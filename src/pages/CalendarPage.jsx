@@ -100,6 +100,7 @@ export function CalendarPage({ tasks, addTask }) {
           key={selectedDate}
           heading={`Add task for ${formatDate(selectedDate)}`}
           initialDeadline={selectedDate}
+          allTasks={tasks}
           onAddTask={handleAddTask}
         />
       )}

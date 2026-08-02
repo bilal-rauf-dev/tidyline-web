@@ -14,7 +14,8 @@ import { Sparkline } from '../components/Sparkline'
 import { TrendBars } from '../components/TrendBars'
 import { ActivityGrid } from '../components/ActivityGrid'
 
-export function AnalyticsPage({ tasks }) {
+export function AnalyticsPage({ tasks: allTasks }) {
+  const tasks = useMemo(() => allTasks.filter((task) => !task.archived), [allTasks])
   const completion = useMemo(() => getCompletionStat(tasks), [tasks])
   const topBuckets = useMemo(() => getTopBuckets(tasks, 2), [tasks])
   const trends = useMemo(() => getBucketTrends(tasks), [tasks])

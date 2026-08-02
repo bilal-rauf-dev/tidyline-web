@@ -139,8 +139,53 @@ new chart type for a new page without adding it here first.
   **outlined** = nothing. Hatching is a 45° repeating hard-stop stripe, not a
   blended gradient. This is the standard renderer for any date-shaped data.
 
+- **Distance rail** (`DistanceRail.jsx`) — seven ticks, one per bucket, sitting
+  at the top of every bucket card. The tick for the current bucket is a
+  full-height accent bar; ticks nearer than it stay solid, ticks beyond it
+  fade to the border colour. This is what makes the seven bucket cards read as
+  one Today → Later sequence rather than seven interchangeable boxes. It is a
+  positional glyph, not a progress bar — nothing "fills up".
+
 Deltas render as plain signed text (`+2`, `-1`, `–` for zero) — never a
 coloured pill, and never a green/red semantic pair.
+
+## Form and control primitives
+
+- **Underline field** (`.input-underline`) — the single most important input on
+  a form gets no box: just a 1px bottom rule that thickens to 2px accent on
+  focus. Exactly one per form; every other field stays a normal bordered input.
+  Used for the task title on both the add and edit forms.
+- **Icon field** (`.field-icon`) — a small outline line-icon plus a short text
+  label above a compact input. The icon uses the same 20×20 stroked language as
+  the sidebar nav icons and never appears inside a circle. Icons are decorative
+  (`aria-hidden`); the text label carries the accessible name.
+- **Icon action button** (`.icon-action`, `.icon-mini`) — square-ish bordered
+  button (`.icon-action`, for a primary inline action like "add reminder") or
+  bare glyph (`.icon-mini`, for row-level actions like pin/edit/duplicate/
+  archive/delete). Both always carry an `aria-label` and a `title`. Never a
+  circular floating action button.
+- **Tag mark** (`TagList.jsx`) — flat rectangle with a 2px left border and no
+  background, **never a rounded pill**. Tone is assigned deterministically by
+  hashing the tag name across three palette values only (neutral, lavender,
+  coral), so a given tag is always the same colour and no new hues enter.
+- **Day-context panel** (`DayContext.jsx`) — left-bordered lavender panel that
+  appears under a date or time field once a value is picked, listing what is
+  already scheduled that day (or within 2h, for reminders). Renders nothing
+  when the slot is clear, so it is a signal rather than constant chrome. It
+  always excludes the task currently being edited.
+- **Segmented control** (`.segmented`) — flat row of buttons in a shared
+  bordered container; the active segment is marked by an inset bottom accent
+  rule, not a filled pill.
+- **Undo toast** (`UndoToast.jsx`) — dark card pinned bottom-centre, holding a
+  message, an underlined "Undo" action, and a dismiss glyph. Same
+  `--surface-dark` and `--radius-card` as any other dark card; no shadow, no
+  pill. Auto-dismisses after 6s (verified in-browser: present at 4.2s, gone by
+  6.6s). Undo restores a full snapshot of the task list taken before the
+  destructive action, so it works identically for single and bulk operations.
+- **Drag affordance** (`.task-grip`) — a six-dot grip glyph at the start of a
+  task row. Cards are `draggable` only when selection mode is off; in selection
+  mode the grip is replaced by a checkbox and dragging is disabled so the two
+  interactions cannot conflict.
 
 ## Never do this (explicit anti-patterns)
 
@@ -177,11 +222,14 @@ The following are the default outputs of AI-generated UI and are banned outright
   nav icons and inherits the muted/white text-color states instead of
   carrying its own fixed brand palette. Full-color brand artwork is used
   only for the favicon and any app-icon export, never inline in the UI.
-  Source of truth: `C:\Users\Kirig\Downloads\TidyLine_logo.svg`, copied
-  into the repo at `public/logo.svg` (full color, for favicon/app-icon use)
-  and `public/logo.png` (PNG fallback); the sidebar mark
-  (`src/components/BrandMonogram.jsx`) extracts just the monogram path data
-  from that source, recolored to `currentColor`.
+  Source of truth is now **`public/logo.svg` in this repo** — it has been
+  edited since import (the "TidyLine" wordmark `<text>` elements were removed,
+  leaving the rounded square plus monogram) and has therefore diverged from the
+  original export in `~/Downloads/TidyLine_logo.svg`. Treat the repo copy as
+  authoritative. `public/logo.png` is a stale PNG fallback that still contains
+  the removed wordmark and needs re-exporting. The sidebar mark
+  (`src/components/BrandMonogram.jsx`) carries the same five monogram paths,
+  recolored to `currentColor`.
 - Sections: Home, Board, Calendar, Analytics, Settings — all built out now.
   Home is the default route (`/`); Board lives at `/board`. Any future new
   section should default to a plain "coming soon" card treatment until built
@@ -249,7 +297,20 @@ The following are the default outputs of AI-generated UI and are banned outright
     inventing placeholder data for a dashboard would make it lie.
 - Bucket columns (Today/Week/2 Weeks/etc.): render as the bento grid above, not
   seven identical white boxes. Give "Today" the dark card treatment since it's
-  the highest-priority bucket.
+  the highest-priority bucket, and give every bucket a distance rail so the set
+  reads as an ordered sequence.
+- Dropping a task into another bucket rewrites its **actual deadline** to the
+  earliest date that still falls in that bucket (`BUCKET_START_DAYS`: 0/1/8/15/
+  31/91/366 days out). Earliest-in-range is chosen over a midpoint because it
+  preserves urgency, is deterministic, and is reversible — dragging back and
+  forth lands on predictable dates rather than drifting. Drag-and-drop is
+  mouse-only; the edit form is the keyboard-accessible equivalent.
+- Archiving sets an `archived` flag and hides the task from the board, Home and
+  Analytics; it never deletes. Hard delete stays available as a separate,
+  clearly destructive action. Both are undoable.
+- Pinning is orthogonal to done/undone: a pinned task sorts to the top of its
+  bucket *even when completed*, and is marked with a lavender left border —
+  deliberately a different visual channel from the strikethrough used for done.
 - Task cards: no colored pill for the deadline. Show the date as a bold number
   + short label (e.g. large "12" over small "Aug"), similar to how the
   reference renders stat numbers.

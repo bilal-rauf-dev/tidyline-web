@@ -18,7 +18,8 @@ function getGreeting() {
   return 'Good evening'
 }
 
-export function HomePage({ tasks }) {
+export function HomePage({ tasks: allTasks }) {
+  const tasks = useMemo(() => allTasks.filter((task) => !task.archived), [allTasks])
   const buckets = useMemo(() => groupTasksByBucket(tasks), [tasks])
   const heatmap = useMemo(() => getActivityHeatmap(tasks, HOME_HEATMAP_DAYS), [tasks])
   const heatmapSummary = useMemo(() => summarizeHeatmap(heatmap), [heatmap])

@@ -1,19 +1,54 @@
+import { useState } from 'react'
 import { TaskCard } from './TaskCard'
+import { DistanceRail } from './DistanceRail'
 
 export function BucketColumn({
   bucketKey,
   label,
   tasks,
-  onToggle,
-  onDelete,
-  onUpdate,
-  onAddReminder,
-  onRemoveReminder,
+  onMoveTask,
+  selectedIds = [],
+  ...taskHandlers
 }) {
+  const [isOver, setIsOver] = useState(false)
   const isToday = bucketKey === 'today'
 
+  function handleDragOver(event) {
+    event.preventDefault()
+    event.dataTransfer.dropEffect = 'move'
+    setIsOver(true)
+  }
+
+  function handleDragLeave(event) {
+    if (!event.currentTarget.contains(event.relatedTarget)) {
+      setIsOver(false)
+    }
+  }
+
+  function handleDrop(event) {
+    event.preventDefault()
+    setIsOver(false)
+
+    const id = event.dataTransfer.getData('text/plain')
+
+    if (id) {
+      onMoveTask(id, bucketKey)
+    }
+  }
+
+  const classNames = ['bucket-column', `bucket-${bucketKey}`]
+  if (isToday) classNames.push('dark')
+  if (isOver) classNames.push('drop-target')
+
   return (
-    <article className={`bucket-column bucket-${bucketKey}${isToday ? ' dark' : ''}`}>
+    <article
+      className={classNames.join(' ')}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
+      <DistanceRail bucketKey={bucketKey} />
+
       {isToday ? (
         <div className="bucket-stat">
           <strong>{tasks.length}</strong>
@@ -34,11 +69,8 @@ export function BucketColumn({
             <TaskCard
               key={task.id}
               task={task}
-              onToggle={onToggle}
-              onDelete={onDelete}
-              onUpdate={onUpdate}
-              onAddReminder={onAddReminder}
-              onRemoveReminder={onRemoveReminder}
+              selected={selectedIds.includes(task.id)}
+              {...taskHandlers}
             />
           ))}
         </ul>

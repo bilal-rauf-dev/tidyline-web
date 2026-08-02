@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef, useState } from 'react'
 import { Link, useLocation } from 'wouter'
 import {
   HomeIcon,
@@ -20,6 +21,23 @@ const NAV_ITEMS = [
 export function Sidebar({ isOpen, isCollapsed, onToggleCollapse, onNavigate }) {
   const [location] = useLocation()
   const activeIndex = NAV_ITEMS.findIndex((item) => item.href === location)
+  const listRef = useRef(null)
+  const [indicatorTop, setIndicatorTop] = useState(0)
+
+  // Measure the active item rather than deriving its offset arithmetically:
+  // a var()-based transform silently stops re-resolving once transitioned,
+  // and measuring also survives any future change to nav item height.
+  useLayoutEffect(() => {
+    if (!listRef.current || activeIndex < 0) {
+      return
+    }
+
+    const active = listRef.current.querySelectorAll('.nav-item')[activeIndex]
+
+    if (active) {
+      setIndicatorTop(active.offsetTop)
+    }
+  }, [activeIndex, isCollapsed, isOpen])
 
   return (
     <nav
@@ -32,9 +50,10 @@ export function Sidebar({ isOpen, isCollapsed, onToggleCollapse, onNavigate }) {
         <span>Tidyline</span>
       </div>
 
-      <ul className="nav-list" style={{ '--nav-active-index': Math.max(activeIndex, 0) }}>
+      <ul className="nav-list" ref={listRef}>
         <li
           className={activeIndex < 0 ? 'nav-indicator hidden' : 'nav-indicator'}
+          style={{ transform: `translateY(${indicatorTop}px)` }}
           aria-hidden="true"
         />
 

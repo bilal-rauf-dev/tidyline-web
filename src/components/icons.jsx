@@ -9,6 +9,103 @@ const base = {
   strokeLinejoin: 'round',
 }
 
+export function PlusIcon() {
+  return (
+    <svg {...base} aria-hidden="true">
+      <path d="M10 4.5v11M4.5 10h11" />
+    </svg>
+  )
+}
+
+export function BellIcon() {
+  return (
+    <svg {...base} aria-hidden="true">
+      <path d="M6 8.5a4 4 0 0 1 8 0c0 2.8 1 4.2 1.5 4.7h-11C5 12.7 6 11.3 6 8.5z" />
+      <path d="M8.6 15.4a1.6 1.6 0 0 0 2.8 0" />
+    </svg>
+  )
+}
+
+export function TagIcon() {
+  return (
+    <svg {...base} aria-hidden="true">
+      <path d="M3.5 3.5h6l7 7-6 6-7-7z" />
+      <circle cx="7" cy="7" r="1.1" />
+    </svg>
+  )
+}
+
+export function SearchIcon() {
+  return (
+    <svg {...base} aria-hidden="true">
+      <circle cx="9" cy="9" r="5.2" />
+      <path d="m12.9 12.9 3.6 3.6" />
+    </svg>
+  )
+}
+
+export function PinIcon() {
+  return (
+    <svg {...base} aria-hidden="true">
+      <path d="M7.5 3h5l-1 5 3 2.5v1.5H5.5v-1.5l3-2.5z" />
+      <path d="M10 12v5" />
+    </svg>
+  )
+}
+
+export function ArchiveIcon() {
+  return (
+    <svg {...base} aria-hidden="true">
+      <rect x="2.8" y="4" width="14.4" height="3.4" rx="0.8" />
+      <path d="M4.3 7.4v8a1 1 0 0 0 1 1h9.4a1 1 0 0 0 1-1v-8" />
+      <path d="M8.2 10.6h3.6" />
+    </svg>
+  )
+}
+
+export function TrashIcon() {
+  return (
+    <svg {...base} aria-hidden="true">
+      <path d="M3.5 5.5h13" />
+      <path d="M8 5.5V4.2a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1.3" />
+      <path d="m5.7 5.5.6 10.3a1 1 0 0 0 1 .9h5.4a1 1 0 0 0 1-.9l.6-10.3" />
+    </svg>
+  )
+}
+
+export function CopyIcon() {
+  return (
+    <svg {...base} aria-hidden="true">
+      <rect x="6.8" y="6.8" width="9.7" height="9.7" rx="1.4" />
+      <path d="M13.4 6.8V5.2a1.7 1.7 0 0 0-1.7-1.7H5.2a1.7 1.7 0 0 0-1.7 1.7v6.5a1.7 1.7 0 0 0 1.7 1.7h1.6" />
+    </svg>
+  )
+}
+
+export function EditIcon() {
+  return (
+    <svg {...base} aria-hidden="true">
+      <path d="m13.4 3.6 3 3L7 16H4v-3z" />
+    </svg>
+  )
+}
+
+export function CloseIcon() {
+  return (
+    <svg {...base} aria-hidden="true">
+      <path d="m5.5 5.5 9 9M14.5 5.5l-9 9" />
+    </svg>
+  )
+}
+
+export function GripIcon() {
+  return (
+    <svg {...base} aria-hidden="true">
+      <path d="M7.5 5.5h.01M12.5 5.5h.01M7.5 10h.01M12.5 10h.01M7.5 14.5h.01M12.5 14.5h.01" />
+    </svg>
+  )
+}
+
 export function HomeIcon() {
   return (
     <svg {...base} aria-hidden="true">
