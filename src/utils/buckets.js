@@ -1,3 +1,5 @@
+import { daysUntil } from './dates'
+
 export const BUCKET_ORDER = ['today', 'week', 'twoWeeks', 'month', 'quarter', 'year', 'later']
 
 export const BUCKET_LABELS = {
@@ -9,8 +11,6 @@ export const BUCKET_LABELS = {
   year: 'Year',
   later: 'Later',
 }
-
-const DAY_MS = 1000 * 60 * 60 * 24
 
 /**
  * Earliest day offset that still lands inside each bucket. Dropping a task
@@ -42,13 +42,7 @@ export function deadlineForBucket(bucketKey, referenceDate = new Date()) {
 }
 
 export function getTaskBucket(deadline, referenceDate = new Date()) {
-  const todayStart = new Date(
-    referenceDate.getFullYear(),
-    referenceDate.getMonth(),
-    referenceDate.getDate(),
-  )
-  const deadlineDate = new Date(`${deadline}T00:00:00`)
-  const daysUntilDeadline = Math.floor((deadlineDate - todayStart) / DAY_MS)
+  const daysUntilDeadline = daysUntil(deadline, referenceDate)
 
   if (daysUntilDeadline <= 0) return 'today'
   if (daysUntilDeadline <= 7) return 'week'

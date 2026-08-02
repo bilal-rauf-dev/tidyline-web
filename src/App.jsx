@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Route, Switch, useLocation } from 'wouter'
 import './App.css'
 import { Sidebar } from './components/Sidebar'
 import { MenuIcon } from './components/icons'
+import { CommandPalette } from './components/CommandPalette'
 import { HomePage } from './pages/HomePage'
 import { BoardPage } from './pages/BoardPage'
 import { CalendarPage } from './pages/CalendarPage'
@@ -11,19 +12,39 @@ import { SettingsPage } from './pages/SettingsPage'
 import { useTasks } from './hooks/useTasks'
 import { useReminderNotifications } from './hooks/useReminderNotifications'
 import { useTheme } from './hooks/useTheme'
+import { useShortcuts } from './hooks/useShortcuts'
+
+/** The task under the caret or the pointer — what single-key actions act on. */
+function activeTaskId() {
+  const focused = document.activeElement?.closest?.('[data-task-id]')
+
+  if (focused) {
+    return focused.dataset.taskId
+  }
+
+  return document.querySelector('[data-task-id]:hover')?.dataset.taskId ?? null
+}
 
 function App() {
   const taskState = useTasks()
-  const { theme, toggleTheme } = useTheme()
-  const [location] = useLocation()
+  const appearance = useTheme()
+  const [location, navigate] = useLocation()
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [isCollapsed, setIsCollapsed] = useState(false)
+  const [isPaletteOpen, setIsPaletteOpen] = useState(false)
 
-  useReminderNotifications(taskState.tasks)
+  const { completeTask, toggleTask, deleteTask } = taskState
+
+  const onNotificationComplete = useCallback(
+    (taskId) => completeTask(taskId),
+    [completeTask],
+  )
+
+  useReminderNotifications(taskState.tasks, { onComplete: onNotificationComplete })
 
   useEffect(() => {
     if (!isDrawerOpen) {
-      return
+      return undefined
     }
 
     function handleKeyDown(event) {
@@ -35,6 +56,72 @@ function App() {
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [isDrawerOpen])
+
+  const focusSearch = useCallback(() => {
+    const input = document.querySelector('.toolbar-search input')
+
+    if (input) {
+      input.focus()
+      return
+    }
+
+    navigate('/board')
+    setTimeout(() => document.querySelector('.toolbar-search input')?.focus(), 80)
+  }, [navigate])
+
+  const startNewTask = useCallback(() => {
+    navigate('/board?add=1')
+    setTimeout(() => document.querySelector('.input-underline')?.focus(), 80)
+  }, [navigate])
+
+  const commands = useMemo(
+    () => [
+      { id: 'new', label: 'New task', hint: 'N', run: startNewTask },
+      { id: 'search', label: 'Focus search', hint: '/', run: focusSearch },
+      { id: 'home', label: 'Go to Home', run: () => navigate('/') },
+      { id: 'board', label: 'Go to Board', run: () => navigate('/board') },
+      { id: 'calendar', label: 'Go to Calendar', run: () => navigate('/calendar') },
+      { id: 'analytics', label: 'Go to Analytics', run: () => navigate('/analytics') },
+      { id: 'settings', label: 'Go to Settings', run: () => navigate('/settings') },
+      { id: 'archive', label: 'Show archived tasks', run: () => navigate('/board?view=archived') },
+      {
+        id: 'theme',
+        label: `Switch to ${appearance.theme === 'dark' ? 'light' : 'dark'} theme`,
+        run: appearance.toggleTheme,
+      },
+      {
+        id: 'density',
+        label: `Use ${appearance.density === 'compact' ? 'comfortable' : 'compact'} density`,
+        run: () =>
+          appearance.setDensity(appearance.density === 'compact' ? 'comfortable' : 'compact'),
+      },
+    ],
+    [navigate, startNewTask, focusSearch, appearance],
+  )
+
+  useShortcuts(
+    useMemo(
+      () => ({
+        onPalette: () => setIsPaletteOpen((open) => !open),
+        onEscape: () => setIsPaletteOpen(false),
+        onNewTask: startNewTask,
+        onFocusSearch: focusSearch,
+        onToggleActive: () => {
+          const id = activeTaskId()
+          if (!id) return false
+          toggleTask(id)
+          return true
+        },
+        onDeleteActive: () => {
+          const id = activeTaskId()
+          if (!id) return false
+          deleteTask(id)
+          return true
+        },
+      }),
+      [startNewTask, focusSearch, toggleTask, deleteTask],
+    ),
+  )
 
   return (
     <div className={isCollapsed ? 'app-layout collapsed' : 'app-layout'}>
@@ -57,6 +144,10 @@ function App() {
         isCollapsed={isCollapsed}
         onToggleCollapse={() => setIsCollapsed((current) => !current)}
         onNavigate={() => setIsDrawerOpen(false)}
+        onOpenPalette={() => {
+          setIsDrawerOpen(false)
+          setIsPaletteOpen(true)
+        }}
       />
 
       {isDrawerOpen && (
@@ -78,7 +169,11 @@ function App() {
               <BoardPage {...taskState} />
             </Route>
             <Route path="/calendar">
-              <CalendarPage tasks={taskState.tasks} addTask={taskState.addTask} />
+              <CalendarPage
+                tasks={taskState.tasks}
+                addTask={taskState.addTask}
+                setDeadline={taskState.setDeadline}
+              />
             </Route>
             <Route path="/analytics">
               <AnalyticsPage tasks={taskState.tasks} />
@@ -86,8 +181,7 @@ function App() {
             <Route path="/settings">
               <SettingsPage
                 tasks={taskState.tasks}
-                theme={theme}
-                toggleTheme={toggleTheme}
+                appearance={appearance}
                 importTasks={taskState.importTasks}
                 clearCompleted={taskState.clearCompleted}
               />
@@ -95,6 +189,10 @@ function App() {
           </Switch>
         </div>
       </div>
+
+      {isPaletteOpen && (
+        <CommandPalette commands={commands} onClose={() => setIsPaletteOpen(false)} />
+      )}
     </div>
   )
 }

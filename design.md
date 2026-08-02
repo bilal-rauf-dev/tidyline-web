@@ -25,6 +25,15 @@ Every screen uses at most one dark card and one accent color pulled hard —
 not a rainbow of pastel tags. Color is used to mark exactly one important
 thing per view (today, the primary CTA, the one stat that matters).
 
+**The accent is a user-selectable token.** `--accent` defaults to coral but
+Settings lets the user swap which single hue plays the accent role (coral,
+violet, teal, amber, indigo — all dark enough to carry white text). This
+relaxes "one accent pulled hard" in one direction only: it changes *which*
+hue is the accent, never how many accents are active at once. Everything
+accent-coloured reads from `--accent`, so nothing needs per-hue special
+casing. `--accent-soft` (lavender) is unchanged by this and remains the
+secondary chart-geometry colour.
+
 **Override (data-dense pages):** the one-dark-card rule is relaxed on
 Analytics and Home, which are dashboards rather than task surfaces and need
 card-type variety to stay readable. Those pages may mix three surface types:
@@ -73,6 +82,14 @@ existing palette rather than introducing a new hue:
 - If a shadow is used at all, it's a 1px hard-edge or none. Never a soft
   `0 10px 30px rgba(0,0,0,0.1)` glow.
 
+## Density
+
+Two spacing modes, chosen in Settings and applied via `data-density` on the
+root. Compact tightens only the containers that actually carry list density —
+card padding, task row padding, grid gaps, settings rows — and deliberately
+leaves type sizes and the type scale alone, so nothing becomes harder to read.
+It is a spacing toggle, not a global rem rescale.
+
 ## Motion
 
 Not present in the reference screenshots (they're static) — these values are a
@@ -91,6 +108,14 @@ draws attention to itself.
   element that moves, not a border toggling on and off per item.
 - Everything above collapses to ~0ms under `prefers-reduced-motion: reduce`,
   set globally in `index.css`.
+- **Living timeline (FLIP).** When wall-clock time moves a task into a
+  different bucket, the card animates from its old column position to its new
+  one instead of teleporting. Implemented as measure → apply → invert → play
+  via the Web Animations API over 420ms on the standard ease-out. It is armed
+  *only* by the time tick, so manual drags, filtering and sorting re-render
+  without animating. The tick runs on a 60s interval and re-fires on tab
+  visibility/focus, so a laptop reopened the next morning re-shelves its tasks
+  rather than showing yesterday's layout.
 
 ## Layout
 
@@ -182,6 +207,32 @@ coloured pill, and never a green/red semantic pair.
   pill. Auto-dismisses after 6s (verified in-browser: present at 4.2s, gone by
   6.6s). Undo restores a full snapshot of the task list taken before the
   destructive action, so it works identically for single and bulk operations.
+- **Distance rail** is documented under chart primitives above.
+- **Countdown label** (`.countdown`) — plain bold micro-text on the card
+  ("3 days left", "today", "2 days overdue"), turning accent-coloured once
+  negative. Text only; never a coloured pill.
+- **Task flag row** (`.task-meta`) — the collapsed card's summary line: the
+  countdown plus small glyphs for repeat/notes/links and text counts for
+  checklist progress (`1/3`) and duration. Glyphs only appear when the field
+  has content, so a bare task stays bare. This is what keeps rich detail from
+  making every card noisy.
+- **Expandable detail panel** (`.task-details-panel`) — opens inside the card
+  under a top rule, never as a modal or drawer. Holds notes, checklist, links,
+  attachments, location, estimate, recurrence and reminders.
+- **Overdue tier card** (`.overdue-group`) — severity is expressed only by
+  left-border weight and palette intensity: 3px `--line` (yesterday) → 3px
+  lavender (a few days) → 5px accent (a week or more). No new hues, no red,
+  no alarm iconography.
+- **Bucket progress bar** (`.bucket-progress`) — 3px flat lavender fill on a
+  `--line` track at the head of each bucket. Square ends, same language as the
+  milestone bar, just smaller.
+- **Command palette** (`CommandPalette.jsx`) — centred card on a token-derived
+  scrim, reusing `--surface`, `--radius-card` and a 1px `--line` border. The
+  search row is an underline field, not a rounded pill, and the active row is
+  marked with an accent left border like a nav item. No shadow.
+- **Accent swatch** (`.accent-swatch`) — small rounded-rect colour buttons in
+  Settings; the selected one is ringed with a `--text` border rather than a
+  checkmark.
 - **Drag affordance** (`.task-grip`) — a six-dot grip glyph at the start of a
   task row. Cards are `draggable` only when selection mode is off; in selection
   mode the grip is replaced by a checkbox and dragging is disabled so the two
@@ -230,6 +281,16 @@ The following are the default outputs of AI-generated UI and are banned outright
   the removed wordmark and needs re-exporting. The sidebar mark
   (`src/components/BrandMonogram.jsx`) carries the same five monogram paths,
   recolored to `currentColor`.
+- **Brand row is also a control row.** The wordmark takes the horizontal
+  slack (`flex: 1`) so any trailing controls sit flush to the sidebar's right
+  edge. Controls here are bare `.icon-mini` glyphs inheriting the sidebar's
+  muted-to-white text states — no pill, no circle background, no filled
+  button. Currently one such control: the command-palette trigger, which
+  duplicates the Ctrl+K shortcut rather than replacing it (the shortcut stays
+  the primary path; the button makes it discoverable). Its `aria-label` and
+  tooltip both name the shortcut. Trailing controls are hidden on the
+  collapsed 76px rail — there is no room beside the monogram — and restored
+  in the mobile drawer, which is always full width.
 - Sections: Home, Board, Calendar, Analytics, Settings — all built out now.
   Home is the default route (`/`); Board lives at `/board`. Any future new
   section should default to a plain "coming soon" card treatment until built
@@ -258,6 +319,50 @@ The following are the default outputs of AI-generated UI and are banned outright
 - Main content area keeps the `#F2F0EC` background and existing card
   tokens exactly as defined above; only the sidebar introduces the dark
   surface as permanent chrome.
+
+## Data model decisions
+
+These are behavioural contracts, not styling. Change them deliberately.
+
+- **`completedAt`** — set when a task is completed, cleared when un-completed.
+  Added because "completed today" cannot be derived from `done` alone. The
+  activity grid still keys off `deadline`; migrating it to `completedAt` would
+  only describe tasks completed from this version onward, so it is deferred
+  rather than silently half-applied.
+- **Recurrence materialises on completion, not virtually.** Completing a
+  recurring task writes exactly one new instance with the next deadline.
+  Rejected the virtual alternative because occurrences carry mutable
+  per-instance state — checklist ticks, notes edits, pins, tags — which a
+  computed occurrence cannot hold without a parallel override store. One flat
+  task list keeps storage bounded, keeps every visible task a real editable
+  record, and avoids rendering 52 phantom copies of a weekly task. The cost is
+  explicit: **if you never complete it, no future occurrence exists.** For a
+  deadline tool that is the correct bias — the board shows what is actually
+  owed, not a projection.
+  Carried to the next instance: title, tags, notes, links, attachments,
+  location, duration, reminders, recurrence rule. Reset: `done`,
+  `completedAt`, `pinned`, and every checklist tick.
+- **Relative reminders resolve at check time, not save time.** A "1 hour
+  before" reminder stores `minutesBefore`, never a frozen timestamp, so
+  editing the deadline moves the reminder with it. Freezing at save time would
+  silently detach the reminder from a rescheduled task and fire at a moment
+  that no longer means anything. Absolute and "tomorrow morning" reminders do
+  resolve once, at save time, because neither is deadline-linked.
+- **`DEADLINE_HOUR = 9`** — a date-only deadline has no clock time, so 09:00
+  local is the pinned "due moment" used by relative reminders and by the
+  "tomorrow morning" preset.
+- **Recurring reminders reuse the recurrence model** in `recurrence.js`
+  ("every Monday" is `{ freq: 'weekly', weekday: 1 }`). There is one
+  recurrence implementation, not two.
+- **One date-diff implementation.** `daysUntil()` in `dates.js` is the only
+  place day arithmetic happens; bucketing, countdown labels and overdue
+  tiering all call it.
+- **Attachments are references, not files.** An attachment is a name plus a
+  URL pointing at something already hosted elsewhere. There is no backend and
+  localStorage has a hard size ceiling, so real uploads are not possible here.
+- **Overdue is not a bucket.** Overdue tasks are removed from the bucket grid
+  entirely and rendered in their own section. Any that do surface elsewhere
+  still carry the overdue treatment, so they never read as on-time.
 
 ## Component-specific direction (TidyLine)
 

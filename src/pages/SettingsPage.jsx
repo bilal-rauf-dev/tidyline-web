@@ -1,8 +1,11 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { parseImportedTasks, serializeTasks } from '../utils/tasksIO'
+import { isSoundEnabled, playChime, setSoundEnabled } from '../utils/notifications'
+import { ACCENT_OPTIONS, DENSITY_OPTIONS } from '../hooks/useTheme'
 
-export function SettingsPage({ tasks, theme, toggleTheme, importTasks, clearCompleted }) {
+export function SettingsPage({ tasks, appearance, importTasks, clearCompleted }) {
   const fileInputRef = useRef(null)
+  const [soundOn, setSoundOn] = useState(isSoundEnabled)
   const completedCount = tasks.filter((task) => task.done).length
 
   function handleExport() {
@@ -17,6 +20,7 @@ export function SettingsPage({ tasks, theme, toggleTheme, importTasks, clearComp
 
   function handleImportChange(event) {
     const file = event.target.files?.[0]
+
     if (!file) {
       return
     }
@@ -24,8 +28,7 @@ export function SettingsPage({ tasks, theme, toggleTheme, importTasks, clearComp
     const reader = new FileReader()
     reader.onload = () => {
       try {
-        const imported = parseImportedTasks(String(reader.result))
-        importTasks(imported)
+        importTasks(parseImportedTasks(String(reader.result)))
       } catch {
         window.alert('That file is not a valid TidyLine export.')
       }
@@ -39,8 +42,18 @@ export function SettingsPage({ tasks, theme, toggleTheme, importTasks, clearComp
       return
     }
 
-    if (window.confirm(`Remove ${completedCount} completed task(s)? This can't be undone.`)) {
+    if (window.confirm(`Remove ${completedCount} completed task(s)?`)) {
       clearCompleted()
+    }
+  }
+
+  function toggleSound() {
+    const next = !soundOn
+    setSoundEnabled(next)
+    setSoundOn(next)
+
+    if (next) {
+      playChime()
     }
   }
 
@@ -52,10 +65,68 @@ export function SettingsPage({ tasks, theme, toggleTheme, importTasks, clearComp
 
       <section className="entry-card">
         <h2>Appearance</h2>
+
         <div className="settings-row">
           <span>Theme</span>
-          <button type="button" className="secondary" onClick={toggleTheme}>
-            {theme === 'dark' ? 'Switch to light' : 'Switch to dark'}
+          <button type="button" className="secondary" onClick={appearance.toggleTheme}>
+            {appearance.theme === 'dark' ? 'Switch to light' : 'Switch to dark'}
+          </button>
+        </div>
+
+        <div className="settings-row">
+          <span>
+            Accent colour
+            <small className="settings-note">
+              One hue plays the accent role — picking another swaps it.
+            </small>
+          </span>
+          <div className="accent-choices" role="group" aria-label="Accent colour">
+            {ACCENT_OPTIONS.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                className={
+                  appearance.accent === option.value ? 'accent-swatch active' : 'accent-swatch'
+                }
+                style={{ background: option.value }}
+                onClick={() => appearance.setAccent(option.value)}
+                aria-pressed={appearance.accent === option.value}
+                aria-label={option.label}
+                title={option.label}
+              />
+            ))}
+          </div>
+        </div>
+
+        <div className="settings-row">
+          <span>Density</span>
+          <div className="segmented" role="group" aria-label="Density">
+            {DENSITY_OPTIONS.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                className={appearance.density === option.value ? 'segment active' : 'segment'}
+                onClick={() => appearance.setDensity(option.value)}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="entry-card">
+        <h2>Notifications</h2>
+
+        <div className="settings-row">
+          <span>
+            Reminder sound
+            <small className="settings-note">
+              Plays a short chime when a reminder fires.
+            </small>
+          </span>
+          <button type="button" className="secondary" onClick={toggleSound}>
+            {soundOn ? 'Mute' : 'Unmute'}
           </button>
         </div>
       </section>
@@ -72,7 +143,11 @@ export function SettingsPage({ tasks, theme, toggleTheme, importTasks, clearComp
 
         <div className="settings-row">
           <span>Import tasks</span>
-          <button type="button" className="secondary" onClick={() => fileInputRef.current?.click()}>
+          <button
+            type="button"
+            className="secondary"
+            onClick={() => fileInputRef.current?.click()}
+          >
             Import JSON
           </button>
           <input

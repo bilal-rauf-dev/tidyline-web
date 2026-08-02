@@ -5,7 +5,10 @@ import { getActivityHeatmap, summarizeHeatmap } from '../utils/analytics'
 import { getDeadlineParts } from '../utils/dates'
 import { TIMELINE_TICKS, getTodayTimeline } from '../utils/timeline'
 import { RingStat } from '../components/RingStat'
+import { MilestoneBar } from '../components/MilestoneBar'
 import { ActivityGrid } from '../components/ActivityGrid'
+import { isOverdue } from '../utils/overdue'
+import { toDateStr } from '../utils/calendar'
 
 const UPCOMING_LIMIT = 5
 const HOME_HEATMAP_DAYS = 35
@@ -36,6 +39,24 @@ export function HomePage({ tasks: allTasks }) {
 
   const todayTasks = buckets.today
   const todayDone = todayTasks.filter((task) => task.done).length
+
+  const daily = useMemo(() => {
+    const todayStr = toDateStr(new Date())
+    const dueToday = tasks.filter((task) => task.deadline === todayStr)
+    const overdueCount = tasks.filter((task) => isOverdue(task)).length
+    const completedToday = tasks.filter(
+      (task) => task.done && task.completedAt?.slice(0, 10) === todayStr,
+    ).length
+    const done = dueToday.filter((task) => task.done).length
+
+    return {
+      dueToday: dueToday.length,
+      overdueCount,
+      completedToday,
+      done,
+      percent: dueToday.length === 0 ? 0 : Math.round((done / dueToday.length) * 100),
+    }
+  }, [tasks])
 
   return (
     <main className="app-shell">
@@ -98,6 +119,28 @@ export function HomePage({ tasks: allTasks }) {
             </ul>
           )}
         </article>
+      </section>
+
+      <section className="entry-card daily-card" aria-label="Today at a glance">
+        <h2>Today at a glance</h2>
+
+        <div className="daily-stats">
+          <div className="daily-stat">
+            <strong>{daily.dueToday}</strong>
+            <span>due today</span>
+          </div>
+          <div className={daily.overdueCount > 0 ? 'daily-stat alert' : 'daily-stat'}>
+            <strong>{daily.overdueCount}</strong>
+            <span>overdue</span>
+          </div>
+          <div className="daily-stat">
+            <strong>{daily.completedToday}</strong>
+            <span>completed today</span>
+          </div>
+          <RingStat label="Today" value={daily.done} total={daily.dueToday} />
+        </div>
+
+        <MilestoneBar percent={daily.percent} label="Today's progress" />
       </section>
 
       <section className="home-grid" aria-label="Summary">

@@ -1,40 +1,43 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useSearch } from 'wouter'
 import { BUCKET_LABELS, BUCKET_ORDER, groupTasksByBucket } from '../utils/buckets'
+import { DEFAULT_FILTERS, buildComparator, filterTasks } from '../utils/filters'
+import { collectTags } from '../utils/tags'
+import { groupOverdue, isOverdue } from '../utils/overdue'
+import { useFlipReparent, useTimeTick } from '../hooks/useFlipReparent'
 import { TaskForm } from '../components/TaskForm'
 import { BucketColumn } from '../components/BucketColumn'
 import { BoardToolbar } from '../components/BoardToolbar'
+import { OverdueSection } from '../components/OverdueSection'
 import { UndoToast } from '../components/UndoToast'
-import { DEFAULT_FILTERS, buildComparator, filterTasks } from '../utils/filters'
-import { collectTags } from '../utils/tags'
 
 export function BoardPage({
   tasks,
   addTask,
-  updateTask,
-  deleteTask,
-  toggleTask,
-  togglePin,
-  archiveTask,
-  unarchiveTask,
-  duplicateTask,
   moveTaskToBucket,
-  addReminder,
-  removeReminder,
   bulkComplete,
   bulkArchive,
   bulkDelete,
   undoState,
   undo,
   dismissUndo,
+  ...taskActions
 }) {
   const search = useSearch()
-  const focusForm = new URLSearchParams(search).get('add') === '1'
+  const params = new URLSearchParams(search)
+  const focusForm = params.get('add') === '1'
 
-  const [view, setView] = useState('active')
+  const boardRef = useRef(null)
+  const tick = useTimeTick()
+  // `now` is derived purely from the tick, so every time-sensitive memo below
+  // has an honest dependency instead of a suppressed lint warning.
+  const now = useMemo(() => new Date(tick), [tick])
+
+  const [view, setView] = useState(params.get('view') === 'archived' ? 'archived' : 'active')
   const [filters, setFilters] = useState(DEFAULT_FILTERS)
   const [selectionMode, setSelectionMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState([])
+  const [collapsedBuckets, setCollapsedBuckets] = useState([])
 
   const tags = useMemo(() => collectTags(tasks), [tasks])
 
@@ -45,12 +48,23 @@ export function BoardPage({
     return filterTasks(inView, filters)
   }, [tasks, view, filters])
 
-  const buckets = useMemo(
-    () => groupTasksByBucket(visible, new Date(), buildComparator(filters)),
-    [visible, filters],
+  // Overdue work is lifted out of the buckets entirely (section D).
+  const overdueGroups = useMemo(
+    () => (view === 'archived' ? [] : groupOverdue(visible, now)),
+    [visible, view, now],
   )
 
-  const matchCount = visible.length
+  const bucketed = useMemo(
+    () => visible.filter((task) => view === 'archived' || !isOverdue(task, now)),
+    [visible, view, now],
+  )
+
+  const buckets = useMemo(
+    () => groupTasksByBucket(bucketed, now, buildComparator(filters)),
+    [bucketed, filters, now],
+  )
+
+  useFlipReparent(boardRef, tick)
 
   function toggleSelected(id) {
     setSelectedIds((current) =>
@@ -72,19 +86,38 @@ export function BoardPage({
     exitSelection()
   }
 
+  function toggleBucketCollapse(bucketKey) {
+    setCollapsedBuckets((current) =>
+      current.includes(bucketKey)
+        ? current.filter((entry) => entry !== bucketKey)
+        : [...current, bucketKey],
+    )
+  }
+
+  // Explicit mapping: TaskCard/TaskDetails use on*-prefixed prop names, which
+  // do not match the hook's action names.
   const taskHandlers = {
     allTasks: tasks,
     selectionMode,
     onSelect: toggleSelected,
-    onToggle: toggleTask,
-    onDelete: deleteTask,
-    onUpdate: updateTask,
-    onAddReminder: addReminder,
-    onRemoveReminder: removeReminder,
-    onTogglePin: togglePin,
-    onArchive: archiveTask,
-    onUnarchive: unarchiveTask,
-    onDuplicate: duplicateTask,
+    onToggle: taskActions.toggleTask,
+    onDelete: taskActions.deleteTask,
+    onUpdate: taskActions.updateTask,
+    onTogglePin: taskActions.togglePin,
+    onArchive: taskActions.archiveTask,
+    onUnarchive: taskActions.unarchiveTask,
+    onDuplicate: taskActions.duplicateTask,
+    onSetRecurrence: taskActions.setRecurrence,
+    onAddReminder: taskActions.addReminder,
+    onRemoveReminder: taskActions.removeReminder,
+    onAddChecklistItem: taskActions.addChecklistItem,
+    onToggleChecklistItem: taskActions.toggleChecklistItem,
+    onRemoveChecklistItem: taskActions.removeChecklistItem,
+    onMoveChecklistItem: taskActions.moveChecklistItem,
+    onAddLink: taskActions.addLink,
+    onRemoveLink: taskActions.removeLink,
+    onAddAttachment: taskActions.addAttachment,
+    onRemoveAttachment: taskActions.removeAttachment,
   }
 
   return (
@@ -118,7 +151,7 @@ export function BoardPage({
         </div>
 
         <span className="match-count">
-          {matchCount} {matchCount === 1 ? 'task' : 'tasks'}
+          {visible.length} {visible.length === 1 ? 'task' : 'tasks'}
         </span>
 
         <button
@@ -147,19 +180,25 @@ export function BoardPage({
         </div>
       )}
 
-      <section className="buckets" aria-label="Task buckets">
-        {BUCKET_ORDER.map((bucket) => (
-          <BucketColumn
-            key={bucket}
-            bucketKey={bucket}
-            label={BUCKET_LABELS[bucket]}
-            tasks={buckets[bucket]}
-            onMoveTask={moveTaskToBucket}
-            selectedIds={selectedIds}
-            {...taskHandlers}
-          />
-        ))}
-      </section>
+      <div ref={boardRef}>
+        <OverdueSection groups={overdueGroups} selectedIds={selectedIds} {...taskHandlers} />
+
+        <section className="buckets" aria-label="Task buckets">
+          {BUCKET_ORDER.map((bucket) => (
+            <BucketColumn
+              key={bucket}
+              bucketKey={bucket}
+              label={BUCKET_LABELS[bucket]}
+              tasks={buckets[bucket]}
+              onMoveTask={moveTaskToBucket}
+              collapsed={collapsedBuckets.includes(bucket)}
+              onToggleCollapse={toggleBucketCollapse}
+              selectedIds={selectedIds}
+              {...taskHandlers}
+            />
+          ))}
+        </section>
+      </div>
 
       {undoState && (
         <UndoToast message={undoState.message} onUndo={undo} onDismiss={dismissUndo} />

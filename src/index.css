@@ -31,6 +31,39 @@
   }
 }
 
+/*
+ * Density is a spacing-scale toggle, not a global rem rescale: it tightens
+ * the containers that actually carry list density (cards, task rows, list
+ * gaps) and leaves type sizes alone so nothing becomes hard to read.
+ */
+:root[data-density="compact"] .entry-card,
+:root[data-density="compact"] .bucket-column,
+:root[data-density="compact"] .overdue-group {
+  padding: 0.7rem;
+}
+
+:root[data-density="compact"] .app-shell {
+  gap: 0.9rem;
+}
+
+:root[data-density="compact"] .buckets,
+:root[data-density="compact"] .home-grid,
+:root[data-density="compact"] .analytics-grid {
+  gap: 0.6rem;
+}
+
+:root[data-density="compact"] .task-list li.task {
+  padding: 0.4rem 0;
+}
+
+:root[data-density="compact"] .settings-row {
+  padding: 0.5rem 0;
+}
+
+:root[data-density="compact"] .hero-copy {
+  line-height: 1.45;
+}
+
 :root[data-theme="dark"] {
   --bg: #101012;
   --surface: #1c1c1f;

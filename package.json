@@ -8,6 +8,8 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
+    "smoke": "vite build --ssr scripts/smoke.jsx --outDir .smoke --logLevel warn && node .smoke/smoke.js",
+    "check": "npm run lint && npm run build && npm run smoke",
     "preview": "vite preview"
   },
   "dependencies": {

@@ -74,6 +74,28 @@
   flex-shrink: 0;
 }
 
+/* Wordmark takes the slack so trailing controls sit at the far edge. */
+.sidebar-brand > span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.brand-command {
+  flex-shrink: 0;
+  color: var(--text-on-dark-soft);
+}
+
+.brand-command:hover {
+  color: var(--text-on-dark);
+}
+
+/* No room for it beside the monogram on the 76px rail. */
+.app-layout.collapsed .brand-command {
+  display: none;
+}
+
 .nav-list {
   position: relative;
   list-style: none;
@@ -885,6 +907,468 @@ button {
 .secondary.danger {
   color: var(--accent);
   border-color: var(--accent);
+}
+
+/* Task meta strip: countdown + detail flags */
+
+.task-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.4rem;
+}
+
+.countdown {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--text-soft);
+}
+
+.countdown.overdue {
+  color: var(--accent);
+}
+
+.bucket-column.dark .countdown {
+  color: var(--text-on-dark-soft);
+}
+
+.task-flag {
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-soft);
+}
+
+.task-flag svg {
+  width: 13px;
+  height: 13px;
+}
+
+.task-flag.text {
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.bucket-column.dark .task-flag {
+  color: var(--text-on-dark-soft);
+}
+
+/* Overdue severity — weight and intensity rise with age */
+
+.task.overdue-1 {
+  border-left: 2px solid var(--line);
+  padding-left: 0.55rem;
+}
+
+.task.overdue-2 {
+  border-left: 3px solid var(--accent-soft);
+  padding-left: 0.55rem;
+}
+
+.task.overdue-3 {
+  border-left: 4px solid var(--accent);
+  padding-left: 0.55rem;
+}
+
+.overdue-section {
+  margin-bottom: 1.5rem;
+}
+
+.overdue-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  margin-bottom: 0.75rem;
+}
+
+.overdue-head h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+.overdue-total {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--accent);
+}
+
+.overdue-groups {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.overdue-group {
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  padding: 0.9rem;
+  border-left: 3px solid var(--line);
+}
+
+.overdue-group.severity-2 {
+  border-left-color: var(--accent-soft);
+}
+
+.overdue-group.severity-3 {
+  border-left-width: 5px;
+  border-left-color: var(--accent);
+}
+
+.overdue-group-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 0.4rem;
+}
+
+.overdue-group-head h3 {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.overdue-group-head span {
+  font-weight: 800;
+  color: var(--text-soft);
+}
+
+/* Bucket collapse + progress */
+
+.bucket-header-side {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.bucket-collapse svg {
+  transition: transform var(--dur-move) var(--ease);
+}
+
+.bucket-column.collapsed .bucket-collapse svg {
+  transform: rotate(-90deg);
+}
+
+.bucket-progress {
+  height: 3px;
+  background: var(--line);
+  margin-bottom: 0.7rem;
+}
+
+.bucket-column.dark .bucket-progress {
+  background: var(--line-on-dark);
+}
+
+.bucket-progress-fill {
+  height: 100%;
+  background: var(--accent-soft);
+}
+
+.bucket-sticky {
+  position: sticky;
+  top: 0.75rem;
+  z-index: 5;
+  align-self: start;
+  max-height: calc(100vh - 1.5rem);
+  overflow-y: auto;
+}
+
+/* Expanded task details */
+
+.task-details-panel {
+  display: grid;
+  gap: 0.9rem;
+  margin-top: 0.7rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid var(--line);
+}
+
+.bucket-column.dark .task-details-panel {
+  border-top-color: var(--line-on-dark);
+}
+
+.task-details-panel textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.5rem 0.6rem;
+  font: inherit;
+  font-size: 0.85rem;
+  background: var(--surface);
+  color: var(--text);
+  resize: vertical;
+}
+
+.detail-block {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.detail-count {
+  margin-left: 0.35rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.detail-note {
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--text-soft);
+}
+
+.detail-add-row {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.detail-add-row input {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.82rem;
+  padding: 0.45rem 0.5rem;
+}
+
+.detail-list,
+.checklist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.detail-list li,
+.checklist li {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+}
+
+.checklist li label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.checklist li.done span {
+  text-decoration: line-through;
+  color: var(--text-soft);
+}
+
+.detail-list a {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--accent);
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 0.75rem;
+}
+
+.duration-row {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.duration-row input {
+  width: 5rem;
+}
+
+.reminder-picker,
+.recurrence-picker {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.reminder-picker-row,
+.recurrence-row {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.reminder-picker-row select,
+.recurrence-row select,
+.recurrence-row input,
+.duration-row select {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-btn);
+  padding: 0.45rem 0.5rem;
+  font: inherit;
+  font-size: 0.82rem;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.icon-mini:disabled {
+  opacity: 0.25;
+  cursor: default;
+}
+
+/* Home daily row */
+
+.daily-stats {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.1rem;
+}
+
+.daily-stat {
+  line-height: 1.1;
+}
+
+.daily-stat strong {
+  display: block;
+  font-size: clamp(1.6rem, 2.4vw, 2.1rem);
+  font-weight: 800;
+}
+
+.daily-stat span {
+  font-size: 0.78rem;
+  color: var(--text-soft);
+}
+
+.daily-stat.alert strong {
+  color: var(--accent);
+}
+
+/* Settings extras */
+
+.settings-note {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--text-soft);
+}
+
+.accent-choices {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.accent-swatch {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 6px;
+}
+
+.accent-swatch.active {
+  border-color: var(--text);
+}
+
+/* Command palette */
+
+.palette-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 12vh;
+}
+
+.palette-scrim {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: color-mix(in srgb, var(--surface-dark) 45%, transparent);
+}
+
+.palette {
+  position: relative;
+  width: min(520px, 92vw);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  overflow: hidden;
+  animation: route-in var(--dur-move) var(--ease);
+}
+
+.palette-search {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.8rem 0.9rem;
+  border-bottom: 1px solid var(--line);
+  color: var(--text-soft);
+}
+
+.palette-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  background: none;
+  font-size: 0.95rem;
+}
+
+.palette-search input:focus-visible {
+  outline: none;
+}
+
+.palette-search kbd {
+  font: inherit;
+  font-size: 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 0.1rem 0.3rem;
+}
+
+.palette-list {
+  list-style: none;
+  margin: 0;
+  padding: 0.3rem;
+  max-height: 46vh;
+  overflow-y: auto;
+}
+
+.palette-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+  padding: 0.55rem 0.6rem;
+  border: 0;
+  border-left: 2px solid transparent;
+  border-radius: 0;
+  background: none;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--text);
+  text-align: left;
+}
+
+.palette-item.active {
+  border-left-color: var(--accent);
+  background: var(--bg);
+}
+
+.palette-hint {
+  font-size: 0.72rem;
+  color: var(--text-soft);
+}
+
+.palette-empty {
+  padding: 1rem;
 }
 
 /* Undo toast */
@@ -1760,6 +2244,11 @@ button {
   .app-layout.collapsed .sidebar-brand span,
   .app-layout.collapsed .nav-item span {
     display: inline;
+  }
+
+  /* The drawer is always full width, so the trigger fits again. */
+  .app-layout.collapsed .brand-command {
+    display: inline-flex;
   }
 
   .app-layout.collapsed .sidebar-brand,

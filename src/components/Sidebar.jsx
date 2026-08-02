@@ -7,6 +7,7 @@ import {
   AnalyticsIcon,
   SettingsIcon,
   ChevronLeftIcon,
+  CommandIcon,
 } from './icons'
 import { BrandMonogram } from './BrandMonogram'
 
@@ -18,7 +19,7 @@ const NAV_ITEMS = [
   { href: '/settings', label: 'Settings', Icon: SettingsIcon },
 ]
 
-export function Sidebar({ isOpen, isCollapsed, onToggleCollapse, onNavigate }) {
+export function Sidebar({ isOpen, isCollapsed, onToggleCollapse, onNavigate, onOpenPalette }) {
   const [location] = useLocation()
   const activeIndex = NAV_ITEMS.findIndex((item) => item.href === location)
   const listRef = useRef(null)
@@ -48,6 +49,16 @@ export function Sidebar({ isOpen, isCollapsed, onToggleCollapse, onNavigate }) {
       <div className="sidebar-brand">
         <BrandMonogram />
         <span>Tidyline</span>
+
+        <button
+          type="button"
+          className="icon-mini brand-command"
+          onClick={onOpenPalette}
+          aria-label="Open command palette (Ctrl+K)"
+          title="Command palette — Ctrl+K"
+        >
+          <CommandIcon />
+        </button>
       </div>
 
       <ul className="nav-list" ref={listRef}>
