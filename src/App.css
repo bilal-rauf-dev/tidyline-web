@@ -196,8 +196,10 @@
 
 .app-content {
   margin-left: var(--sidebar-w);
+  min-width: 0;
   min-height: 100vh;
   background: var(--bg);
+  container: app-content / inline-size;
   transition: margin-left var(--dur-move) var(--ease);
 }
 
@@ -229,7 +231,7 @@
 }
 
 .app-shell {
-  width: min(1120px, 92vw);
+  width: min(1120px, 92%);
   margin: 2.5rem auto 3rem;
   display: grid;
   gap: 1.5rem;
@@ -2179,7 +2181,8 @@ button {
   text-overflow: ellipsis;
 }
 
-@media (max-width: 1024px) {
+/* Respond to the space beside the sidebar, not the outer browser viewport. */
+@container app-content (max-width: 1120px) {
   .buckets {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     grid-template-areas:
