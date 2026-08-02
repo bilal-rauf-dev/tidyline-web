@@ -1,13 +1,76 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Sora:wght@500;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
 
 :root {
-  --bg: #f4f7fb;
-  --ink: #132033;
-  --ink-soft: #4b5970;
-  --line: #d6dfeb;
-  --focus: #1f8ce5;
-  --font-body: 'Outfit', 'Segoe UI', sans-serif;
-  --font-heading: 'Sora', 'Segoe UI', sans-serif;
+  --bg: #f2f0ec;
+  --surface: #ffffff;
+  --surface-dark: #141416;
+  --accent: #ff5a36;
+  --accent-soft: #c9c3f2;
+  --text: #14141a;
+  --text-soft: #6b6b72;
+  --text-on-dark: #f5f4f2;
+  --text-on-dark-soft: #a7a6ac;
+  --line: #e7e4dd;
+  --line-on-dark: rgba(245, 244, 242, 0.14);
+  --font: "Inter", "Segoe UI", sans-serif;
+  --radius-card: 18px;
+  --radius-btn: 11px;
+  --dur-fast: 300ms;
+  --dur-slow: 600ms;
+  --dur-move: 220ms;
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/*
+ * Density is a spacing-scale toggle, not a global rem rescale: it tightens
+ * the containers that actually carry list density (cards, task rows, list
+ * gaps) and leaves type sizes alone so nothing becomes hard to read.
+ */
+:root[data-density="compact"] .entry-card,
+:root[data-density="compact"] .bucket-column,
+:root[data-density="compact"] .overdue-group {
+  padding: 0.7rem;
+}
+
+:root[data-density="compact"] .app-shell {
+  gap: 0.9rem;
+}
+
+:root[data-density="compact"] .buckets,
+:root[data-density="compact"] .home-grid,
+:root[data-density="compact"] .analytics-grid {
+  gap: 0.6rem;
+}
+
+:root[data-density="compact"] .task-list li.task {
+  padding: 0.4rem 0;
+}
+
+:root[data-density="compact"] .settings-row {
+  padding: 0.5rem 0;
+}
+
+:root[data-density="compact"] .hero-copy {
+  line-height: 1.45;
+}
+
+:root[data-theme="dark"] {
+  --bg: #101012;
+  --surface: #1c1c1f;
+  --surface-dark: #000000;
+  --text: var(--text-on-dark);
+  --text-soft: var(--text-on-dark-soft);
+  --line: var(--line-on-dark);
 }
 
 * {
@@ -22,17 +85,15 @@ body,
 
 body {
   margin: 0;
-  font-family: var(--font-body);
-  color: var(--ink);
-  background:
-    radial-gradient(circle at 85% 0%, rgba(255, 197, 133, 0.35), transparent 30%),
-    radial-gradient(circle at 0% 100%, rgba(130, 193, 255, 0.25), transparent 35%),
-    var(--bg);
+  font-family: var(--font);
+  color: var(--text);
+  background: var(--bg);
 }
 
 h1,
 h2,
 h3 {
-  color: var(--ink);
-  font-family: var(--font-heading);
+  color: var(--text);
+  font-family: var(--font);
+  font-weight: 800;
 }

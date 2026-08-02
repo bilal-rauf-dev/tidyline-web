@@ -1,279 +1,199 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Route, Switch, useLocation } from 'wouter'
 import './App.css'
+import { Sidebar } from './components/Sidebar'
+import { MenuIcon } from './components/icons'
+import { CommandPalette } from './components/CommandPalette'
+import { HomePage } from './pages/HomePage'
+import { BoardPage } from './pages/BoardPage'
+import { CalendarPage } from './pages/CalendarPage'
+import { AnalyticsPage } from './pages/AnalyticsPage'
+import { SettingsPage } from './pages/SettingsPage'
+import { useTasks } from './hooks/useTasks'
+import { useReminderNotifications } from './hooks/useReminderNotifications'
+import { useTheme } from './hooks/useTheme'
+import { useShortcuts } from './hooks/useShortcuts'
 
-const BUCKET_ORDER = ['today', 'week', 'twoWeeks', 'month', 'quarter', 'year', 'later']
+/** The task under the caret or the pointer — what single-key actions act on. */
+function activeTaskId() {
+  const focused = document.activeElement?.closest?.('[data-task-id]')
 
-const BUCKET_LABELS = {
-  today: 'Today',
-  week: 'Week',
-  twoWeeks : '2 Weeks',
-  month: 'Month',
-  quarter: 'Quarter',
-  year: 'Year',
-  later: 'Later'
-}
-
-function formatDate(value) {
-  const date = new Date(`${value}T00:00:00`)
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  }).format(date)
-}
-
-function formatDateTime(value) {
-  const date = new Date(value)
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  }).format(date)
-}
-
-function getTaskBucket(deadline) {
-  const now = new Date()
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  const deadlineDate = new Date(`${deadline}T00:00:00`)
-
-  if (deadlineDate <= todayStart) {
-    return 'today'
+  if (focused) {
+    return focused.dataset.taskId
   }
 
-  const daysUntilDeadline = Math.floor(
-    (deadlineDate - todayStart) / (1000 * 60 * 60 * 24),
-  )
-
-  if (daysUntilDeadline <= 7) {
-    return 'week'
-  }
-
-  if (daysUntilDeadline <= 14) {
-    return 'twoWeeks'
-  }
-
-  if (
-    deadlineDate.getFullYear() === now.getFullYear() &&
-    deadlineDate.getMonth() === now.getMonth()
-  ) {
-    return 'month'
-  }
-
-  if (deadlineDate.getFullYear() === now.getFullYear() &&
-      deadlineDate.getMonth() < now.getMonth() + 3) {
-    return 'quarter'
-  }
-
-  if (deadlineDate.getFullYear() === now.getFullYear()) {
-    return 'year'
-  }
-
-  return 'later'
+  return document.querySelector('[data-task-id]:hover')?.dataset.taskId ?? null
 }
 
 function App() {
-  const [title, setTitle] = useState('')
-  const [deadline, setDeadline] = useState('')
-  const [reminderInput, setReminderInput] = useState('')
-  const [remindersDraft, setRemindersDraft] = useState([])
-  const [tasks, setTasks] = useState([])
+  const taskState = useTasks()
+  const appearance = useTheme()
+  const [location, navigate] = useLocation()
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false)
+  const [isCollapsed, setIsCollapsed] = useState(false)
+  const [isPaletteOpen, setIsPaletteOpen] = useState(false)
 
-  const buckets = useMemo(() => {
-    const grouped = {
-      today: [],
-      week: [],
-      twoWeeks: [],
-      month: [],
-      quarter: [],
-      year: [],
-      later: [],
+  const { completeTask, toggleTask, deleteTask } = taskState
+
+  const onNotificationComplete = useCallback(
+    (taskId) => completeTask(taskId),
+    [completeTask],
+  )
+
+  useReminderNotifications(taskState.tasks, { onComplete: onNotificationComplete })
+
+  useEffect(() => {
+    if (!isDrawerOpen) {
+      return undefined
     }
 
-    tasks.forEach((task) => {
-      grouped[getTaskBucket(task.deadline)].push(task)
-    })
+    function handleKeyDown(event) {
+      if (event.key === 'Escape') {
+        setIsDrawerOpen(false)
+      }
+    }
 
-    BUCKET_ORDER.forEach((bucket) => {
-      grouped[bucket].sort((a, b) => {
-        if (a.done !== b.done) {
-          return Number(a.done) - Number(b.done)
-        }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isDrawerOpen])
 
-        return a.deadline.localeCompare(b.deadline)
-      })
-    })
+  const focusSearch = useCallback(() => {
+    const input = document.querySelector('.toolbar-search input')
 
-    return grouped
-  }, [tasks])
-
-  function addReminder() {
-    if (!reminderInput) {
+    if (input) {
+      input.focus()
       return
     }
 
-    if (remindersDraft.includes(reminderInput)) {
-      setReminderInput('')
-      return
-    }
+    navigate('/board')
+    setTimeout(() => document.querySelector('.toolbar-search input')?.focus(), 80)
+  }, [navigate])
 
-    setRemindersDraft((current) => [...current, reminderInput].sort())
-    setReminderInput('')
-  }
+  const startNewTask = useCallback(() => {
+    navigate('/board?add=1')
+    setTimeout(() => document.querySelector('.input-underline')?.focus(), 80)
+  }, [navigate])
 
-  function removeReminder(reminder) {
-    setRemindersDraft((current) =>
-      current.filter((entry) => entry !== reminder),
-    )
-  }
+  const commands = useMemo(
+    () => [
+      { id: 'new', label: 'New task', hint: 'N', run: startNewTask },
+      { id: 'search', label: 'Focus search', hint: '/', run: focusSearch },
+      { id: 'home', label: 'Go to Home', run: () => navigate('/') },
+      { id: 'board', label: 'Go to Board', run: () => navigate('/board') },
+      { id: 'calendar', label: 'Go to Calendar', run: () => navigate('/calendar') },
+      { id: 'analytics', label: 'Go to Analytics', run: () => navigate('/analytics') },
+      { id: 'settings', label: 'Go to Settings', run: () => navigate('/settings') },
+      { id: 'archive', label: 'Show archived tasks', run: () => navigate('/board?view=archived') },
+      {
+        id: 'theme',
+        label: `Switch to ${appearance.theme === 'dark' ? 'light' : 'dark'} theme`,
+        run: appearance.toggleTheme,
+      },
+      {
+        id: 'density',
+        label: `Use ${appearance.density === 'compact' ? 'comfortable' : 'compact'} density`,
+        run: () =>
+          appearance.setDensity(appearance.density === 'compact' ? 'comfortable' : 'compact'),
+      },
+    ],
+    [navigate, startNewTask, focusSearch, appearance],
+  )
 
-  function addTask(event) {
-    event.preventDefault()
-
-    if (!title.trim() || !deadline) {
-      return
-    }
-
-    const task = {
-      id: crypto.randomUUID(),
-      title: title.trim(),
-      deadline,
-      reminders: remindersDraft,
-      done: false,
-      createdAt: new Date().toISOString(),
-    }
-
-    setTasks((current) => [task, ...current])
-    setTitle('')
-    setDeadline('')
-    setRemindersDraft([])
-    setReminderInput('')
-  }
-
-  function toggleTask(id) {
-    setTasks((current) =>
-      current.map((task) =>
-        task.id === id ? { ...task, done: !task.done } : task,
-      ),
-    )
-  }
+  useShortcuts(
+    useMemo(
+      () => ({
+        onPalette: () => setIsPaletteOpen((open) => !open),
+        onEscape: () => setIsPaletteOpen(false),
+        onNewTask: startNewTask,
+        onFocusSearch: focusSearch,
+        onToggleActive: () => {
+          const id = activeTaskId()
+          if (!id) return false
+          toggleTask(id)
+          return true
+        },
+        onDeleteActive: () => {
+          const id = activeTaskId()
+          if (!id) return false
+          deleteTask(id)
+          return true
+        },
+      }),
+      [startNewTask, focusSearch, toggleTask, deleteTask],
+    ),
+  )
 
   return (
-    <main className="app-shell">
-      <header className="hero">
-        <p className="hero-tag">Deadline-driven planning</p>
-        <h1>Reminder Board</h1>
-        <p className="hero-copy">
-          Add a task, set its due date, attach one or more reminders, and it
-          lands automatically in the right time bucket.
-        </p>
+    <div className={isCollapsed ? 'app-layout collapsed' : 'app-layout'}>
+      <header className="topbar">
+        <button
+          type="button"
+          className="icon-button"
+          onClick={() => setIsDrawerOpen(true)}
+          aria-label="Open navigation"
+          aria-expanded={isDrawerOpen}
+          aria-controls="sidebar-nav"
+        >
+          <MenuIcon />
+        </button>
+        <span className="topbar-title">Tidyline</span>
       </header>
 
-      <section className="entry-card" aria-label="Add task">
-        <h2>Add Task</h2>
+      <Sidebar
+        isOpen={isDrawerOpen}
+        isCollapsed={isCollapsed}
+        onToggleCollapse={() => setIsCollapsed((current) => !current)}
+        onNavigate={() => setIsDrawerOpen(false)}
+        onOpenPalette={() => {
+          setIsDrawerOpen(false)
+          setIsPaletteOpen(true)
+        }}
+      />
 
-        <form onSubmit={addTask} className="task-form">
-          <label>
-            Task name
-            <input
-              type="text"
-              placeholder="Enter task title"
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-              required
-            />
-          </label>
+      {isDrawerOpen && (
+        <button
+          type="button"
+          className="sidebar-backdrop"
+          aria-label="Close navigation"
+          onClick={() => setIsDrawerOpen(false)}
+        />
+      )}
 
-          <label>
-            Deadline
-            <input
-              type="date"
-              value={deadline}
-              onChange={(event) => setDeadline(event.target.value)}
-              required
-            />
-          </label>
-
-          <div className="reminder-builder">
-            <label>
-              Reminder time
-              <input
-                type="datetime-local"
-                value={reminderInput}
-                onChange={(event) => setReminderInput(event.target.value)}
+      <div className="app-content">
+        <div className="route-view" key={location}>
+          <Switch>
+            <Route path="/">
+              <HomePage tasks={taskState.tasks} />
+            </Route>
+            <Route path="/board">
+              <BoardPage {...taskState} />
+            </Route>
+            <Route path="/calendar">
+              <CalendarPage
+                tasks={taskState.tasks}
+                addTask={taskState.addTask}
+                setDeadline={taskState.setDeadline}
               />
-            </label>
-            <button type="button" className="secondary" onClick={addReminder}>
-              Add reminder
-            </button>
-          </div>
+            </Route>
+            <Route path="/analytics">
+              <AnalyticsPage tasks={taskState.tasks} />
+            </Route>
+            <Route path="/settings">
+              <SettingsPage
+                tasks={taskState.tasks}
+                appearance={appearance}
+                importTasks={taskState.importTasks}
+                clearCompleted={taskState.clearCompleted}
+              />
+            </Route>
+          </Switch>
+        </div>
+      </div>
 
-          {remindersDraft.length > 0 && (
-            <ul className="chips" aria-label="Pending reminders">
-              {remindersDraft.map((reminder) => (
-                <li key={reminder}>
-                  <span>{formatDateTime(reminder)}</span>
-                  <button
-                    type="button"
-                    onClick={() => removeReminder(reminder)}
-                    aria-label={`Remove reminder ${formatDateTime(reminder)}`}
-                  >
-                    x
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-
-          <button type="submit" className="primary">
-            Save task
-          </button>
-        </form>
-      </section>
-
-      <section className="buckets" aria-label="Task buckets">
-        {BUCKET_ORDER.map((bucket) => (
-          <article key={bucket} className="bucket-column">
-            <div className="bucket-header">
-              <h3>{BUCKET_LABELS[bucket]}</h3>
-              <span>{buckets[bucket].length}</span>
-            </div>
-
-            {buckets[bucket].length === 0 ? (
-              <p className="empty">No tasks yet.</p>
-            ) : (
-              <ul className="task-list">
-                {buckets[bucket].map((task) => (
-                  <li key={task.id} className={task.done ? 'task done' : 'task'}>
-                    <div className="task-top">
-                      <strong>{task.title}</strong>
-                      <label className="task-toggle">
-                        <input
-                          type="checkbox"
-                          checked={task.done}
-                          onChange={() => toggleTask(task.id)}
-                        />
-                        Done
-                      </label>
-                    </div>
-
-                    <p className="deadline">Deadline: {formatDate(task.deadline)}</p>
-
-                    {task.reminders.length > 0 && (
-                      <ul className="reminder-list">
-                        {task.reminders.map((reminder) => (
-                          <li key={reminder}>{formatDateTime(reminder)}</li>
-                        ))}
-                      </ul>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </article>
-        ))}
-      </section>
-    </main>
+      {isPaletteOpen && (
+        <CommandPalette commands={commands} onClose={() => setIsPaletteOpen(false)} />
+      )}
+    </div>
   )
 }
 
