@@ -25,6 +25,16 @@ Every screen uses at most one dark card and one accent color pulled hard —
 not a rainbow of pastel tags. Color is used to mark exactly one important
 thing per view (today, the primary CTA, the one stat that matters).
 
+**Override (data-dense pages):** the one-dark-card rule is relaxed on
+Analytics and Home, which are dashboards rather than task surfaces and need
+card-type variety to stay readable. Those pages may mix three surface types:
+white (`--surface`), dark (`--surface-dark`), and a solid **accent surface**
+(`--accent` as a card background, white text on it). The lavender secondary
+(`--accent-soft`) is admitted as a genuine second accent on these pages, used
+only for chart geometry — ring fills, milestone fill, sparkline peak, timeline
+points — never for text, borders, or a fourth card colour. Task-surface pages
+(Board, Calendar, Settings) keep the original one-dark-card discipline.
+
 ## Dark mode
 
 The reference screenshots only depict one (light) theme, so these tokens are
@@ -101,6 +111,36 @@ draws attention to itself.
   date-shaped.
 - Donut/pie charts use flat segment colors from the palette above, labeled
   outside the ring with plain numbers, not inside floating pill callouts.
+
+## Chart primitives
+
+These exist as components in `src/components/`. Reuse them; do not invent a
+new chart type for a new page without adding it here first.
+
+- **Milestone bar** (`MilestoneBar.jsx`) — horizontal completion bar with
+  1px tick marks at 25/50/75 and a 0–100 scale beneath. Flat fill in
+  `--accent-soft` on a `--line` track. Square ends, never a rounded capsule.
+  Use for a single "share of total" metric.
+- **Ring stat** (`RingStat.jsx`) — circular progress tile: ring, plain-text
+  label, and a fraction whose numerator is the bold hero number
+  (`16/30` sets the `16` large). Butt stroke caps, not round, so the ring
+  never reads as a pill. Use for per-segment progress; pairs two-up under a
+  milestone bar.
+- **Trend column** (`TrendBars.jsx`) — one column per series entry: signed
+  delta on top, label, height-by-count flat bar, count beneath. Exactly one
+  column carries `--accent`; the rest are neutral. Bars are square-topped
+  rectangles. Use for comparing counts across a fixed set of categories.
+- **Sparkline** (`Sparkline.jsx`) — 2px flat polyline with a single
+  highlighted peak point. No fill under the curve, no gradient, no axis.
+  Use for a short time series where only the shape and its peak matter.
+- **Activity grid** (`ActivityGrid.jsx`) — day-of-week dot grid, seven rows,
+  one column per week. Three states: **solid** = completed activity,
+  **hatched** = overdue (a deadline that passed while still undone),
+  **outlined** = nothing. Hatching is a 45° repeating hard-stop stripe, not a
+  blended gradient. This is the standard renderer for any date-shaped data.
+
+Deltas render as plain signed text (`+2`, `-1`, `–` for zero) — never a
+coloured pill, and never a green/red semantic pair.
 
 ## Never do this (explicit anti-patterns)
 
@@ -180,14 +220,33 @@ The following are the default outputs of AI-generated UI and are banned outright
      centered, no gradient behind it, no eyebrow label above it), one line of
      body-copy subtext, and one primary CTA that jumps straight to the Board's
      add-task form with the title field focused (`/board?add=1`).
-  2. An asymmetric bento grid below: a dark "due today" hero-stat card
-     (identical treatment to the Board's Today card — it is the one dark card
-     on this screen), a compact 5-week version of the Analytics activity
-     heatmap, and a taller "coming up" card listing the next few upcoming
-     tasks across all buckets using the same bold-day-number/small-month
-     deadline treatment as task cards.
-  - No new stat card types, no second accent color, and no card-per-metric
-    uniform grid — reuse what the Board and Analytics pages already established.
+  2. A "Daily activity" timeline card sitting *beside* the greeting, not
+     below it — today's reminders plotted on a 24-hour axis with a coral
+     current-time marker, lavender points for pending reminders and outlined
+     points for completed ones, followed by a compact time+title list. Reuses
+     existing reminder datetimes; adds no fields.
+  3. An asymmetric bento grid below, using all three surface types so Home
+     reads as the same system as Analytics: a dark "due today" card pairing
+     the hero count with a ring stat for today's cleared tasks, an accent
+     (coral) activity card with a big day-count and the shared activity grid,
+     and a white "coming up" card listing the next few tasks using the same
+     bold-day-number/small-month deadline treatment as task cards.
+  - Reuse the chart primitives above. Do not invent a new stat card type here.
+- Analytics page: four cards of four different shapes, never a uniform grid.
+  1. **Progress** (white, wide) — milestone bar for overall done/total, with
+     two ring-stat tiles beneath for the two buckets holding the most tasks.
+  2. **Bucket trend** (dark, tall) — one trend column per bucket showing count
+     and week-over-week delta. "Last week" is *reconstructed*, not recorded:
+     tasks that already existed a week ago (by `createdAt`) are re-bucketed
+     against a reference date of today−7d. The tallest column takes the accent.
+  3. **Busiest day** (dark, small) — sparkline of deadline load over the next
+     14 days with the peak marked, and a bold `peak/total` fraction beneath.
+  4. **Activity** (accent surface, small) — big count of days with completed
+     tasks, the shared activity grid including the hatched overdue state, and
+     an overdue-day count as a footnote.
+  - Deliberately *not* built: mood tracking, a projects list, and a team
+    section from the reference. This app has no data for any of them, and
+    inventing placeholder data for a dashboard would make it lie.
 - Bucket columns (Today/Week/2 Weeks/etc.): render as the bento grid above, not
   seven identical white boxes. Give "Today" the dark card treatment since it's
   the highest-priority bucket.

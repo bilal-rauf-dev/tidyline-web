@@ -1,14 +1,31 @@
 import { useMemo } from 'react'
-import { BUCKET_LABELS, BUCKET_ORDER, groupTasksByBucket } from '../utils/buckets'
-import { getActivityHeatmap, getCompletionStat } from '../utils/analytics'
+import {
+  getActivityHeatmap,
+  getBucketTrends,
+  getBusiestDay,
+  getCompletionStat,
+  getTopBuckets,
+  summarizeHeatmap,
+} from '../utils/analytics'
+import { formatDate } from '../utils/dates'
+import { MilestoneBar } from '../components/MilestoneBar'
+import { RingStat } from '../components/RingStat'
+import { Sparkline } from '../components/Sparkline'
+import { TrendBars } from '../components/TrendBars'
+import { ActivityGrid } from '../components/ActivityGrid'
 
 export function AnalyticsPage({ tasks }) {
   const completion = useMemo(() => getCompletionStat(tasks), [tasks])
+  const topBuckets = useMemo(() => getTopBuckets(tasks, 2), [tasks])
+  const trends = useMemo(() => getBucketTrends(tasks), [tasks])
+  const busiest = useMemo(() => getBusiestDay(tasks), [tasks])
   const heatmap = useMemo(() => getActivityHeatmap(tasks), [tasks])
-  const buckets = useMemo(() => groupTasksByBucket(tasks), [tasks])
+  const heatmapSummary = useMemo(() => summarizeHeatmap(heatmap), [heatmap])
 
-  const bucketCounts = BUCKET_ORDER.map((bucket) => buckets[bucket].length)
-  const maxCount = Math.max(1, ...bucketCounts)
+  const busiestBucket = trends.reduce(
+    (top, entry) => (entry.count > top.count ? entry : top),
+    trends[0],
+  )
 
   return (
     <main className="app-shell">
@@ -20,55 +37,57 @@ export function AnalyticsPage({ tasks }) {
         </p>
       </header>
 
-      <section className="analytics-grid">
-        <div className="bucket-column dark">
-          <div className="bucket-stat">
-            <strong>{completion.percent}%</strong>
+      <section className="analytics-grid" aria-label="Analytics">
+        <article className="entry-card analytics-progress">
+          <h2>Tasks completed</h2>
+
+          <MilestoneBar percent={completion.percent} label="Total progress" />
+
+          <div className="ring-tiles">
+            {topBuckets.map((bucket) => (
+              <RingStat
+                key={bucket.bucket}
+                label={bucket.label}
+                value={bucket.done}
+                total={bucket.total}
+              />
+            ))}
+          </div>
+        </article>
+
+        <article className="bucket-column dark analytics-trend">
+          <h2>Bucket trend</h2>
+          <p className="card-note">Change vs. one week ago</p>
+          <TrendBars entries={trends} accentKey={busiestBucket?.bucket} />
+        </article>
+
+        <article className="bucket-column dark analytics-peak">
+          <h2>Busiest day</h2>
+          <Sparkline series={busiest.series} peakIndex={busiest.peakIndex} />
+          <div className="peak-stat">
+            <strong>
+              {busiest.peakCount}/{busiest.total}
+            </strong>
             <span>
-              {completion.done} of {completion.total} tasks completed
+              due {busiest.total > 0 ? formatDate(busiest.peakDate) : 'nothing scheduled'}
             </span>
           </div>
-        </div>
+        </article>
 
-        <div className="entry-card analytics-card">
-          <h2>Completion streak</h2>
-          <div className="analytics-heatmap" aria-label="Completed tasks by day, last 10 weeks">
-            {heatmap.map((cell, index) =>
-              cell === null ? (
-                <span key={`blank-${index}`} className="heatmap-dot empty" style={{ visibility: 'hidden' }} />
-              ) : (
-                <span
-                  key={cell.dateStr}
-                  className={cell.active ? 'heatmap-dot' : 'heatmap-dot empty'}
-                  title={cell.dateStr}
-                />
-              ),
-            )}
+        <article className="accent-card analytics-activity">
+          <h2>Activity</h2>
+
+          <div className="activity-stat">
+            <strong>{heatmapSummary.activeDays}</strong>
+            <span>days completed</span>
           </div>
-        </div>
 
-        <div className="entry-card analytics-card analytics-breakdown">
-          <h2>Tasks per bucket</h2>
-          <div className="analytics-bars">
-            {BUCKET_ORDER.map((bucket) => {
-              const count = buckets[bucket].length
-              const heightPct = (count / maxCount) * 100
+          <ActivityGrid cells={heatmap} label="Task activity by day, last 10 weeks" />
 
-              return (
-                <div className="analytics-bar-col" key={bucket}>
-                  <span className="analytics-bar-count">{count}</span>
-                  <div className="analytics-bar-track">
-                    <div
-                      className={bucket === 'today' ? 'analytics-bar-fill accent' : 'analytics-bar-fill'}
-                      style={{ height: `${heightPct}%` }}
-                    />
-                  </div>
-                  <span className="analytics-bar-label">{BUCKET_LABELS[bucket]}</span>
-                </div>
-              )
-            })}
-          </div>
-        </div>
+          <p className="card-note">
+            {heatmapSummary.overdueDays} overdue {heatmapSummary.overdueDays === 1 ? 'day' : 'days'}
+          </p>
+        </article>
       </section>
     </main>
   )

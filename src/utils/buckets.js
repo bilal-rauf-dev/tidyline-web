@@ -12,9 +12,12 @@ export const BUCKET_LABELS = {
 
 const DAY_MS = 1000 * 60 * 60 * 24
 
-export function getTaskBucket(deadline) {
-  const now = new Date()
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+export function getTaskBucket(deadline, referenceDate = new Date()) {
+  const todayStart = new Date(
+    referenceDate.getFullYear(),
+    referenceDate.getMonth(),
+    referenceDate.getDate(),
+  )
   const deadlineDate = new Date(`${deadline}T00:00:00`)
   const daysUntilDeadline = Math.floor((deadlineDate - todayStart) / DAY_MS)
 
@@ -27,11 +30,11 @@ export function getTaskBucket(deadline) {
   return 'later'
 }
 
-export function groupTasksByBucket(tasks) {
+export function groupTasksByBucket(tasks, referenceDate = new Date()) {
   const grouped = Object.fromEntries(BUCKET_ORDER.map((bucket) => [bucket, []]))
 
   tasks.forEach((task) => {
-    grouped[getTaskBucket(task.deadline)].push(task)
+    grouped[getTaskBucket(task.deadline, referenceDate)].push(task)
   })
 
   BUCKET_ORDER.forEach((bucket) => {
