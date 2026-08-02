@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+<rect width="1024" height="1024" rx="120" fill="white"/>
+<g fill="none" stroke-linecap="round" stroke-linejoin="round">
+<path d="M260 170 H560 M410 170 V560" stroke="#171B24" stroke-width="56"/>
+<path d="M560 250 V560 H760" stroke="#FF6B45" stroke-width="56"/>
+<path d="M640 280 H760" stroke="#D8B4FE" stroke-width="24"/>
+<path d="M640 360 H760" stroke="#BFDBFE" stroke-width="24"/>
+<path d="M640 440 H760" stroke="#D8B4FE" stroke-width="24"/>
+</g>
+<text x="220" y="780" font-family="Poppins, Arial, sans-serif" font-size="110" font-weight="600" fill="#171B24">Tidy</text>
+<text x="520" y="780" font-family="Poppins, Arial, sans-serif" font-size="110" font-weight="600" fill="#FF6B45">Line</text>
+</svg>

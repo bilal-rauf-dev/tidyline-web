@@ -1,44 +1,101 @@
-import { useMemo } from 'react'
+import { useEffect, useState } from 'react'
+import { Route, Switch, useLocation } from 'wouter'
 import './App.css'
+import { Sidebar } from './components/Sidebar'
+import { MenuIcon } from './components/icons'
+import { HomePage } from './pages/HomePage'
+import { BoardPage } from './pages/BoardPage'
+import { CalendarPage } from './pages/CalendarPage'
+import { AnalyticsPage } from './pages/AnalyticsPage'
+import { SettingsPage } from './pages/SettingsPage'
 import { useTasks } from './hooks/useTasks'
-import { BUCKET_LABELS, BUCKET_ORDER, groupTasksByBucket } from './utils/buckets'
-import { TaskForm } from './components/TaskForm'
-import { BucketColumn } from './components/BucketColumn'
+import { useReminderNotifications } from './hooks/useReminderNotifications'
+import { useTheme } from './hooks/useTheme'
 
 function App() {
-  const { tasks, addTask, updateTask, deleteTask, toggleTask, addReminder, removeReminder } =
-    useTasks()
+  const taskState = useTasks()
+  const { theme, toggleTheme } = useTheme()
+  const [location] = useLocation()
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false)
+  const [isCollapsed, setIsCollapsed] = useState(false)
 
-  const buckets = useMemo(() => groupTasksByBucket(tasks), [tasks])
+  useReminderNotifications(taskState.tasks)
+
+  useEffect(() => {
+    if (!isDrawerOpen) {
+      return
+    }
+
+    function handleKeyDown(event) {
+      if (event.key === 'Escape') {
+        setIsDrawerOpen(false)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isDrawerOpen])
 
   return (
-    <main className="app-shell">
-      <header className="hero">
-        <h1>Reminder board</h1>
-        <p className="hero-copy">
-          Add a task, set its due date, attach one or more reminders, and it
-          lands automatically in the right time bucket.
-        </p>
+    <div className={isCollapsed ? 'app-layout collapsed' : 'app-layout'}>
+      <header className="topbar">
+        <button
+          type="button"
+          className="icon-button"
+          onClick={() => setIsDrawerOpen(true)}
+          aria-label="Open navigation"
+          aria-expanded={isDrawerOpen}
+          aria-controls="sidebar-nav"
+        >
+          <MenuIcon />
+        </button>
+        <span className="topbar-title">Tidyline</span>
       </header>
 
-      <TaskForm onAddTask={addTask} />
+      <Sidebar
+        isOpen={isDrawerOpen}
+        isCollapsed={isCollapsed}
+        onToggleCollapse={() => setIsCollapsed((current) => !current)}
+        onNavigate={() => setIsDrawerOpen(false)}
+      />
 
-      <section className="buckets" aria-label="Task buckets">
-        {BUCKET_ORDER.map((bucket) => (
-          <BucketColumn
-            key={bucket}
-            bucketKey={bucket}
-            label={BUCKET_LABELS[bucket]}
-            tasks={buckets[bucket]}
-            onToggle={toggleTask}
-            onDelete={deleteTask}
-            onUpdate={updateTask}
-            onAddReminder={addReminder}
-            onRemoveReminder={removeReminder}
-          />
-        ))}
-      </section>
-    </main>
+      {isDrawerOpen && (
+        <button
+          type="button"
+          className="sidebar-backdrop"
+          aria-label="Close navigation"
+          onClick={() => setIsDrawerOpen(false)}
+        />
+      )}
+
+      <div className="app-content">
+        <div className="route-view" key={location}>
+          <Switch>
+            <Route path="/">
+              <HomePage tasks={taskState.tasks} />
+            </Route>
+            <Route path="/board">
+              <BoardPage {...taskState} />
+            </Route>
+            <Route path="/calendar">
+              <CalendarPage tasks={taskState.tasks} addTask={taskState.addTask} />
+            </Route>
+            <Route path="/analytics">
+              <AnalyticsPage tasks={taskState.tasks} />
+            </Route>
+            <Route path="/settings">
+              <SettingsPage
+                tasks={taskState.tasks}
+                theme={theme}
+                toggleTheme={toggleTheme}
+                importTasks={taskState.importTasks}
+                clearCompleted={taskState.clearCompleted}
+              />
+            </Route>
+          </Switch>
+        </div>
+      </div>
+    </div>
   )
 }
 

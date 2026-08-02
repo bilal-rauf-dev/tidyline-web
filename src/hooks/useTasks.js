@@ -69,6 +69,14 @@ export function useTasks() {
     )
   }
 
+  function importTasks(newTasks) {
+    setTasks(newTasks)
+  }
+
+  function clearCompleted() {
+    setTasks((current) => current.filter((task) => !task.done))
+  }
+
   return {
     tasks,
     addTask,
@@ -77,5 +85,7 @@ export function useTasks() {
     toggleTask,
     addReminder,
     removeReminder,
+    importTasks,
+    clearCompleted,
   }
 }

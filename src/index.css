@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
 
 :root {
   --bg: #f2f0ec;
@@ -12,9 +12,32 @@
   --text-on-dark-soft: #a7a6ac;
   --line: #e7e4dd;
   --line-on-dark: rgba(245, 244, 242, 0.14);
-  --font: 'Inter', 'Segoe UI', sans-serif;
+  --font: "Inter", "Segoe UI", sans-serif;
   --radius-card: 18px;
   --radius-btn: 11px;
+  --dur-fast: 300ms;
+  --dur-slow: 600ms;
+  --dur-move: 220ms;
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #101012;
+  --surface: #1c1c1f;
+  --surface-dark: #000000;
+  --text: var(--text-on-dark);
+  --text-soft: var(--text-on-dark-soft);
+  --line: var(--line-on-dark);
 }
 
 * {

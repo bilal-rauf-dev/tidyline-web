@@ -1,11 +1,24 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { formatDateTime } from '../utils/dates'
+import { ensureNotificationPermission } from '../utils/notifications'
 
-export function TaskForm({ onAddTask }) {
+export function TaskForm({
+  onAddTask,
+  initialDeadline = '',
+  heading = 'Add task',
+  focusOnMount = false,
+}) {
+  const titleInputRef = useRef(null)
   const [title, setTitle] = useState('')
-  const [deadline, setDeadline] = useState('')
+  const [deadline, setDeadline] = useState(initialDeadline)
   const [reminderInput, setReminderInput] = useState('')
   const [remindersDraft, setRemindersDraft] = useState([])
+
+  useEffect(() => {
+    if (focusOnMount) {
+      titleInputRef.current?.focus()
+    }
+  }, [focusOnMount])
 
   function addReminder() {
     if (!reminderInput) {
@@ -17,6 +30,7 @@ export function TaskForm({ onAddTask }) {
       return
     }
 
+    ensureNotificationPermission()
     setRemindersDraft((current) => [...current, reminderInput].sort())
     setReminderInput('')
   }
@@ -48,12 +62,13 @@ export function TaskForm({ onAddTask }) {
 
   return (
     <section className="entry-card" aria-label="Add task">
-      <h2>Add task</h2>
+      <h2>{heading}</h2>
 
       <form onSubmit={handleSubmit} className="task-form">
         <label>
           Task name
           <input
+            ref={titleInputRef}
             type="text"
             placeholder="Enter task title"
             value={title}

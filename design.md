@@ -25,6 +25,25 @@ Every screen uses at most one dark card and one accent color pulled hard —
 not a rainbow of pastel tags. Color is used to mark exactly one important
 thing per view (today, the primary CTA, the one stat that matters).
 
+## Dark mode
+
+The reference screenshots only depict one (light) theme, so these tokens are
+a new addition, not something extracted from the references — added because
+a light/dark toggle was explicitly requested. Derived systematically from the
+existing palette rather than introducing a new hue:
+
+- Background (page): `#101012`
+- Surface (cards, default): `#1C1C1F`
+- Surface (dark accent card): pure black `#000000` — stays the anchor, now
+  darker than both the page and default card surface instead of sitting
+  between them.
+- Text primary / secondary / border: reuse the existing `--text-on-dark` /
+  `--text-on-dark-soft` / `--line-on-dark` values as-is (no new hex values
+  needed — those tokens already existed for the Today/sidebar dark cards).
+- Accent color does not change between themes; it's the one constant.
+- Toggle lives in Settings; preference persists in `localStorage`, defaulting
+  to the OS `prefers-color-scheme` on first visit.
+
 ## Typography
 
 - One typeface family, sans-serif, used at extreme weight contrast: 700–800 for
@@ -43,6 +62,25 @@ thing per view (today, the primary CTA, the one stat that matters).
   (white card on `#F2F0EC` page, or a solid dark card) — not `box-shadow` blur.
 - If a shadow is used at all, it's a 1px hard-edge or none. Never a soft
   `0 10px 30px rgba(0,0,0,0.1)` glow.
+
+## Motion
+
+Not present in the reference screenshots (they're static) — these values are a
+new addition, chosen to stay subtle and utility-grade. This is a productivity
+tool, not a marketing page: no bounce, no spring, no overshoot, nothing that
+draws attention to itself.
+
+- Duration tokens: `--dur-fast: 160ms` (fades, color changes),
+  `--dur-move: 220ms` (anything that travels a distance — the nav indicator,
+  sidebar width, drawer slide).
+- Easing token: `--ease: cubic-bezier(0.2, 0, 0, 1)` — a decelerating ease-out
+  that arrives and stops. Never an `ease-in-out` bounce or a spring curve.
+- Route transitions: content fades in from `blur(4px)` to `blur(0)` over
+  `--dur-fast`. No slide, no scale, no stagger.
+- Active nav indicator travels between items rather than snapping — one shared
+  element that moves, not a border toggling on and off per item.
+- Everything above collapses to ~0ms under `prefers-reduced-motion: reduce`,
+  set globally in `index.css`.
 
 ## Layout
 
@@ -79,8 +117,77 @@ The following are the default outputs of AI-generated UI and are banned outright
 - Generic checkmark-in-a-green-circle for "done" states — use the dark/light
   contrast + strikethrough text instead
 
+## Navigation shell
+
+- Persistent left sidebar, fixed width (~260–280px), background `#141416`
+  (the same dark tone as the Today card — the sidebar is the app's other
+  anchor point, so it should feel like the same material).
+- Sidebar text: muted gray (`#9C9CA3`) for inactive items, full white for
+  the active item.
+- Active nav item indicator: a solid coral (`#FF5A36`) left-border accent
+  (2–3px), not a filled pill background behind the label.
+- Nav items: plain text label plus one small outline-style line-icon per
+  item (not emoji, not icon-in-a-circle), icon inherits the text color.
+- App name/wordmark at the top of the sidebar: bold, white, plain text,
+  preceded by the brand monogram (the T-shape, L-shape, and three accent
+  lines only — no background square, no repeated wordmark).
+- **Override (supersedes the original brand-color decision):** the inline
+  sidebar monogram is monochrome — a single `currentColor` fill/stroke, at
+  reduced opacity for the three accent lines — so it behaves like the other
+  nav icons and inherits the muted/white text-color states instead of
+  carrying its own fixed brand palette. Full-color brand artwork is used
+  only for the favicon and any app-icon export, never inline in the UI.
+  Source of truth: `C:\Users\Kirig\Downloads\TidyLine_logo.svg`, copied
+  into the repo at `public/logo.svg` (full color, for favicon/app-icon use)
+  and `public/logo.png` (PNG fallback); the sidebar mark
+  (`src/components/BrandMonogram.jsx`) extracts just the monogram path data
+  from that source, recolored to `currentColor`.
+- Sections: Home, Board, Calendar, Analytics, Settings — all built out now.
+  Home is the default route (`/`); Board lives at `/board`. Any future new
+  section should default to a plain "coming soon" card treatment until built
+  — not a placeholder illustration or empty-state graphic.
+
+### Responsive behavior and collapse
+
+- Above 720px the sidebar is permanent chrome, fixed to the viewport, and the
+  main content is offset by its width.
+- **Collapse (desktop, by choice):** a toggle at the bottom of the sidebar
+  shrinks it from 264px to 76px — icons only, labels hidden, chevron rotates
+  180°. Sidebar width and content offset are driven by one `--sidebar-w`
+  custom property so they animate in lockstep over `--dur-move`. This is a
+  user preference, not a viewport response. It is session-only state; it
+  deliberately does not persist.
+- **Drawer (≤720px, by viewport):** the sidebar becomes an off-canvas slide-in
+  drawer at full 264px width with labels visible — never an icon-only rail,
+  which is unusable as a primary nav on a phone. A slim dark top bar appears
+  with a hamburger trigger and the wordmark. The drawer is dismissed by the
+  backdrop, by Escape, or by selecting a nav item (auto-close). When closed it
+  is `visibility: hidden` so off-screen nav items are not focusable.
+- The desktop collapse preference is explicitly ignored below 720px — the
+  drawer always shows full labels regardless of collapse state.
+- Backdrop is the dark surface token at 45% alpha (`color-mix`), not a new
+  color and not a frosted/blurred panel.
+- Main content area keeps the `#F2F0EC` background and existing card
+  tokens exactly as defined above; only the sidebar introduces the dark
+  surface as permanent chrome.
+
 ## Component-specific direction (TidyLine)
 
+- Home page (default route): a landing/summary view, not a data source of its
+  own — every number on it is derived from the same task list and the same
+  utils the other pages use. Structure, top to bottom:
+  1. Left-aligned time-of-day greeting as the `h1` (sentence case, not
+     centered, no gradient behind it, no eyebrow label above it), one line of
+     body-copy subtext, and one primary CTA that jumps straight to the Board's
+     add-task form with the title field focused (`/board?add=1`).
+  2. An asymmetric bento grid below: a dark "due today" hero-stat card
+     (identical treatment to the Board's Today card — it is the one dark card
+     on this screen), a compact 5-week version of the Analytics activity
+     heatmap, and a taller "coming up" card listing the next few upcoming
+     tasks across all buckets using the same bold-day-number/small-month
+     deadline treatment as task cards.
+  - No new stat card types, no second accent color, and no card-per-metric
+    uniform grid — reuse what the Board and Analytics pages already established.
 - Bucket columns (Today/Week/2 Weeks/etc.): render as the bento grid above, not
   seven identical white boxes. Give "Today" the dark card treatment since it's
   the highest-priority bucket.

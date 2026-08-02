@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { formatDateTime, getDeadlineParts } from '../utils/dates'
+import { ensureNotificationPermission } from '../utils/notifications'
 
 export function TaskCard({ task, onToggle, onDelete, onUpdate, onAddReminder, onRemoveReminder }) {
   const [isEditing, setIsEditing] = useState(false)
@@ -30,6 +31,7 @@ export function TaskCard({ task, onToggle, onDelete, onUpdate, onAddReminder, on
       return
     }
 
+    ensureNotificationPermission()
     onAddReminder(task.id, newReminder)
     setNewReminder('')
     setIsAddingReminder(false)
