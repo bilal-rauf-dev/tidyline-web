@@ -48,7 +48,7 @@ export function TaskForm({ onAddTask }) {
 
   return (
     <section className="entry-card" aria-label="Add task">
-      <h2>Add Task</h2>
+      <h2>Add task</h2>
 
       <form onSubmit={handleSubmit} className="task-form">
         <label>

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { formatDate, formatDateTime } from '../utils/dates'
+import { formatDateTime, getDeadlineParts } from '../utils/dates'
 
 export function TaskCard({ task, onToggle, onDelete, onUpdate, onAddReminder, onRemoveReminder }) {
   const [isEditing, setIsEditing] = useState(false)
@@ -70,6 +70,8 @@ export function TaskCard({ task, onToggle, onDelete, onUpdate, onAddReminder, on
     )
   }
 
+  const { day, month } = getDeadlineParts(task.deadline)
+
   return (
     <li className={task.done ? 'task done' : 'task'}>
       <div className="task-top">
@@ -84,53 +86,61 @@ export function TaskCard({ task, onToggle, onDelete, onUpdate, onAddReminder, on
         </label>
       </div>
 
-      <p className="deadline">Deadline: {formatDate(task.deadline)}</p>
-
-      {task.reminders.length > 0 && (
-        <ul className="chips reminder-chips" aria-label="Reminders">
-          {task.reminders.map((reminder) => (
-            <li key={reminder}>
-              <span>{formatDateTime(reminder)}</span>
-              <button
-                type="button"
-                onClick={() => onRemoveReminder(task.id, reminder)}
-                aria-label={`Remove reminder ${formatDateTime(reminder)}`}
-              >
-                x
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {isAddingReminder ? (
-        <div className="reminder-builder task-reminder-builder">
-          <input
-            type="datetime-local"
-            value={newReminder}
-            onChange={(event) => setNewReminder(event.target.value)}
-            aria-label="New reminder time"
-          />
-          <button type="button" className="secondary" onClick={saveReminder}>
-            Add
-          </button>
-          <button type="button" className="secondary" onClick={() => setIsAddingReminder(false)}>
-            Cancel
-          </button>
+      <div className="task-body">
+        <div className="deadline-stat">
+          <strong>{day}</strong>
+          <span>{month}</span>
         </div>
-      ) : (
-        <button type="button" className="link-button" onClick={() => setIsAddingReminder(true)}>
-          + Add reminder
-        </button>
-      )}
 
-      <div className="task-actions">
-        <button type="button" className="link-button" onClick={startEditing}>
-          Edit
-        </button>
-        <button type="button" className="link-button danger" onClick={() => onDelete(task.id)}>
-          Delete
-        </button>
+        <div className="task-details">
+          {task.reminders.length > 0 && (
+            <ul className="reminder-strip" aria-label="Reminders">
+              {task.reminders.map((reminder) => (
+                <li key={reminder}>
+                  <span className="reminder-dot" aria-hidden="true" />
+                  <span>{formatDateTime(reminder)}</span>
+                  <button
+                    type="button"
+                    onClick={() => onRemoveReminder(task.id, reminder)}
+                    aria-label={`Remove reminder ${formatDateTime(reminder)}`}
+                  >
+                    x
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {isAddingReminder ? (
+            <div className="reminder-builder task-reminder-builder">
+              <input
+                type="datetime-local"
+                value={newReminder}
+                onChange={(event) => setNewReminder(event.target.value)}
+                aria-label="New reminder time"
+              />
+              <button type="button" className="secondary" onClick={saveReminder}>
+                Add
+              </button>
+              <button type="button" className="secondary" onClick={() => setIsAddingReminder(false)}>
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <button type="button" className="link-button" onClick={() => setIsAddingReminder(true)}>
+              + Add reminder
+            </button>
+          )}
+
+          <div className="task-actions">
+            <button type="button" className="link-button" onClick={startEditing}>
+              Edit
+            </button>
+            <button type="button" className="link-button danger" onClick={() => onDelete(task.id)}>
+              Delete
+            </button>
+          </div>
+        </div>
       </div>
     </li>
   )

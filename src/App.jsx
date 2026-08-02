@@ -14,8 +14,7 @@ function App() {
   return (
     <main className="app-shell">
       <header className="hero">
-        <p className="hero-tag">Deadline-driven planning</p>
-        <h1>Reminder Board</h1>
+        <h1>Reminder board</h1>
         <p className="hero-copy">
           Add a task, set its due date, attach one or more reminders, and it
           lands automatically in the right time bucket.
@@ -28,6 +27,7 @@ function App() {
         {BUCKET_ORDER.map((bucket) => (
           <BucketColumn
             key={bucket}
+            bucketKey={bucket}
             label={BUCKET_LABELS[bucket]}
             tasks={buckets[bucket]}
             onToggle={toggleTask}
