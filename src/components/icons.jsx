@@ -186,6 +186,14 @@ export function CloseIcon() {
   );
 }
 
+export function CheckIcon() {
+  return (
+    <svg {...base} aria-hidden="true">
+      <path d="m4.5 10 3.4 3.4 7.6-7.6" />
+    </svg>
+  );
+}
+
 export function GripIcon() {
   return (
     <svg {...base} aria-hidden="true">
@@ -215,6 +223,14 @@ export function ChevronLeftIcon() {
   return (
     <svg {...base} aria-hidden="true">
       <path d="M12 5.5 7.5 10l4.5 4.5" />
+    </svg>
+  );
+}
+
+export function ChevronRightIcon() {
+  return (
+    <svg {...base} aria-hidden="true">
+      <path d="m8 5.5 4.5 4.5L8 14.5" />
     </svg>
   );
 }

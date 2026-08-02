@@ -15,7 +15,7 @@
   --font: "Inter", "Segoe UI", sans-serif;
   --radius-card: 18px;
   --radius-btn: 11px;
-  --dur-fast: 300ms;
+  --dur-fast: 160ms;
   --dur-slow: 600ms;
   --dur-move: 220ms;
   --ease: cubic-bezier(0.2, 0, 0, 1);

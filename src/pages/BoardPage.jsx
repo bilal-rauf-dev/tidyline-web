@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearch } from 'wouter'
 import { BUCKET_LABELS, BUCKET_ORDER, groupTasksByBucket } from '../utils/buckets'
 import { DEFAULT_FILTERS, buildComparator, filterTasks } from '../utils/filters'
@@ -26,8 +26,10 @@ export function BoardPage({
   const search = useSearch()
   const params = new URLSearchParams(search)
   const focusForm = params.get('add') === '1'
+  const expandTaskId = params.get('expand')
 
   const boardRef = useRef(null)
+  const todaySentinelRef = useRef(null)
   const tick = useTimeTick()
   // `now` is derived purely from the tick, so every time-sensitive memo below
   // has an honest dependency instead of a suppressed lint warning.
@@ -38,6 +40,29 @@ export function BoardPage({
   const [selectionMode, setSelectionMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState([])
   const [collapsedBuckets, setCollapsedBuckets] = useState([])
+  const [isTodayCompact, setIsTodayCompact] = useState(false)
+
+  useEffect(() => {
+    function syncTodaySummary() {
+      const sentinelTop = todaySentinelRef.current?.getBoundingClientRect().top
+
+      if (sentinelTop === undefined) {
+        return
+      }
+
+      // The Today card becomes sticky at 0.75rem (12px). Compact only after
+      // its original position has travelled another ~52px past that point.
+      setIsTodayCompact(sentinelTop <= -40)
+    }
+
+    syncTodaySummary()
+    window.addEventListener('scroll', syncTodaySummary, { passive: true })
+    window.addEventListener('resize', syncTodaySummary)
+    return () => {
+      window.removeEventListener('scroll', syncTodaySummary)
+      window.removeEventListener('resize', syncTodaySummary)
+    }
+  }, [])
 
   const tags = useMemo(() => collectTags(tasks), [tasks])
 
@@ -118,6 +143,7 @@ export function BoardPage({
     onRemoveLink: taskActions.removeLink,
     onAddAttachment: taskActions.addAttachment,
     onRemoveAttachment: taskActions.removeAttachment,
+    expandTaskId,
   }
 
   return (
@@ -183,6 +209,8 @@ export function BoardPage({
       <div ref={boardRef}>
         <OverdueSection groups={overdueGroups} selectedIds={selectedIds} {...taskHandlers} />
 
+        <span ref={todaySentinelRef} className="today-sticky-sentinel" aria-hidden="true" />
+
         <section className="buckets" aria-label="Task buckets">
           {BUCKET_ORDER.map((bucket) => (
             <BucketColumn
@@ -193,6 +221,7 @@ export function BoardPage({
               onMoveTask={moveTaskToBucket}
               collapsed={collapsedBuckets.includes(bucket)}
               onToggleCollapse={toggleBucketCollapse}
+              compact={bucket === 'today' && isTodayCompact}
               selectedIds={selectedIds}
               {...taskHandlers}
             />

@@ -3,6 +3,7 @@ import { BUCKET_LABELS, BUCKET_ORDER, groupTasksByBucket } from './buckets'
 
 const HEATMAP_DAYS = 70
 const BUSIEST_WINDOW_DAYS = 14
+const COMPLETION_HISTORY_DAYS = 14
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000
 
 function startOfToday() {
@@ -159,6 +160,52 @@ export function getBusiestDay(tasks, days = BUSIEST_WINDOW_DAYS) {
     peakIndex,
     peakCount: series[peakIndex].count,
     peakDate: series[peakIndex].dateStr,
+    windowDays: days,
+  }
+}
+
+/**
+ * Actual completions per day, using completedAt rather than reconstructing
+ * history from current task state. Older tasks without completedAt simply do
+ * not contribute, which keeps the chart honest.
+ */
+export function getCompletionHistory(tasks, days = COMPLETION_HISTORY_DAYS) {
+  const today = startOfToday()
+  const counts = new Map()
+
+  tasks.forEach((task) => {
+    if (!task.done || !task.completedAt) {
+      return
+    }
+
+    const dateStr = task.completedAt.slice(0, 10)
+    counts.set(dateStr, (counts.get(dateStr) ?? 0) + 1)
+  })
+
+  const series = []
+
+  for (let offset = days - 1; offset >= 0; offset -= 1) {
+    const date = new Date(today)
+    date.setDate(today.getDate() - offset)
+    const dateStr = toDateStr(date)
+    series.push({ dateStr, count: counts.get(dateStr) ?? 0 })
+  }
+
+  const total = series.reduce((sum, point) => sum + point.count, 0)
+  let peakIndex = 0
+
+  series.forEach((point, index) => {
+    if (point.count > series[peakIndex].count) {
+      peakIndex = index
+    }
+  })
+
+  return {
+    series,
+    total,
+    peakIndex,
+    peakCount: series[peakIndex]?.count ?? 0,
+    peakDate: series[peakIndex]?.dateStr ?? toDateStr(today),
     windowDays: days,
   }
 }

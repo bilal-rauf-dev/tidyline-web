@@ -9,6 +9,7 @@ import {
 } from '../utils/calendar'
 import { formatDate } from '../utils/dates'
 import { TaskForm } from '../components/TaskForm'
+import { ChevronLeftIcon, ChevronRightIcon } from '../components/icons'
 
 export function CalendarPage({ tasks, addTask, setDeadline }) {
   const [viewDate, setViewDate] = useState(() => new Date())
@@ -50,20 +51,22 @@ export function CalendarPage({ tasks, addTask, setDeadline }) {
         <div className="calendar-toolbar">
           <button
             type="button"
-            className="link-button"
+            className="calendar-nav"
             onClick={() => setViewDate((current) => addMonths(current, -1))}
             aria-label="Previous month"
           >
-            ‹ Prev
+            <ChevronLeftIcon />
+            <span>Prev</span>
           </button>
           <h2>{formatMonthLabel(viewDate)}</h2>
           <button
             type="button"
-            className="link-button"
+            className="calendar-nav"
             onClick={() => setViewDate((current) => addMonths(current, 1))}
             aria-label="Next month"
           >
-            Next ›
+            <span>Next</span>
+            <ChevronRightIcon />
           </button>
         </div>
 

@@ -2,9 +2,28 @@ import { useEffect, useRef, useState } from 'react'
 import { formatDateTime } from '../utils/dates'
 import { ensureNotificationPermission } from '../utils/notifications'
 import { parseTags } from '../utils/tags'
-import { BellIcon, CalendarIcon, CloseIcon, PlusIcon, TagIcon } from './icons'
+import { BellIcon, CalendarIcon, ChevronDownIcon, CloseIcon, PlusIcon, TagIcon } from './icons'
 import { TagList } from './TagList'
 import { DayContext } from './DayContext'
+import { TaskDraftDetails } from './TaskDraftDetails'
+
+function createEmptyDetails() {
+  return {
+    notes: '',
+    checklist: [],
+    checklistDraft: '',
+    links: [],
+    linkLabel: '',
+    linkUrl: '',
+    attachments: [],
+    attachmentLabel: '',
+    attachmentUrl: '',
+    location: '',
+    durationValue: '',
+    durationUnit: 'min',
+    recurrence: null,
+  }
+}
 
 export function TaskForm({
   onAddTask,
@@ -19,6 +38,8 @@ export function TaskForm({
   const [reminderInput, setReminderInput] = useState('')
   const [remindersDraft, setRemindersDraft] = useState([])
   const [tagInput, setTagInput] = useState('')
+  const [detailsOpen, setDetailsOpen] = useState(false)
+  const [details, setDetails] = useState(createEmptyDetails)
 
   useEffect(() => {
     if (focusOnMount) {
@@ -57,6 +78,16 @@ export function TaskForm({
       deadline,
       reminders: remindersDraft,
       tags: parseTags(tagInput),
+      recurrence: details.recurrence,
+      notes: details.notes,
+      checklist: details.checklist,
+      links: details.links,
+      attachments: details.attachments,
+      location: details.location,
+      duration:
+        details.durationValue === ''
+          ? null
+          : { value: Number(details.durationValue), unit: details.durationUnit },
     })
 
     setTitle('')
@@ -64,16 +95,31 @@ export function TaskForm({
     setRemindersDraft([])
     setReminderInput('')
     setTagInput('')
+    setDetailsOpen(false)
+    setDetails(createEmptyDetails())
   }
 
   const draftTags = parseTags(tagInput)
 
   return (
     <section className="entry-card task-entry" aria-label="Add task">
-      <h2 className="card-heading">
-        <PlusIcon />
-        {heading}
-      </h2>
+      <div className="task-entry-heading">
+        <h2 className="card-heading">
+          <PlusIcon />
+          {heading}
+        </h2>
+        <button
+          type="button"
+          className={detailsOpen ? 'icon-mini task-entry-toggle open' : 'icon-mini task-entry-toggle'}
+          onClick={() => setDetailsOpen((open) => !open)}
+          aria-expanded={detailsOpen}
+          aria-controls="task-entry-details"
+          aria-label={detailsOpen ? 'Hide additional task details' : 'Add notes and details'}
+          title={detailsOpen ? 'Hide details' : 'Add notes and details'}
+        >
+          <ChevronDownIcon />
+        </button>
+      </div>
 
       <form onSubmit={handleSubmit} className="task-form">
         <div className="field-underline">
@@ -163,6 +209,12 @@ export function TaskForm({
         </label>
 
         <TagList tags={draftTags} />
+
+        {detailsOpen && (
+          <div id="task-entry-details">
+            <TaskDraftDetails draft={details} onChange={setDetails} />
+          </div>
+        )}
 
         <div className="form-footer">
           <button type="submit" className="primary">

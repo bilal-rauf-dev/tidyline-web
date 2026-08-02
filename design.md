@@ -189,6 +189,26 @@ coloured pill, and never a green/red semantic pair.
   bare glyph (`.icon-mini`, for row-level actions like pin/edit/duplicate/
   archive/delete). Both always carry an `aria-label` and a `title`. Never a
   circular floating action button.
+- **Custom checkbox** (`Checkbox.jsx`, `.custom-checkbox`) — a small square
+  control using the shared line-icon language. Its unchecked state is a
+  `--line` border; its checked state uses `--accent` with a white check glyph.
+  Use it for task completion, selection, checklist items and confirmation
+  preferences instead of the browser-default checkbox.
+- **Confirmation dialog** (`DeleteConfirmDialog.jsx`) — a token-derived
+  `--surface` card on the same dark scrim as the command palette, with a 1px
+  `--line` border and no shadow. It enters with the standard short fade and
+  restrained scale/translate motion; actions use existing button primitives.
+- **Select menu** (`SelectMenu.jsx`, `.select-*`) — the shared replacement for
+  native `<select>` chrome. The trigger is a bordered `--surface` button with
+  `--radius-btn`; the menu is another bordered surface with no shadow, small
+  gaps between options, and an accent left rule on the selected option. Its
+  short translate/fade entrance and item presses use the standard motion
+  tokens. Board filters, reminder presets, recurrence and duration all use it.
+- **Creation detail panel** (`TaskDraftDetails.jsx`, `.task-draft-details`) —
+  the optional inline extension of Add Task. It reuses the same Notes,
+  Checklist, Links, Attachments, Location, Estimate and Repeat controls as an
+  expanded task, starts collapsed, and stays inside the utility form rather
+  than becoming a modal or separate workflow.
 - **Tag mark** (`TagList.jsx`) — flat rectangle with a 2px left border and no
   background, **never a rounded pill**. Tone is assigned deterministically by
   hashing the tag name across three palette values only (neutral, lavender,
@@ -207,6 +227,10 @@ coloured pill, and never a green/red semantic pair.
   pill. Auto-dismisses after 6s (verified in-browser: present at 4.2s, gone by
   6.6s). Undo restores a full snapshot of the task list taken before the
   destructive action, so it works identically for single and bulk operations.
+- **Task-added toast** (`TaskAddedToast.jsx`) — the same dark, bottom-centred
+  toast surface and six-second timing as Undo. It shows the real created task
+  title and an underlined Edit action that navigates to and expands that task;
+  it introduces no new notification surface or colour.
 - **Distance rail** is documented under chart primitives above.
 - **Countdown label** (`.countdown`) — plain bold micro-text on the card
   ("3 days left", "today", "2 days overdue"), turning accent-coloured once
@@ -378,14 +402,14 @@ These are behavioural contracts, not styling. Change them deliberately.
      current-time marker, lavender points for pending reminders and outlined
      points for completed ones, followed by a compact time+title list. Reuses
      existing reminder datetimes; adds no fields.
-  3. An asymmetric bento grid below, using all three surface types so Home
-     reads as the same system as Analytics: a dark "due today" card pairing
-     the hero count with a ring stat for today's cleared tasks, an accent
-     (coral) activity card with a big day-count and the shared activity grid,
-     and a white "coming up" card listing the next few tasks using the same
-     bold-day-number/small-month deadline treatment as task cards.
+  3. An asymmetric five-card bento grid below, using all three surface types:
+     a dark Today focus card with a cleared ring and real overdue/completed
+     counts; a white overall-progress milestone card; an accent activity card
+     with the shared dot grid; a wide upcoming-deadlines card with date,
+     countdown and existing tag marks; and a white completion-rhythm card with
+     a sparkline derived strictly from `completedAt` over the last 14 days.
   - Reuse the chart primitives above. Do not invent a new stat card type here.
-- Analytics page: four cards of four different shapes, never a uniform grid.
+- Analytics page: five cards of varied shapes, never a uniform grid.
   1. **Progress** (white, wide) — milestone bar for overall done/total, with
      two ring-stat tiles beneath for the two buckets holding the most tasks.
   2. **Bucket trend** (dark, tall) — one trend column per bucket showing count
@@ -397,6 +421,9 @@ These are behavioural contracts, not styling. Change them deliberately.
   4. **Activity** (accent surface, small) — big count of days with completed
      tasks, the shared activity grid including the hatched overdue state, and
      an overdue-day count as a footnote.
+  5. **Completion rhythm** (white, small) — a 14-day sparkline and total based
+     only on recorded `completedAt` values. Missing historical timestamps are
+     left missing rather than reconstructed or fabricated.
   - Deliberately *not* built: mood tracking, a projects list, and a team
     section from the reference. This app has no data for any of them, and
     inventing placeholder data for a dashboard would make it lie.

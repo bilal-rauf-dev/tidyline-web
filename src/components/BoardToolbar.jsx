@@ -1,5 +1,6 @@
 import { SORT_OPTIONS, STATUS_OPTIONS } from '../utils/filters'
 import { SearchIcon, TagIcon } from './icons'
+import { SelectMenu } from './SelectMenu'
 
 export function BoardToolbar({ filters, onChange, tags }) {
   function set(key, value) {
@@ -19,42 +20,41 @@ export function BoardToolbar({ filters, onChange, tags }) {
         />
       </div>
 
-      <label className="toolbar-field">
+      <div className="toolbar-field">
         <span className="field-icon-head">
           <TagIcon />
           Tag
         </span>
-        <select value={filters.tag} onChange={(event) => set('tag', event.target.value)}>
-          <option value="all">All tags</option>
-          {tags.map((tag) => (
-            <option key={tag} value={tag}>
-              {tag}
-            </option>
-          ))}
-        </select>
-      </label>
+        <SelectMenu
+          value={filters.tag}
+          ariaLabel="Filter by tag"
+          options={[
+            { value: 'all', label: 'All tags' },
+            ...tags.map((tag) => ({ value: tag, label: tag })),
+          ]}
+          onChange={(value) => set('tag', value)}
+        />
+      </div>
 
-      <label className="toolbar-field">
+      <div className="toolbar-field">
         <span className="field-icon-head">Status</span>
-        <select value={filters.status} onChange={(event) => set('status', event.target.value)}>
-          {STATUS_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      </label>
+        <SelectMenu
+          value={filters.status}
+          ariaLabel="Filter by status"
+          options={STATUS_OPTIONS}
+          onChange={(value) => set('status', value)}
+        />
+      </div>
 
-      <label className="toolbar-field">
+      <div className="toolbar-field">
         <span className="field-icon-head">Sort by</span>
-        <select value={filters.sortBy} onChange={(event) => set('sortBy', event.target.value)}>
-          {SORT_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      </label>
+        <SelectMenu
+          value={filters.sortBy}
+          ariaLabel="Sort tasks by"
+          options={SORT_OPTIONS}
+          onChange={(value) => set('sortBy', value)}
+        />
+      </div>
 
       <button
         type="button"

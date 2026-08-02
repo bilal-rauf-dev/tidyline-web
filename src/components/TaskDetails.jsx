@@ -13,6 +13,8 @@ import {
 import { ReminderPicker } from './ReminderPicker'
 import { RecurrencePicker } from './RecurrencePicker'
 import { mapsSearchUrl } from '../utils/maps'
+import { Checkbox } from './Checkbox'
+import { SelectMenu } from './SelectMenu'
 
 function UrlRow({ label, placeholder, onAdd }) {
   const [name, setName] = useState('')
@@ -84,8 +86,7 @@ export function TaskDetails({ task, handlers }) {
             {task.checklist.map((item, index) => (
               <li key={item.id} className={item.done ? 'done' : undefined}>
                 <label>
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     checked={item.done}
                     onChange={() => handlers.onToggleChecklistItem(task.id, item.id)}
                   />
@@ -255,18 +256,19 @@ export function TaskDetails({ task, handlers }) {
                 })
               }}
             />
-            <select
+            <SelectMenu
               value={task.duration?.unit ?? 'min'}
-              aria-label="Duration unit"
-              onChange={(event) =>
+              ariaLabel="Duration unit"
+              options={[
+                { value: 'min', label: 'minutes' },
+                { value: 'hr', label: 'hours' },
+              ]}
+              onChange={(value) =>
                 handlers.onUpdate(task.id, {
-                  duration: { value: task.duration?.value ?? 0, unit: event.target.value },
+                  duration: { value: task.duration?.value ?? 0, unit: value },
                 })
               }
-            >
-              <option value="min">minutes</option>
-              <option value="hr">hours</option>
-            </select>
+            />
           </div>
         </label>
       </div>

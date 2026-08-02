@@ -286,6 +286,54 @@
   gap: 1rem;
 }
 
+.task-entry {
+  padding: 1rem 1.1rem;
+}
+
+.task-entry-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.task-entry-heading .card-heading {
+  margin: 0;
+}
+
+.task-entry-toggle svg {
+  width: 1rem;
+  height: 1rem;
+  transition: transform var(--dur-move) var(--ease);
+}
+
+.task-entry-toggle.open svg {
+  transform: rotate(180deg);
+}
+
+.task-entry .task-form {
+  gap: 0.75rem;
+}
+
+.task-entry .input-underline {
+  padding-block: 0.35rem 0.45rem;
+  font-size: 1.05rem;
+}
+
+.task-entry .field-group {
+  gap: 0.7rem;
+  padding: 0.7rem;
+}
+
+.task-entry :is(input[type="text"]:not(.input-underline), input[type="date"], input[type="datetime-local"], input[type="url"], input[type="number"]) {
+  padding: 0.55rem 0.65rem;
+}
+
+.task-entry .form-footer {
+  padding-top: 0.7rem;
+}
+
 .task-form label {
   display: grid;
   gap: 0.35rem;
@@ -512,8 +560,24 @@ input {
   color: var(--text);
 }
 
+select {
+  max-width: 100%;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-btn);
+  padding: 0.55rem 0.65rem;
+  font: inherit;
+  background: var(--surface);
+  color: var(--text);
+}
+
+select option {
+  background: var(--surface);
+  color: var(--text);
+}
+
 input:focus-visible,
-button:focus-visible {
+button:focus-visible,
+select:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
@@ -531,6 +595,22 @@ button {
   font-weight: 600;
   cursor: pointer;
   padding: 0.68rem 0.95rem;
+}
+
+/* Click-only feedback. Hover styling remains immediate and unchanged. */
+:where(button:not(:disabled), a[href], select, .custom-checkbox, .task[draggable="true"]) {
+  transition:
+    transform var(--dur-fast) var(--ease),
+    opacity var(--dur-fast) var(--ease);
+}
+
+:where(button:not(:disabled), a[href], select, .custom-checkbox):active {
+  transform: scale(0.97);
+  opacity: 0.82;
+}
+
+.task[draggable="true"]:active {
+  opacity: 0.88;
 }
 
 .primary {
@@ -591,6 +671,7 @@ button {
   padding: 1.1rem;
   display: flex;
   flex-direction: column;
+  transition: padding var(--dur-move) var(--ease);
 }
 
 .bucket-column.dark {
@@ -606,6 +687,11 @@ button {
   gap: 3px;
   height: 12px;
   margin-bottom: 0.8rem;
+  overflow: hidden;
+  transition:
+    height var(--dur-move) var(--ease),
+    margin-bottom var(--dur-move) var(--ease),
+    opacity var(--dur-fast) var(--ease);
 }
 
 .rail-tick {
@@ -639,6 +725,7 @@ button {
 
 .bucket-stat {
   margin: 0 0 0.9rem;
+  transition: margin var(--dur-move) var(--ease);
 }
 
 .bucket-stat strong {
@@ -646,6 +733,7 @@ button {
   font-size: clamp(2rem, 3vw, 2.75rem);
   font-weight: 800;
   line-height: 1;
+  transition: font-size var(--dur-move) var(--ease);
 }
 
 .bucket-stat span {
@@ -653,6 +741,7 @@ button {
   margin-top: 0.3rem;
   font-size: 0.85rem;
   color: var(--text-on-dark-soft);
+  transition: margin var(--dur-move) var(--ease);
 }
 
 .bucket-header {
@@ -879,14 +968,99 @@ button {
   color: var(--text-soft);
 }
 
-.toolbar-field select {
+.toolbar-field .select-trigger {
+  font-size: 0.85rem;
+}
+
+/* Primitive: custom dropdown surface and option list. */
+
+.select-menu-control {
+  position: relative;
+  min-width: 0;
+}
+
+.select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+  width: 100%;
+  min-width: 0;
+  padding: 0.5rem 0.6rem;
   border: 1px solid var(--line);
   border-radius: var(--radius-btn);
-  padding: 0.5rem 0.6rem;
-  font: inherit;
-  font-size: 0.85rem;
   background: var(--surface);
   color: var(--text);
+  font-size: 0.82rem;
+  text-align: left;
+}
+
+.select-trigger span {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.select-trigger svg {
+  flex-shrink: 0;
+  width: 0.95rem;
+  height: 0.95rem;
+  transition: transform var(--dur-move) var(--ease);
+}
+
+.select-trigger[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
+.select-menu {
+  position: absolute;
+  top: calc(100% + 0.3rem);
+  left: 0;
+  z-index: 25;
+  display: grid;
+  gap: 0.2rem;
+  min-width: 100%;
+  width: max-content;
+  max-width: min(18rem, 85vw);
+  max-height: 15rem;
+  overflow-y: auto;
+  padding: 0.3rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-btn);
+  background: var(--surface);
+  animation: menu-in var(--dur-fast) var(--ease);
+}
+
+@keyframes menu-in {
+  from {
+    transform: translateY(-0.3rem);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.select-option {
+  width: 100%;
+  padding: 0.5rem 0.65rem;
+  border: 0;
+  border-left: 2px solid transparent;
+  border-radius: 0;
+  background: none;
+  color: var(--text);
+  font-size: 0.82rem;
+  font-weight: 500;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.select-option.selected {
+  border-left-color: var(--accent);
+  background: var(--bg);
 }
 
 .bulk-bar {
@@ -1055,6 +1229,7 @@ button {
   height: 3px;
   background: var(--line);
   margin-bottom: 0.7rem;
+  transition: margin-bottom var(--dur-move) var(--ease);
 }
 
 .bucket-column.dark .bucket-progress {
@@ -1075,14 +1250,170 @@ button {
   overflow-y: auto;
 }
 
+.today-sticky-sentinel {
+  display: block;
+  height: 0;
+  pointer-events: none;
+}
+
+/* Shared square checkbox control — the accent carries the checked state. */
+
+.custom-checkbox {
+  position: relative;
+  display: inline-grid;
+  flex: 0 0 auto;
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.custom-checkbox input {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.custom-checkbox-mark {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface);
+  color: #fff;
+  transition:
+    border-color var(--dur-fast) var(--ease),
+    background-color var(--dur-fast) var(--ease);
+}
+
+.custom-checkbox-mark svg {
+  width: 0.72rem;
+  height: 0.72rem;
+  opacity: 0;
+  transform: scale(0.7);
+  transition:
+    transform var(--dur-fast) var(--ease),
+    opacity var(--dur-fast) var(--ease);
+}
+
+.custom-checkbox input:checked + .custom-checkbox-mark {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.custom-checkbox input:checked + .custom-checkbox-mark svg {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.custom-checkbox input:focus-visible + .custom-checkbox-mark {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.bucket-column.dark .custom-checkbox-mark {
+  border-color: var(--line-on-dark);
+  background: transparent;
+}
+
+.bucket-column.dark .custom-checkbox input:checked + .custom-checkbox-mark {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.bucket-sticky.is-compact {
+  padding-block: 0.7rem;
+}
+
+.bucket-sticky.is-compact .distance-rail {
+  height: 0;
+  margin-bottom: 0;
+  opacity: 0;
+}
+
+.bucket-sticky.is-compact .bucket-stat {
+  margin-bottom: 0.35rem;
+}
+
+.bucket-sticky.is-compact .bucket-stat strong {
+  font-size: 1.55rem;
+}
+
+.bucket-sticky.is-compact .bucket-stat span {
+  margin-top: 0.12rem;
+}
+
+.bucket-sticky.is-compact .bucket-progress {
+  margin-bottom: 0.35rem;
+}
+
 /* Expanded task details */
 
 .task-details-panel {
   display: grid;
+  width: 100%;
+  min-width: 0;
   gap: 0.9rem;
   margin-top: 0.7rem;
   padding-top: 0.8rem;
   border-top: 1px solid var(--line);
+  overflow-wrap: anywhere;
+}
+
+.task-details-panel > *,
+.detail-block,
+.reminder-picker,
+.recurrence-picker {
+  min-width: 0;
+}
+
+.task-draft-details {
+  display: grid;
+  min-width: 0;
+  gap: 0.8rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid var(--line);
+  animation: detail-in var(--dur-move) var(--ease);
+}
+
+@keyframes detail-in {
+  from {
+    transform: translateY(-0.35rem);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.task-draft-details textarea {
+  width: 100%;
+  max-width: 100%;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-btn);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.85rem;
+  resize: vertical;
+}
+
+.task-draft-details .detail-list li > span {
+  min-width: 0;
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+
+.detail-add-row.draft-single-row {
+  grid-template-columns: minmax(0, 1fr) auto;
 }
 
 .bucket-column.dark .task-details-panel {
@@ -1091,6 +1422,7 @@ button {
 
 .task-details-panel textarea {
   width: 100%;
+  max-width: 100%;
   border: 1px solid var(--line);
   border-radius: 10px;
   padding: 0.5rem 0.6rem;
@@ -1119,9 +1451,14 @@ button {
 }
 
 .detail-add-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
   gap: 0.4rem;
   align-items: center;
+}
+
+.detail-block > .detail-add-row:has(input:only-of-type) {
+  grid-template-columns: minmax(0, 1fr) auto;
 }
 
 .detail-add-row input {
@@ -1157,6 +1494,11 @@ button {
   cursor: pointer;
 }
 
+.checklist li label span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .checklist li.done span {
   text-decoration: line-through;
   color: var(--text-soft);
@@ -1173,13 +1515,15 @@ button {
 
 .detail-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr));
   gap: 0.75rem;
 }
 
 .duration-row {
   display: flex;
+  min-width: 0;
   gap: 0.4rem;
+  flex-wrap: wrap;
 }
 
 .duration-row input {
@@ -1200,10 +1544,9 @@ button {
   flex-wrap: wrap;
 }
 
-.reminder-picker-row select,
-.recurrence-row select,
 .recurrence-row input,
-.duration-row select {
+.duration-row .select-trigger {
+  max-width: 100%;
   border: 1px solid var(--line);
   border-radius: var(--radius-btn);
   padding: 0.45rem 0.5rem;
@@ -1211,6 +1554,16 @@ button {
   font-size: 0.82rem;
   background: var(--surface);
   color: var(--text);
+}
+
+.reminder-picker-row .select-menu-control,
+.recurrence-row .select-menu-control {
+  max-width: 100%;
+}
+
+.duration-row .select-menu-control {
+  flex: 1;
+  min-width: 6.5rem;
 }
 
 .icon-mini:disabled {
@@ -1340,6 +1693,16 @@ button {
   padding: 0.3rem;
   max-height: 46vh;
   overflow-y: auto;
+  display: grid;
+  gap: 0.2rem;
+}
+
+.settings-check,
+.confirm-preference {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  cursor: pointer;
 }
 
 .palette-item {
@@ -1389,7 +1752,19 @@ button {
   background: var(--surface-dark);
   color: var(--text-on-dark);
   font-size: 0.85rem;
-  animation: route-in var(--dur-move) var(--ease);
+  animation: toast-in var(--dur-move) var(--ease);
+}
+
+@keyframes toast-in {
+  from {
+    transform: translate(-50%, 0.75rem);
+    opacity: 0;
+  }
+
+  to {
+    transform: translate(-50%, 0);
+    opacity: 1;
+  }
 }
 
 .undo-action {
@@ -1405,6 +1780,93 @@ button {
 
 .undo-toast .icon-mini {
   color: var(--text-on-dark);
+}
+
+.toast-message {
+  display: grid;
+  min-width: 0;
+  gap: 0.12rem;
+}
+
+.toast-message strong {
+  color: var(--text-on-dark);
+  font-size: 0.85rem;
+}
+
+.toast-message span {
+  max-width: min(42vw, 22rem);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--text-on-dark-soft);
+  font-size: 0.76rem;
+}
+
+/* Delete confirmation */
+
+.confirm-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
+.confirm-scrim {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: color-mix(in srgb, var(--surface-dark) 45%, transparent);
+}
+
+.confirm-dialog {
+  position: relative;
+  width: min(420px, 100%);
+  padding: 1.3rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  animation: dialog-in var(--dur-move) var(--ease);
+}
+
+@keyframes dialog-in {
+  from {
+    transform: translateY(0.75rem) scale(0.98);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+.confirm-dialog h2 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.confirm-dialog p {
+  margin: 0.65rem 0 1rem;
+  color: var(--text-soft);
+  font-size: 0.9rem;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.confirm-preference {
+  font-size: 0.85rem;
+  color: var(--text);
+}
+
+.confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  margin-top: 1.2rem;
 }
 
 .task strong {
@@ -1433,12 +1895,6 @@ button {
 
 .bucket-column.dark .task-toggle {
   color: var(--text-on-dark-soft);
-}
-
-.task-toggle input {
-  width: 0.9rem;
-  height: 0.9rem;
-  margin: 0;
 }
 
 .task-body {
@@ -1582,6 +2038,23 @@ button {
   margin: 0;
   font-size: 1.05rem;
   font-weight: 700;
+}
+
+.calendar-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-btn);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.82rem;
+}
+
+.calendar-nav svg {
+  width: 1rem;
+  height: 1rem;
 }
 
 .calendar-weekdays {
@@ -1969,10 +2442,11 @@ button {
 .analytics-grid {
   display: grid;
   gap: 1rem;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   grid-template-areas:
-    "progress progress trend trend"
-    "peak     activity trend trend";
+    "progress progress progress trend trend trend"
+    "progress progress progress trend trend trend"
+    "activity activity activity velocity velocity peak";
 }
 
 .analytics-progress {
@@ -1989,6 +2463,43 @@ button {
 
 .analytics-activity {
   grid-area: activity;
+}
+
+.analytics-velocity {
+  grid-area: velocity;
+}
+
+.analytics-progress-stat,
+.analytics-velocity-stat,
+.home-progress-stat,
+.home-completion-stat {
+  display: flex;
+  align-items: baseline;
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+}
+
+.analytics-progress-stat strong,
+.home-progress-stat strong,
+.home-completion-stat strong,
+.analytics-velocity-stat strong {
+  font-size: clamp(1.8rem, 2.6vw, 2.4rem);
+  line-height: 1;
+  font-weight: 800;
+}
+
+.analytics-progress-stat span,
+.home-progress-stat span,
+.home-completion-stat span,
+.analytics-velocity-stat span {
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: var(--text-soft);
+}
+
+.analytics-velocity .sparkline,
+.home-completion .sparkline {
+  margin-block: 1rem;
 }
 
 /* Home */
@@ -2129,24 +2640,46 @@ button {
 .home-grid {
   display: grid;
   gap: 1rem;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   grid-template-areas:
-    "due activity upcoming"
-    "due activity upcoming";
+    "focus progress  activity activity"
+    "focus upcoming upcoming completion";
 }
 
-.home-due {
-  grid-area: due;
+.home-focus {
+  grid-area: focus;
   justify-content: space-between;
   gap: 1rem;
+}
+
+.home-focus-notes {
+  display: grid;
+  gap: 0.45rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid var(--line-on-dark);
+  font-size: 0.76rem;
+  color: var(--text-on-dark-soft);
+}
+
+.home-focus-notes strong {
+  margin-right: 0.25rem;
+  color: var(--text-on-dark);
 }
 
 .home-activity {
   grid-area: activity;
 }
 
+.home-progress {
+  grid-area: progress;
+}
+
 .home-upcoming {
   grid-area: upcoming;
+}
+
+.home-completion {
+  grid-area: completion;
 }
 
 .home-upcoming h2 {
@@ -2169,6 +2702,13 @@ button {
   border-bottom: 1px solid var(--line);
 }
 
+.upcoming-copy {
+  display: grid;
+  min-width: 0;
+  gap: 0.25rem;
+  flex: 1;
+}
+
 .upcoming-list li:last-child {
   border-bottom: 0;
 }
@@ -2179,6 +2719,11 @@ button {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+
+.upcoming-date {
+  font-size: 0.72rem;
+  color: var(--text-soft);
 }
 
 /* Respond to the space beside the sidebar, not the outer browser viewport. */
@@ -2197,7 +2742,8 @@ button {
     grid-template-areas:
       "progress progress"
       "trend    trend"
-      "peak     activity";
+      "activity activity"
+      "velocity peak";
   }
 
   .home-top {
@@ -2207,8 +2753,10 @@ button {
   .home-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     grid-template-areas:
-      "due      activity"
-      "upcoming upcoming";
+      "focus    progress"
+      "focus    activity"
+      "upcoming upcoming"
+      "completion completion";
   }
 }
 
@@ -2291,6 +2839,11 @@ button {
   .home-grid {
     grid-template-columns: 1fr;
     grid-template-areas: none;
+  }
+
+  .analytics-grid > *,
+  .home-grid > * {
+    grid-area: auto;
   }
 
   .ring-tiles {

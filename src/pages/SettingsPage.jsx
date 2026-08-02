@@ -2,8 +2,16 @@ import { useRef, useState } from 'react'
 import { parseImportedTasks, serializeTasks } from '../utils/tasksIO'
 import { isSoundEnabled, playChime, setSoundEnabled } from '../utils/notifications'
 import { ACCENT_OPTIONS, DENSITY_OPTIONS } from '../hooks/useTheme'
+import { Checkbox } from '../components/Checkbox'
 
-export function SettingsPage({ tasks, appearance, importTasks, clearCompleted }) {
+export function SettingsPage({
+  tasks,
+  appearance,
+  importTasks,
+  clearCompleted,
+  askBeforeDelete,
+  onAskBeforeDeleteChange,
+}) {
   const fileInputRef = useRef(null)
   const [soundOn, setSoundOn] = useState(isSoundEnabled)
   const completedCount = tasks.filter((task) => task.done).length
@@ -128,6 +136,26 @@ export function SettingsPage({ tasks, appearance, importTasks, clearCompleted })
           <button type="button" className="secondary" onClick={toggleSound}>
             {soundOn ? 'Mute' : 'Unmute'}
           </button>
+        </div>
+      </section>
+
+      <section className="entry-card">
+        <h2>Task actions</h2>
+
+        <div className="settings-row">
+          <span>
+            Ask before deleting tasks
+            <small className="settings-note">
+              Show a confirmation before a task is permanently removed.
+            </small>
+          </span>
+          <label className="settings-check">
+            <Checkbox
+              checked={askBeforeDelete}
+              onChange={(event) => onAskBeforeDeleteChange(event.target.checked)}
+              aria-label="Ask before deleting tasks"
+            />
+          </label>
         </div>
       </section>
 

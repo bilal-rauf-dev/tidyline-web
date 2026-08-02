@@ -1,5 +1,6 @@
 import { RECURRENCE_FREQUENCIES, WEEKDAY_NAMES } from '../utils/recurrence'
 import { RepeatIcon } from './icons'
+import { SelectMenu } from './SelectMenu'
 
 export function RecurrencePicker({ recurrence, onChange }) {
   const freq = recurrence?.freq ?? 'none'
@@ -31,33 +32,23 @@ export function RecurrencePicker({ recurrence, onChange }) {
       </span>
 
       <div className="recurrence-row">
-        <select
+        <SelectMenu
           value={freq}
-          aria-label="Repeat frequency"
-          onChange={(event) => setFreq(event.target.value)}
-        >
-          <option value="none">Does not repeat</option>
-          {RECURRENCE_FREQUENCIES.map((entry) => (
-            <option key={entry.value} value={entry.value}>
-              {entry.label}
-            </option>
-          ))}
-        </select>
+          ariaLabel="Repeat frequency"
+          options={[
+            { value: 'none', label: 'Does not repeat' },
+            ...RECURRENCE_FREQUENCIES,
+          ]}
+          onChange={setFreq}
+        />
 
         {freq === 'weekly' && (
-          <select
+          <SelectMenu
             value={recurrence?.weekday ?? 1}
-            aria-label="Repeat weekday"
-            onChange={(event) =>
-              onChange({ freq: 'weekly', weekday: Number(event.target.value) })
-            }
-          >
-            {WEEKDAY_NAMES.map((name, index) => (
-              <option key={name} value={index}>
-                {name}
-              </option>
-            ))}
-          </select>
+            ariaLabel="Repeat weekday"
+            options={WEEKDAY_NAMES.map((name, index) => ({ value: index, label: name }))}
+            onChange={(value) => onChange({ freq: 'weekly', weekday: Number(value) })}
+          />
         )}
 
         {freq === 'everyNDays' && (

@@ -9,6 +9,7 @@ export function BucketColumn({
   tasks,
   onMoveTask,
   collapsed = false,
+  compact = false,
   onToggleCollapse,
   selectedIds = [],
   ...taskHandlers
@@ -44,6 +45,7 @@ export function BucketColumn({
 
   const classNames = ['bucket-column', `bucket-${bucketKey}`]
   if (isToday) classNames.push('dark', 'bucket-sticky')
+  if (isToday && compact) classNames.push('is-compact')
   if (isOver) classNames.push('drop-target')
   if (collapsed) classNames.push('collapsed')
 

@@ -4,6 +4,7 @@ import {
   getBucketTrends,
   getBusiestDay,
   getCompletionStat,
+  getCompletionHistory,
   getTopBuckets,
   summarizeHeatmap,
 } from '../utils/analytics'
@@ -22,6 +23,7 @@ export function AnalyticsPage({ tasks: allTasks }) {
   const busiest = useMemo(() => getBusiestDay(tasks), [tasks])
   const heatmap = useMemo(() => getActivityHeatmap(tasks), [tasks])
   const heatmapSummary = useMemo(() => summarizeHeatmap(heatmap), [heatmap])
+  const completionHistory = useMemo(() => getCompletionHistory(tasks), [tasks])
 
   const busiestBucket = trends.reduce(
     (top, entry) => (entry.count > top.count ? entry : top),
@@ -41,6 +43,11 @@ export function AnalyticsPage({ tasks: allTasks }) {
       <section className="analytics-grid" aria-label="Analytics">
         <article className="entry-card analytics-progress">
           <h2>Tasks completed</h2>
+
+          <div className="analytics-progress-stat">
+            <strong>{completion.percent}%</strong>
+            <span>{completion.done} completed · {completion.total - completion.done} open</span>
+          </div>
 
           <MilestoneBar percent={completion.percent} label="Total progress" />
 
@@ -71,6 +78,21 @@ export function AnalyticsPage({ tasks: allTasks }) {
             </strong>
             <span>
               due {busiest.total > 0 ? formatDate(busiest.peakDate) : 'nothing scheduled'}
+            </span>
+          </div>
+        </article>
+
+        <article className="entry-card analytics-velocity">
+          <h2>Completion rhythm</h2>
+          <p className="card-note">Actual completions over the last 14 days</p>
+          <Sparkline
+            series={completionHistory.series}
+            peakIndex={completionHistory.peakIndex}
+          />
+          <div className="analytics-velocity-stat">
+            <strong>{completionHistory.total}</strong>
+            <span>
+              completed · best day {completionHistory.peakCount}
             </span>
           </div>
         </article>

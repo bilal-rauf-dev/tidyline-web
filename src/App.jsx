@@ -4,6 +4,8 @@ import './App.css'
 import { Sidebar } from './components/Sidebar'
 import { MenuIcon } from './components/icons'
 import { CommandPalette } from './components/CommandPalette'
+import { DeleteConfirmDialog } from './components/DeleteConfirmDialog'
+import { TaskAddedToast } from './components/TaskAddedToast'
 import { HomePage } from './pages/HomePage'
 import { BoardPage } from './pages/BoardPage'
 import { CalendarPage } from './pages/CalendarPage'
@@ -13,6 +15,12 @@ import { useTasks } from './hooks/useTasks'
 import { useReminderNotifications } from './hooks/useReminderNotifications'
 import { useTheme } from './hooks/useTheme'
 import { useShortcuts } from './hooks/useShortcuts'
+
+const DELETE_CONFIRM_KEY = 'tidyline:confirm-delete'
+
+function loadDeleteConfirmation() {
+  return localStorage.getItem(DELETE_CONFIRM_KEY) !== 'false'
+}
 
 /** The task under the caret or the pointer — what single-key actions act on. */
 function activeTaskId() {
@@ -32,8 +40,67 @@ function App() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [isPaletteOpen, setIsPaletteOpen] = useState(false)
+  const [askBeforeDelete, setAskBeforeDelete] = useState(loadDeleteConfirmation)
+  const [pendingDeleteId, setPendingDeleteId] = useState(null)
+  const [taskAdded, setTaskAdded] = useState(null)
 
   const { completeTask, toggleTask, deleteTask } = taskState
+
+  const createTask = useCallback(
+    (taskData) => {
+      const task = taskState.addTask(taskData)
+      setTaskAdded({ id: task.id, title: task.title })
+      return task
+    },
+    [taskState],
+  )
+
+  const dismissTaskAdded = useCallback(() => setTaskAdded(null), [])
+
+  const editAddedTask = useCallback(() => {
+    if (!taskAdded) {
+      return
+    }
+
+    navigate(`/board?expand=${encodeURIComponent(taskAdded.id)}`)
+    setTaskAdded(null)
+  }, [navigate, taskAdded])
+
+  useEffect(() => {
+    localStorage.setItem(DELETE_CONFIRM_KEY, String(askBeforeDelete))
+  }, [askBeforeDelete])
+
+  const requestDelete = useCallback(
+    (taskId) => {
+      setTaskAdded(null)
+
+      if (askBeforeDelete) {
+        setPendingDeleteId(taskId)
+        return
+      }
+
+      deleteTask(taskId)
+    },
+    [askBeforeDelete, deleteTask],
+  )
+
+  const cancelDelete = useCallback(() => setPendingDeleteId(null), [])
+
+  const confirmDelete = useCallback(
+    (dontAskAgain) => {
+      if (!pendingDeleteId) {
+        return
+      }
+
+      if (dontAskAgain) {
+        setAskBeforeDelete(false)
+      }
+
+      deleteTask(pendingDeleteId)
+      setPendingDeleteId(null)
+    },
+    [deleteTask, pendingDeleteId],
+  )
 
   const onNotificationComplete = useCallback(
     (taskId) => completeTask(taskId),
@@ -115,11 +182,11 @@ function App() {
         onDeleteActive: () => {
           const id = activeTaskId()
           if (!id) return false
-          deleteTask(id)
+          requestDelete(id)
           return true
         },
       }),
-      [startNewTask, focusSearch, toggleTask, deleteTask],
+      [startNewTask, focusSearch, toggleTask, requestDelete],
     ),
   )
 
@@ -166,12 +233,16 @@ function App() {
               <HomePage tasks={taskState.tasks} />
             </Route>
             <Route path="/board">
-              <BoardPage {...taskState} />
+              <BoardPage
+                {...taskState}
+                addTask={createTask}
+                deleteTask={requestDelete}
+              />
             </Route>
             <Route path="/calendar">
               <CalendarPage
                 tasks={taskState.tasks}
-                addTask={taskState.addTask}
+                addTask={createTask}
                 setDeadline={taskState.setDeadline}
               />
             </Route>
@@ -184,6 +255,8 @@ function App() {
                 appearance={appearance}
                 importTasks={taskState.importTasks}
                 clearCompleted={taskState.clearCompleted}
+                askBeforeDelete={askBeforeDelete}
+                onAskBeforeDeleteChange={setAskBeforeDelete}
               />
             </Route>
           </Switch>
@@ -192,6 +265,23 @@ function App() {
 
       {isPaletteOpen && (
         <CommandPalette commands={commands} onClose={() => setIsPaletteOpen(false)} />
+      )}
+
+      {pendingDeleteId && (
+        <DeleteConfirmDialog
+          taskTitle={taskState.tasks.find((task) => task.id === pendingDeleteId)?.title ?? 'This task'}
+          onCancel={cancelDelete}
+          onConfirm={confirmDelete}
+        />
+      )}
+
+      {taskAdded && (
+        <TaskAddedToast
+          key={taskAdded.id}
+          title={taskAdded.title}
+          onEdit={editAddedTask}
+          onDismiss={dismissTaskAdded}
+        />
       )}
     </div>
   )

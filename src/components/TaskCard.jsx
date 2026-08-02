@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { getCountdownLabel, getDeadlineParts } from '../utils/dates'
 import { parseTags } from '../utils/tags'
 import { overdueSeverity } from '../utils/overdue'
@@ -20,6 +20,7 @@ import {
 import { TagList } from './TagList'
 import { DayContext } from './DayContext'
 import { TaskDetails } from './TaskDetails'
+import { Checkbox } from './Checkbox'
 
 export function TaskCard({
   task,
@@ -34,13 +35,34 @@ export function TaskCard({
   onArchive,
   onUnarchive,
   onDuplicate,
+  expandTaskId,
   ...detailHandlers
 }) {
+  const taskRef = useRef(null)
   const [isEditing, setIsEditing] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
   const [editTitle, setEditTitle] = useState(task.title)
   const [editDeadline, setEditDeadline] = useState(task.deadline)
   const [editTags, setEditTags] = useState((task.tags ?? []).join(', '))
+
+  useEffect(() => {
+    if (expandTaskId !== task.id) {
+      return undefined
+    }
+
+    let scrollFrame
+    const expandFrame = requestAnimationFrame(() => {
+      setIsExpanded(true)
+      scrollFrame = requestAnimationFrame(() => {
+        taskRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      })
+    })
+
+    return () => {
+      cancelAnimationFrame(expandFrame)
+      cancelAnimationFrame(scrollFrame)
+    }
+  }, [expandTaskId, task.id])
 
   function startEditing() {
     setEditTitle(task.title)
@@ -81,6 +103,7 @@ export function TaskCard({
 
   return (
     <li
+      ref={taskRef}
       className={classNames.join(' ')}
       data-task-id={task.id}
       draggable={!selectionMode && !isEditing}
@@ -89,8 +112,7 @@ export function TaskCard({
       <div className="task-top">
         {selectionMode ? (
           <label className="task-select">
-            <input
-              type="checkbox"
+            <Checkbox
               checked={selected}
               onChange={() => onSelect(task.id)}
               aria-label={`Select ${task.title}`}
@@ -105,7 +127,7 @@ export function TaskCard({
         <strong>{task.title}</strong>
 
         <label className="task-toggle">
-          <input type="checkbox" checked={task.done} onChange={() => onToggle(task.id)} />
+          <Checkbox checked={task.done} onChange={() => onToggle(task.id)} />
           Done
         </label>
       </div>

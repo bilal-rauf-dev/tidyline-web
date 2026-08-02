@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { REMINDER_PRESETS, buildReminder, describeReminder } from '../utils/reminders'
 import { ensureNotificationPermission } from '../utils/notifications'
 import { BellIcon, CloseIcon, PlusIcon } from './icons'
+import { SelectMenu } from './SelectMenu'
 
 /**
  * Preset-first reminder control. The raw datetime picker survives as the
@@ -50,18 +51,15 @@ export function ReminderPicker({ reminders, onAdd, onRemove, task }) {
       )}
 
       <div className="reminder-picker-row">
-        <select
+        <SelectMenu
           value={preset}
-          aria-label="Reminder preset"
-          onChange={(event) => setPreset(event.target.value)}
-        >
-          {REMINDER_PRESETS.map((entry) => (
-            <option key={entry.id} value={entry.id}>
-              {entry.label}
-            </option>
-          ))}
-          <option value="custom">Custom date &amp; time…</option>
-        </select>
+          ariaLabel="Reminder preset"
+          options={[
+            ...REMINDER_PRESETS.map((entry) => ({ value: entry.id, label: entry.label })),
+            { value: 'custom', label: 'Custom date & time…' },
+          ]}
+          onChange={setPreset}
+        />
 
         {preset === 'custom' && (
           <input

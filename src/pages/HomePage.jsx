@@ -1,44 +1,52 @@
 import { useMemo } from 'react'
 import { Link } from 'wouter'
-import { groupTasksByBucket } from '../utils/buckets'
-import { getActivityHeatmap, summarizeHeatmap } from '../utils/analytics'
-import { getDeadlineParts } from '../utils/dates'
+import {
+  getActivityHeatmap,
+  getCompletionHistory,
+  getCompletionStat,
+  summarizeHeatmap,
+} from '../utils/analytics'
+import { formatDate, getCountdownLabel, getDeadlineParts } from '../utils/dates'
 import { TIMELINE_TICKS, getTodayTimeline } from '../utils/timeline'
 import { RingStat } from '../components/RingStat'
 import { MilestoneBar } from '../components/MilestoneBar'
 import { ActivityGrid } from '../components/ActivityGrid'
+import { Sparkline } from '../components/Sparkline'
+import { TagList } from '../components/TagList'
 import { isOverdue } from '../utils/overdue'
 import { toDateStr } from '../utils/calendar'
 
-const UPCOMING_LIMIT = 5
+const UPCOMING_LIMIT = 6
 const HOME_HEATMAP_DAYS = 35
 
-function getGreeting() {
-  const hour = new Date().getHours()
+function getGreeting(date = new Date()) {
+  const hour = date.getHours()
 
+  if (hour < 5) return 'Good night'
   if (hour < 12) return 'Good morning'
   if (hour < 18) return 'Good afternoon'
   return 'Good evening'
 }
 
 export function HomePage({ tasks: allTasks }) {
+  const greeting = useMemo(() => getGreeting(), [])
   const tasks = useMemo(() => allTasks.filter((task) => !task.archived), [allTasks])
-  const buckets = useMemo(() => groupTasksByBucket(tasks), [tasks])
   const heatmap = useMemo(() => getActivityHeatmap(tasks, HOME_HEATMAP_DAYS), [tasks])
   const heatmapSummary = useMemo(() => summarizeHeatmap(heatmap), [heatmap])
   const timeline = useMemo(() => getTodayTimeline(tasks), [tasks])
+  const completion = useMemo(() => getCompletionStat(tasks), [tasks])
+  const completionHistory = useMemo(() => getCompletionHistory(tasks), [tasks])
+  const todayStr = toDateStr(new Date())
 
   const upcoming = useMemo(
     () =>
       tasks
         .filter((task) => !task.done)
+        .filter((task) => task.deadline >= todayStr)
         .sort((a, b) => a.deadline.localeCompare(b.deadline))
         .slice(0, UPCOMING_LIMIT),
-    [tasks],
+    [tasks, todayStr],
   )
-
-  const todayTasks = buckets.today
-  const todayDone = todayTasks.filter((task) => task.done).length
 
   const daily = useMemo(() => {
     const todayStr = toDateStr(new Date())
@@ -62,7 +70,7 @@ export function HomePage({ tasks: allTasks }) {
     <main className="app-shell">
       <section className="home-top">
         <header className="hero">
-          <h1>{getGreeting()}</h1>
+          <h1>{greeting}</h1>
           <p className="hero-copy">
             Here&rsquo;s where your deadlines stand today. Add what&rsquo;s on your
             mind and it lands in the right bucket automatically.
@@ -121,36 +129,20 @@ export function HomePage({ tasks: allTasks }) {
         </article>
       </section>
 
-      <section className="entry-card daily-card" aria-label="Today at a glance">
-        <h2>Today at a glance</h2>
-
-        <div className="daily-stats">
-          <div className="daily-stat">
+      <section className="home-grid" aria-label="Today at a glance">
+        <article className="bucket-column dark home-focus">
+          <h2>Today at a glance</h2>
+          <div className="bucket-stat">
             <strong>{daily.dueToday}</strong>
             <span>due today</span>
           </div>
-          <div className={daily.overdueCount > 0 ? 'daily-stat alert' : 'daily-stat'}>
-            <strong>{daily.overdueCount}</strong>
-            <span>overdue</span>
-          </div>
-          <div className="daily-stat">
-            <strong>{daily.completedToday}</strong>
-            <span>completed today</span>
-          </div>
-          <RingStat label="Today" value={daily.done} total={daily.dueToday} />
-        </div>
 
-        <MilestoneBar percent={daily.percent} label="Today's progress" />
-      </section>
+          <RingStat label="Cleared" value={daily.done} total={daily.dueToday} />
 
-      <section className="home-grid" aria-label="Summary">
-        <article className="bucket-column dark home-due">
-          <div className="bucket-stat">
-            <strong>{todayTasks.length}</strong>
-            <span>due today</span>
+          <div className="home-focus-notes">
+            <span><strong>{daily.overdueCount}</strong> overdue</span>
+            <span><strong>{daily.completedToday}</strong> completed today</span>
           </div>
-
-          <RingStat label="Cleared" value={todayDone} total={todayTasks.length} />
         </article>
 
         <article className="accent-card home-activity">
@@ -162,6 +154,19 @@ export function HomePage({ tasks: allTasks }) {
           </div>
 
           <ActivityGrid cells={heatmap} label="Task activity by day, last 5 weeks" />
+
+          <p className="card-note">
+            {heatmapSummary.overdueDays} overdue {heatmapSummary.overdueDays === 1 ? 'day' : 'days'}
+          </p>
+        </article>
+
+        <article className="entry-card home-progress">
+          <h2>Overall progress</h2>
+          <div className="home-progress-stat">
+            <strong>{completion.percent}%</strong>
+            <span>{completion.done} of {completion.total} tasks complete</span>
+          </div>
+          <MilestoneBar percent={completion.percent} label="All active tasks" />
         </article>
 
         <article className="entry-card home-upcoming">
@@ -180,12 +185,33 @@ export function HomePage({ tasks: allTasks }) {
                       <strong>{day}</strong>
                       <span>{month}</span>
                     </div>
-                    <span className="upcoming-title">{task.title}</span>
+                    <div className="upcoming-copy">
+                      <span className="upcoming-title">{task.title}</span>
+                      <span className="upcoming-date">
+                        {formatDate(task.deadline)} · {getCountdownLabel(task.deadline)}
+                      </span>
+                      <TagList tags={task.tags} />
+                    </div>
                   </li>
                 )
               })}
             </ul>
           )}
+        </article>
+
+        <article className="entry-card home-completion">
+          <h2>Completion rhythm</h2>
+          <p className="card-note">Actual completions over the last 14 days</p>
+          <Sparkline
+            series={completionHistory.series}
+            peakIndex={completionHistory.peakIndex}
+          />
+          <div className="home-completion-stat">
+            <strong>{completionHistory.total}</strong>
+            <span>
+              completed · peak {completionHistory.peakCount} on {formatDate(completionHistory.peakDate)}
+            </span>
+          </div>
         </article>
       </section>
     </main>

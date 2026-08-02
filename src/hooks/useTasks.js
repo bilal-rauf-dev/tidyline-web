@@ -105,7 +105,19 @@ export function useTasks() {
     )
   }
 
-  function addTask({ title, deadline, reminders, tags = [], recurrence = null }) {
+  function addTask({
+    title,
+    deadline,
+    reminders,
+    tags = [],
+    recurrence = null,
+    notes = '',
+    checklist = [],
+    links = [],
+    attachments = [],
+    location = '',
+    duration = null,
+  }) {
     const task = normalizeTask({
       id: crypto.randomUUID(),
       title,
@@ -113,10 +125,17 @@ export function useTasks() {
       reminders,
       tags,
       recurrence,
+      notes,
+      checklist,
+      links,
+      attachments,
+      location,
+      duration,
       createdAt: new Date().toISOString(),
     })
 
     setTasks((current) => [task, ...current])
+    return task
   }
 
   function updateTask(id, updates) {
