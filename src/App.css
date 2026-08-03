@@ -1169,6 +1169,60 @@ button {
   color: var(--text-on-dark-soft);
 }
 
+.task-context,
+.energy-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding-left: 0.4rem;
+  border-left: 2px solid var(--line);
+  font-size: 0.72rem;
+  font-weight: 650;
+  color: var(--text-soft);
+}
+
+.task-context.planned {
+  border-left-color: var(--accent);
+}
+
+.energy-mark.energy-normal {
+  border-left-color: var(--accent-soft);
+}
+
+.energy-mark.energy-deep-focus {
+  border-left-color: var(--accent);
+}
+
+.energy-dot {
+  width: 0.42rem;
+  height: 0.42rem;
+  flex: 0 0 auto;
+  border: 1px solid var(--text-soft);
+  border-radius: 50%;
+  background: transparent;
+}
+
+.energy-dot.energy-normal {
+  border-color: var(--accent-soft);
+  background: var(--accent-soft);
+}
+
+.energy-dot.energy-deep-focus {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.bucket-column.dark .task-context,
+.bucket-column.dark .energy-mark {
+  border-left-color: var(--line-on-dark);
+  color: var(--text-on-dark-soft);
+}
+
+.bucket-column.dark .task-context.planned,
+.bucket-column.dark .energy-mark.energy-deep-focus {
+  border-left-color: var(--accent);
+}
+
 /* Overdue severity — weight and intensity rise with age */
 
 .task.overdue-1 {
@@ -1188,6 +1242,48 @@ button {
 
 .overdue-section {
   margin-bottom: 1.5rem;
+}
+
+.upcoming-section {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  border-left: 3px solid var(--accent-soft);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+
+.upcoming-section-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.8rem;
+}
+
+.upcoming-section-head h2,
+.upcoming-section-head p {
+  margin: 0;
+}
+
+.upcoming-section-head h2 {
+  font-size: 1.1rem;
+}
+
+.upcoming-section-head p {
+  margin-top: 0.2rem;
+  font-size: 0.78rem;
+  color: var(--text-soft);
+}
+
+.upcoming-section-head > span {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--text-soft);
+}
+
+.upcoming-task-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
 }
 
 .overdue-head {
@@ -1604,6 +1700,435 @@ button {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr));
   gap: 0.75rem;
+}
+
+.detail-foundations {
+  align-items: start;
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.energy-control {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.energy-control legend {
+  margin-bottom: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-soft);
+}
+
+.energy-options {
+  display: flex;
+  flex-wrap: nowrap;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-btn);
+  overflow: hidden;
+}
+
+.energy-option {
+  display: inline-flex;
+  flex: 1 1 0;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  min-height: 2.15rem;
+  padding: 0.4rem 0.55rem;
+  border: 0;
+  border-right: 1px solid var(--line);
+  border-radius: 0;
+  background: var(--surface);
+  font-size: 0.72rem;
+  white-space: nowrap;
+  color: var(--text-soft);
+}
+
+.energy-option:last-child {
+  border-right: 0;
+}
+
+.energy-option.active {
+  color: var(--text);
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+.field-error {
+  display: block;
+  margin: 0.35rem 0 0;
+  font-size: 0.74rem;
+  font-weight: 650;
+  color: var(--accent);
+}
+
+.postpone-summary {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.55rem 0.65rem;
+  border-left: 3px solid var(--accent-soft);
+  background: var(--bg);
+  font-size: 0.78rem;
+}
+
+.postpone-summary span {
+  color: var(--text-soft);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.task.waiting {
+  opacity: 0.72;
+  border-left: 3px solid var(--accent-soft);
+  padding-left: 0.75rem;
+}
+
+.task-context.waiting-label {
+  border-left-color: var(--accent-soft);
+}
+
+.task-context.scheduled-label {
+  border-left-color: var(--accent);
+}
+
+.risk-mark {
+  padding-left: 0.4rem;
+  border-left: 2px solid var(--line);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-soft);
+}
+
+.risk-mark.risk-tight {
+  border-left-color: var(--accent-soft);
+}
+
+.risk-mark.risk-at-risk {
+  border-left-color: var(--accent);
+  color: var(--accent);
+}
+
+.bucket-column.dark .risk-mark {
+  color: var(--text-on-dark-soft);
+}
+
+.bucket-column.dark .risk-mark.risk-at-risk {
+  color: var(--accent);
+}
+
+.waiting-control {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.waiting-control .segmented {
+  justify-self: start;
+}
+
+.waiting-fields {
+  padding: 0.7rem;
+  border-left: 3px solid var(--accent-soft);
+  background: var(--bg);
+}
+
+.template-picker {
+  display: grid;
+  gap: 0.3rem;
+  justify-self: start;
+  min-width: min(100%, 16rem);
+}
+
+.template-save {
+  display: flex;
+  align-items: end;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--line);
+}
+
+.template-save .field-icon {
+  flex: 1 1 13rem;
+}
+
+.template-saved {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--text-soft);
+}
+
+.template-settings-list,
+.planner-source-list,
+.someday-list {
+  display: grid;
+  gap: 0.65rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.template-settings-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: end;
+  gap: 0.65rem;
+  padding: 0.7rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.template-settings-row > div {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.template-settings-row small {
+  color: var(--text-soft);
+}
+
+.saved-filter-bar {
+  display: flex;
+  align-items: end;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  padding: 0.8rem 1rem;
+  border-left: 3px solid var(--accent-soft);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+
+.saved-filter-picker,
+.saved-filter-name {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.saved-filter-picker {
+  min-width: 13rem;
+}
+
+.saved-filter-name {
+  flex: 1 1 15rem;
+}
+
+.toolbar-advanced {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  flex-basis: 100%;
+  gap: 0.65rem;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition:
+    max-height var(--dur-move) var(--ease),
+    opacity var(--dur-fast) var(--ease);
+}
+
+.toolbar-advanced.open {
+  max-height: 8rem;
+  opacity: 1;
+}
+
+.toolbar-advanced input {
+  width: 100%;
+}
+
+.toolbar-pinned {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  align-self: end;
+  min-height: 2.45rem;
+  font-size: 0.8rem;
+}
+
+.planner-hero,
+.planner-date-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.planner-layout {
+  display: grid;
+  grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.planner-source {
+  position: sticky;
+  top: 1rem;
+}
+
+.planner-source-list li {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.65rem;
+  border-left: 3px solid var(--accent-soft);
+  background: var(--bg);
+  cursor: grab;
+}
+
+.planner-source-list span {
+  font-size: 0.72rem;
+  color: var(--text-soft);
+}
+
+.planner-day {
+  min-width: 0;
+}
+
+.planner-timeline {
+  position: relative;
+  margin-top: 1rem;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-btn);
+  background: var(--surface);
+}
+
+.planner-hour {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  border-top: 1px solid var(--line);
+}
+
+.planner-hour span {
+  position: absolute;
+  top: -0.55rem;
+  left: 0.55rem;
+  padding-right: 0.35rem;
+  background: var(--surface);
+  font-size: 0.68rem;
+  color: var(--text-soft);
+}
+
+.planner-block {
+  position: absolute;
+  left: 4.3rem;
+  right: 0.7rem;
+  z-index: 2;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.4rem;
+  min-height: 18px;
+  padding: 0.45rem 0.55rem 0.7rem;
+  border-left: 4px solid var(--accent);
+  background: var(--surface-dark);
+  color: var(--text-on-dark);
+  cursor: grab;
+  overflow: hidden;
+}
+
+.planner-block > div {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.planner-block strong,
+.planner-block span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.planner-block span {
+  font-size: 0.68rem;
+  color: var(--text-on-dark-soft);
+}
+
+.planner-block .icon-mini {
+  color: var(--text-on-dark-soft);
+}
+
+.planner-resize {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 0.45rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: var(--accent);
+  cursor: ns-resize;
+}
+
+.someday-entry form {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.someday-entry .primary {
+  justify-self: start;
+}
+
+.someday-list-section {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.someday-list-head,
+.someday-card-head,
+.someday-promote {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.someday-list-head h2 {
+  margin: 0;
+}
+
+.someday-list-head span {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--text-soft);
+}
+
+.someday-list {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+}
+
+.someday-card {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-left: 3px solid var(--accent-soft);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+
+.someday-promote {
+  align-items: end;
+  flex-wrap: wrap;
+}
+
+.someday-promote .field-icon {
+  flex: 1 1 11rem;
 }
 
 .duration-row {
@@ -2362,6 +2887,125 @@ button {
   color: var(--accent);
 }
 
+.calendar-day.overloaded {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.calendar-day-workload {
+  display: grid;
+  gap: 0.12rem;
+  margin-top: auto;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--text-soft);
+}
+
+.calendar-day-workload em {
+  font-size: 0.64rem;
+  font-style: normal;
+  color: var(--accent);
+}
+
+.calendar-overload-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.75rem;
+  border-left: 3px solid var(--accent);
+  background: var(--bg);
+}
+
+.calendar-overload-action > div {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.calendar-overload-action span {
+  font-size: 0.74rem;
+  color: var(--text-soft);
+}
+
+.settings-number {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.8rem;
+  color: var(--text-soft);
+}
+
+.settings-number input {
+  width: 5rem;
+}
+
+.redistribution-list,
+.shutdown-list {
+  display: grid;
+  gap: 0;
+  margin: 1rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+.redistribution-list li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.redistribution-list span {
+  font-size: 0.75rem;
+  color: var(--text-soft);
+}
+
+.shutdown-stat {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  margin: 1rem 0;
+}
+
+.shutdown-stat strong {
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 1;
+}
+
+.shutdown-stat span {
+  font-size: 0.78rem;
+  color: var(--text-soft);
+}
+
+.shutdown-list li {
+  display: grid;
+  gap: 0.55rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.shutdown-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.shutdown-actions input {
+  min-height: 2.25rem;
+}
+
+.home-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
 .calendar-day-task {
   display: flex;
   align-items: center;
@@ -2703,7 +3347,8 @@ button {
   grid-template-areas:
     "progress progress progress trend trend trend"
     "progress progress progress trend trend trend"
-    "activity activity activity velocity velocity peak";
+    "activity activity activity velocity velocity peak"
+    "delays delays delays delaytags delaytags delaytags";
 }
 
 .analytics-progress {
@@ -2724,6 +3369,47 @@ button {
 
 .analytics-velocity {
   grid-area: velocity;
+}
+
+.analytics-delays {
+  grid-area: delays;
+}
+
+.analytics-delay-tags {
+  grid-area: delaytags;
+}
+
+.analytics-delay-stat {
+  display: flex;
+  align-items: baseline;
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+}
+
+.analytics-delay-stat strong {
+  font-size: clamp(2rem, 3vw, 2.8rem);
+  line-height: 1;
+}
+
+.analytics-delay-stat span {
+  font-size: 0.78rem;
+  color: var(--text-soft);
+}
+
+.postpone-task-list {
+  display: grid;
+  gap: 0;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style-position: inside;
+}
+
+.postpone-task-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid var(--line);
 }
 
 .analytics-progress-stat,
@@ -3001,7 +3687,9 @@ button {
       "progress progress"
       "trend    trend"
       "activity activity"
-      "velocity peak";
+      "velocity peak"
+      "delays delays"
+      "delaytags delaytags";
   }
 
   .home-top {
@@ -3300,5 +3988,62 @@ button {
 
   .calendar-day-number {
     font-size: 0.78rem;
+  }
+}
+
+@media (max-width: 900px) {
+  .planner-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .planner-source {
+    position: static;
+  }
+
+  .planner-source-list {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .toolbar-advanced {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .toolbar-advanced.open {
+    max-height: 18rem;
+  }
+
+  .template-settings-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .template-settings-row > div {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 520px) {
+  .energy-option {
+    padding-inline: 0.3rem;
+    font-size: 0.65rem;
+  }
+
+  .saved-filter-picker,
+  .saved-filter-name,
+  .saved-filter-bar > button {
+    width: 100%;
+  }
+
+  .toolbar-advanced {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .toolbar-advanced.open {
+    max-height: 30rem;
+  }
+
+  .planner-block {
+    left: 3.75rem;
   }
 }

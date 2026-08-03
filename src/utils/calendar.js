@@ -37,6 +37,8 @@ export function groupTasksByDate(tasks) {
   const grouped = {}
 
   tasks.forEach((task) => {
+    if (!task.deadline) return
+
     if (!grouped[task.deadline]) {
       grouped[task.deadline] = []
     }

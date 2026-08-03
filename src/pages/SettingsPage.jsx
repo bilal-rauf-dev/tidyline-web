@@ -5,6 +5,7 @@ import { ACCENT_OPTIONS, DENSITY_OPTIONS } from '../hooks/useTheme'
 import { Checkbox } from '../components/Checkbox'
 import { BucketConfigMenu } from '../components/BucketConfigMenu'
 import { BUCKET_ORDER } from '../utils/buckets'
+import { TemplateSettings } from '../components/TemplateSettings'
 
 export function SettingsPage({
   tasks,
@@ -16,6 +17,11 @@ export function SettingsPage({
   bucketOrder = BUCKET_ORDER,
   onToggleBucket = () => {},
   onResetBuckets = () => {},
+  templates = [],
+  onRenameTemplate = () => {},
+  onDeleteTemplate = () => {},
+  overloadHours = 6,
+  onOverloadHoursChange = () => {},
 }) {
   const fileInputRef = useRef(null)
   const [soundOn, setSoundOn] = useState(isSoundEnabled)
@@ -163,6 +169,32 @@ export function SettingsPage({
       </section>
 
       <section className="entry-card">
+        <h2>Calendar workload</h2>
+        <div className="settings-row">
+          <span>
+            Flag overloaded days above
+            <small className="settings-note">
+              Uses the total of task estimates; tasks without estimates remain visible but add no hours.
+            </small>
+          </span>
+          <label className="settings-number">
+            <input
+              type="number"
+              min="1"
+              max="24"
+              step="0.5"
+              value={overloadHours}
+              onChange={(event) => {
+                const value = Number(event.target.value)
+                if (value >= 1 && value <= 24) onOverloadHoursChange(value)
+              }}
+            />
+            hours
+          </label>
+        </div>
+      </section>
+
+      <section className="entry-card">
         <h2>Task actions</h2>
 
         <div className="settings-row">
@@ -180,6 +212,18 @@ export function SettingsPage({
             />
           </label>
         </div>
+      </section>
+
+      <section className="entry-card">
+        <h2>Task templates</h2>
+        <p className="card-note">
+          Templates reuse task details while leaving the title and deadline blank.
+        </p>
+        <TemplateSettings
+          templates={templates}
+          onRename={onRenameTemplate}
+          onDelete={onDeleteTemplate}
+        />
       </section>
 
       <section className="entry-card">

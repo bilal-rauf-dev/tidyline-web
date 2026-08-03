@@ -7,6 +7,7 @@ import {
   getCompletionHistory,
   getTopBuckets,
   summarizeHeatmap,
+  getPostponeAnalytics,
 } from '../utils/analytics'
 import { formatDate } from '../utils/dates'
 import { MilestoneBar } from '../components/MilestoneBar'
@@ -17,7 +18,10 @@ import { ActivityGrid } from '../components/ActivityGrid'
 import { BUCKET_ORDER } from '../utils/buckets'
 
 export function AnalyticsPage({ tasks: allTasks, bucketOrder = BUCKET_ORDER }) {
-  const tasks = useMemo(() => allTasks.filter((task) => !task.archived), [allTasks])
+  const tasks = useMemo(
+    () => allTasks.filter((task) => !task.archived && task.deadline),
+    [allTasks],
+  )
   const completion = useMemo(() => getCompletionStat(tasks), [tasks])
   const topBuckets = useMemo(() => getTopBuckets(tasks, 2, bucketOrder), [tasks, bucketOrder])
   const trends = useMemo(() => getBucketTrends(tasks, bucketOrder), [tasks, bucketOrder])
@@ -25,6 +29,7 @@ export function AnalyticsPage({ tasks: allTasks, bucketOrder = BUCKET_ORDER }) {
   const heatmap = useMemo(() => getActivityHeatmap(tasks), [tasks])
   const heatmapSummary = useMemo(() => summarizeHeatmap(heatmap), [heatmap])
   const completionHistory = useMemo(() => getCompletionHistory(tasks), [tasks])
+  const postpone = useMemo(() => getPostponeAnalytics(tasks), [tasks])
 
   const busiestBucket = trends.reduce(
     (top, entry) => (entry.count > top.count ? entry : top),
@@ -111,6 +116,41 @@ export function AnalyticsPage({ tasks: allTasks, bucketOrder = BUCKET_ORDER }) {
           <p className="card-note">
             {heatmapSummary.overdueDays} overdue {heatmapSummary.overdueDays === 1 ? 'day' : 'days'}
           </p>
+        </article>
+
+        <article className="entry-card analytics-delays">
+          <h2>Postpone patterns</h2>
+          <div className="analytics-delay-stat">
+            <strong>{postpone.average.toFixed(1)}</strong>
+            <span>average postponements per task</span>
+          </div>
+          <MilestoneBar
+            percent={tasks.length === 0 ? 0 : Math.round((postpone.delayedTaskCount / tasks.length) * 100)}
+            label={`${postpone.delayedTaskCount} of ${tasks.length} tasks delayed`}
+          />
+
+          {postpone.topTasks.length === 0 ? (
+            <p className="empty">No deadlines have been postponed.</p>
+          ) : (
+            <ol className="postpone-task-list">
+              {postpone.topTasks.map((task) => (
+                <li key={task.id}>
+                  <span>{task.title}</span>
+                  <strong>{task.postponeHistory.length}×</strong>
+                </li>
+              ))}
+            </ol>
+          )}
+        </article>
+
+        <article className="entry-card analytics-delay-tags">
+          <h2>Tags with most delays</h2>
+          <p className="card-note">Postponement records grouped by existing task tags</p>
+          {postpone.tags.length === 0 ? (
+            <p className="empty">No tagged delays yet.</p>
+          ) : (
+            <TrendBars entries={postpone.tags} accentKey={postpone.tags[0].bucket} />
+          )}
         </article>
       </section>
     </main>

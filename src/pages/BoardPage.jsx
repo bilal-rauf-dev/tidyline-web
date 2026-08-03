@@ -10,6 +10,9 @@ import { BucketColumn } from '../components/BucketColumn'
 import { BoardToolbar } from '../components/BoardToolbar'
 import { OverdueSection } from '../components/OverdueSection'
 import { UndoToast } from '../components/UndoToast'
+import { UpcomingSection } from '../components/UpcomingSection'
+import { isTaskUpcoming } from '../utils/taskFields'
+import { SavedFilterBar } from '../components/SavedFilterBar'
 
 export function BoardPage({
   tasks,
@@ -22,6 +25,11 @@ export function BoardPage({
   undo,
   dismissUndo,
   bucketOrder = BUCKET_ORDER,
+  templates = [],
+  onSaveTemplate = () => null,
+  savedFilters = [],
+  onSaveFilter = () => null,
+  onDeleteFilter = () => {},
   ...taskActions
 }) {
   const search = useSearch()
@@ -108,8 +116,8 @@ export function BoardPage({
   const tags = useMemo(() => collectTags(tasks), [tasks])
 
   const visible = useMemo(() => {
-    const inView = tasks.filter((task) =>
-      view === 'archived' ? task.archived : !task.archived,
+    const inView = tasks.filter(
+      (task) => task.deadline && (view === 'archived' ? task.archived : !task.archived),
     )
     return filterTasks(inView, filters)
   }, [tasks, view, filters])
@@ -120,14 +128,33 @@ export function BoardPage({
     [visible, view, now],
   )
 
+  const upcomingTasks = useMemo(
+    () =>
+      view === 'archived'
+        ? []
+        : visible
+            .filter((task) => isTaskUpcoming(task, now))
+            .sort((a, b) =>
+              a.startDate.localeCompare(b.startDate) || a.deadline.localeCompare(b.deadline),
+            ),
+    [visible, view, now],
+  )
+
   const bucketed = useMemo(
-    () => visible.filter((task) => view === 'archived' || !isOverdue(task, now)),
+    () =>
+      visible.filter(
+        (task) =>
+          view === 'archived' || (!isTaskUpcoming(task, now) && !isOverdue(task, now)),
+      ),
     [visible, view, now],
   )
 
   const buckets = useMemo(
-    () => groupTasksByBucket(bucketed, now, buildComparator(filters), bucketOrder),
-    [bucketed, filters, now, bucketOrder],
+    () =>
+      groupTasksByBucket(bucketed, now, buildComparator(filters), bucketOrder, {
+        includeUpcoming: view === 'archived',
+      }),
+    [bucketed, filters, now, bucketOrder, view],
   )
 
   useFlipReparent(boardRef, tick)
@@ -170,6 +197,7 @@ export function BoardPage({
     onDelete: taskActions.deleteTask,
     onUpdate: taskActions.updateTask,
     onTogglePin: taskActions.togglePin,
+    onTogglePlan: taskActions.togglePlanForToday,
     onArchive: taskActions.archiveTask,
     onUnarchive: taskActions.unarchiveTask,
     onDuplicate: taskActions.duplicateTask,
@@ -184,6 +212,7 @@ export function BoardPage({
     onRemoveLink: taskActions.removeLink,
     onAddAttachment: taskActions.addAttachment,
     onRemoveAttachment: taskActions.removeAttachment,
+    onSaveTemplate,
     expandTaskId,
   }
 
@@ -201,7 +230,12 @@ export function BoardPage({
         </p>
       </header>
 
-      <TaskForm onAddTask={addTask} allTasks={tasks} focusOnMount={focusForm} />
+      <TaskForm
+        onAddTask={addTask}
+        allTasks={tasks}
+        focusOnMount={focusForm}
+        templates={templates}
+      />
 
       <div className="board-controls">
         <div className="segmented" role="group" aria-label="View">
@@ -234,6 +268,13 @@ export function BoardPage({
         </button>
       </div>
 
+      <SavedFilterBar
+        savedFilters={savedFilters}
+        onApply={setFilters}
+        onSave={(name) => onSaveFilter(name, filters)}
+        onDelete={onDeleteFilter}
+      />
+
       <BoardToolbar filters={filters} onChange={setFilters} tags={tags} />
 
       {selectionMode && (
@@ -252,6 +293,12 @@ export function BoardPage({
       )}
 
       <div ref={boardRef}>
+        <UpcomingSection
+          tasks={upcomingTasks}
+          selectedIds={selectedIds}
+          {...taskHandlers}
+        />
+
         <OverdueSection groups={overdueGroups} selectedIds={selectedIds} {...taskHandlers} />
 
         <span className="today-sticky-sentinel" aria-hidden="true">

@@ -16,11 +16,22 @@ import { useReminderNotifications } from './hooks/useReminderNotifications'
 import { useTheme } from './hooks/useTheme'
 import { useBucketConfig } from './hooks/useBucketConfig'
 import { useShortcuts } from './hooks/useShortcuts'
+import { useTemplates } from './hooks/useTemplates'
+import { useSavedFilters } from './hooks/useSavedFilters'
+import { PlannerPage } from './pages/PlannerPage'
+import { SomedayPage } from './pages/SomedayPage'
+import { DEFAULT_OVERLOAD_HOURS } from './utils/workload'
 
 const DELETE_CONFIRM_KEY = 'tidyline:confirm-delete'
+const OVERLOAD_HOURS_KEY = 'tidyline:overload-hours'
 
 function loadDeleteConfirmation() {
   return localStorage.getItem(DELETE_CONFIRM_KEY) !== 'false'
+}
+
+function loadOverloadHours() {
+  const value = Number(localStorage.getItem(OVERLOAD_HOURS_KEY))
+  return Number.isFinite(value) && value >= 1 && value <= 24 ? value : DEFAULT_OVERLOAD_HOURS
 }
 
 /** The task under the caret or the pointer — what single-key actions act on. */
@@ -38,6 +49,8 @@ function App() {
   const taskState = useTasks()
   const appearance = useTheme()
   const bucketConfig = useBucketConfig()
+  const templateState = useTemplates()
+  const savedFilterState = useSavedFilters()
   const [location, navigate] = useLocation()
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [isCollapsed, setIsCollapsed] = useState(false)
@@ -45,6 +58,7 @@ function App() {
   const [askBeforeDelete, setAskBeforeDelete] = useState(loadDeleteConfirmation)
   const [pendingDeleteId, setPendingDeleteId] = useState(null)
   const [taskAdded, setTaskAdded] = useState(null)
+  const [overloadHours, setOverloadHours] = useState(loadOverloadHours)
 
   const { completeTask, toggleTask, deleteTask } = taskState
 
@@ -71,6 +85,10 @@ function App() {
   useEffect(() => {
     localStorage.setItem(DELETE_CONFIRM_KEY, String(askBeforeDelete))
   }, [askBeforeDelete])
+
+  useEffect(() => {
+    localStorage.setItem(OVERLOAD_HOURS_KEY, String(overloadHours))
+  }, [overloadHours])
 
   const requestDelete = useCallback(
     (taskId) => {
@@ -150,6 +168,8 @@ function App() {
       { id: 'home', label: 'Go to Home', run: () => navigate('/') },
       { id: 'board', label: 'Go to Board', run: () => navigate('/board') },
       { id: 'calendar', label: 'Go to Calendar', run: () => navigate('/calendar') },
+      { id: 'planner', label: 'Go to Day planner', run: () => navigate('/planner') },
+      { id: 'someday', label: 'Go to Someday / Maybe', run: () => navigate('/someday') },
       { id: 'analytics', label: 'Go to Analytics', run: () => navigate('/analytics') },
       { id: 'settings', label: 'Go to Settings', run: () => navigate('/settings') },
       { id: 'archive', label: 'Show archived tasks', run: () => navigate('/board?view=archived') },
@@ -232,7 +252,12 @@ function App() {
         <div className="route-view" key={location}>
           <Switch>
             <Route path="/">
-              <HomePage tasks={taskState.tasks} />
+              <HomePage
+                tasks={taskState.tasks}
+                setDeadline={taskState.setDeadline}
+                rescheduleTasks={taskState.rescheduleTasks}
+                archiveTask={taskState.archiveTask}
+              />
             </Route>
             <Route path="/board">
               <BoardPage
@@ -240,6 +265,11 @@ function App() {
                 addTask={createTask}
                 deleteTask={requestDelete}
                 bucketOrder={bucketConfig.bucketOrder}
+                templates={templateState.templates}
+                onSaveTemplate={templateState.saveTaskTemplate}
+                savedFilters={savedFilterState.savedFilters}
+                onSaveFilter={savedFilterState.saveFilter}
+                onDeleteFilter={savedFilterState.deleteFilter}
               />
             </Route>
             <Route path="/calendar">
@@ -247,6 +277,21 @@ function App() {
                 tasks={taskState.tasks}
                 addTask={createTask}
                 setDeadline={taskState.setDeadline}
+                templates={templateState.templates}
+                overloadHours={overloadHours}
+              />
+            </Route>
+            <Route path="/planner">
+              <PlannerPage
+                tasks={taskState.tasks}
+                setScheduledStart={taskState.setScheduledStart}
+                updateTask={taskState.updateTask}
+              />
+            </Route>
+            <Route path="/someday">
+              <SomedayPage
+                {...taskState}
+                deleteTask={requestDelete}
               />
             </Route>
             <Route path="/analytics">
@@ -263,6 +308,11 @@ function App() {
                 bucketOrder={bucketConfig.bucketOrder}
                 onToggleBucket={bucketConfig.toggleBucket}
                 onResetBuckets={bucketConfig.resetBuckets}
+                templates={templateState.templates}
+                onRenameTemplate={templateState.renameTemplate}
+                onDeleteTemplate={templateState.deleteTemplate}
+                overloadHours={overloadHours}
+                onOverloadHoursChange={setOverloadHours}
               />
             </Route>
           </Switch>

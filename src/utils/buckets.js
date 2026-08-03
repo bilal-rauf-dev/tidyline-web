@@ -1,4 +1,5 @@
 import { daysUntil } from './dates'
+import { isTaskPlannedForToday, isTaskUpcoming } from './taskFields'
 
 export const BUCKET_ORDER = ['today', 'week', 'twoWeeks', 'month', 'quarter', 'year', 'later']
 export const REQUIRED_BUCKETS = ['today', 'later']
@@ -76,12 +77,24 @@ export function groupTasksByBucket(
   referenceDate = new Date(),
   comparator = byDeadline,
   bucketOrder = BUCKET_ORDER,
+  { includeUpcoming = false } = {},
 ) {
   const activeBuckets = normalizeBucketOrder(bucketOrder)
   const grouped = Object.fromEntries(activeBuckets.map((bucket) => [bucket, []]))
 
   tasks.forEach((task) => {
-    grouped[getTaskBucket(task.deadline, referenceDate, activeBuckets)].push(task)
+    if (!task.deadline) {
+      return
+    }
+
+    if (!includeUpcoming && isTaskUpcoming(task, referenceDate)) {
+      return
+    }
+
+    const bucket = isTaskPlannedForToday(task, referenceDate)
+      ? 'today'
+      : getTaskBucket(task.deadline, referenceDate, activeBuckets)
+    grouped[bucket].push(task)
   })
 
   activeBuckets.forEach((bucket) => {

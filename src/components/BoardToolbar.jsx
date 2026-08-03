@@ -1,8 +1,11 @@
-import { SORT_OPTIONS, STATUS_OPTIONS } from '../utils/filters'
+import { useState } from 'react'
+import { ENERGY_FILTER_OPTIONS, SORT_OPTIONS, STATUS_OPTIONS } from '../utils/filters'
 import { SearchIcon, TagIcon } from './icons'
 import { SelectMenu } from './SelectMenu'
+import { Checkbox } from './Checkbox'
 
 export function BoardToolbar({ filters, onChange, tags }) {
+  const [showAdvanced, setShowAdvanced] = useState(false)
   function set(key, value) {
     onChange({ ...filters, [key]: value })
   }
@@ -47,6 +50,16 @@ export function BoardToolbar({ filters, onChange, tags }) {
       </div>
 
       <div className="toolbar-field">
+        <span className="field-icon-head">Energy</span>
+        <SelectMenu
+          value={filters.energyLevel}
+          ariaLabel="Filter by energy level"
+          options={ENERGY_FILTER_OPTIONS}
+          onChange={(value) => set('energyLevel', value)}
+        />
+      </div>
+
+      <div className="toolbar-field">
         <span className="field-icon-head">Sort by</span>
         <SelectMenu
           value={filters.sortBy}
@@ -64,6 +77,63 @@ export function BoardToolbar({ filters, onChange, tags }) {
       >
         {filters.sortDir === 'asc' ? 'Asc' : 'Desc'}
       </button>
+
+      <button
+        type="button"
+        className="secondary"
+        aria-expanded={showAdvanced}
+        onClick={() => setShowAdvanced((open) => !open)}
+      >
+        {showAdvanced ? 'Fewer filters' : 'More filters'}
+      </button>
+
+      <div
+        className={showAdvanced ? 'toolbar-advanced open' : 'toolbar-advanced'}
+        inert={showAdvanced ? undefined : true}
+        aria-hidden={!showAdvanced}
+      >
+        <label className="toolbar-field">
+          <span className="field-icon-head">Due from</span>
+          <input
+            type="date"
+            value={filters.dateFrom}
+            onChange={(event) => set('dateFrom', event.target.value)}
+          />
+        </label>
+        <label className="toolbar-field">
+          <span className="field-icon-head">Due through</span>
+          <input
+            type="date"
+            value={filters.dateTo}
+            onChange={(event) => set('dateTo', event.target.value)}
+          />
+        </label>
+        <label className="toolbar-field">
+          <span className="field-icon-head">Minimum minutes</span>
+          <input
+            type="number"
+            min="0"
+            value={filters.durationMin}
+            onChange={(event) => set('durationMin', event.target.value)}
+          />
+        </label>
+        <label className="toolbar-field">
+          <span className="field-icon-head">Maximum minutes</span>
+          <input
+            type="number"
+            min="0"
+            value={filters.durationMax}
+            onChange={(event) => set('durationMax', event.target.value)}
+          />
+        </label>
+        <label className="toolbar-pinned">
+          <Checkbox
+            checked={filters.pinnedOnly}
+            onChange={(event) => set('pinnedOnly', event.target.checked)}
+          />
+          Pinned only
+        </label>
+      </div>
     </div>
   )
 }

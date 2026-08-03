@@ -1,5 +1,6 @@
 import { toDateStr } from './calendar'
 import { BUCKET_LABELS, BUCKET_ORDER, groupTasksByBucket } from './buckets'
+import { isTaskUpcoming } from './taskFields'
 
 const HEATMAP_DAYS = 70
 const BUSIEST_WINDOW_DAYS = 14
@@ -83,7 +84,11 @@ export function getActivityHeatmap(tasks, days = HEATMAP_DAYS) {
   tasks.forEach((task) => {
     if (task.done) {
       completed.add(task.deadline)
-    } else if (task.deadline < todayStr) {
+    } else if (
+      task.status !== 'waiting' &&
+      !isTaskUpcoming(task, today) &&
+      task.deadline < todayStr
+    ) {
       overdue.add(task.deadline)
     }
   })
@@ -207,5 +212,40 @@ export function getCompletionHistory(tasks, days = COMPLETION_HISTORY_DAYS) {
     peakCount: series[peakIndex]?.count ?? 0,
     peakDate: series[peakIndex]?.dateStr ?? toDateStr(today),
     windowDays: days,
+  }
+}
+
+export function getPostponeAnalytics(tasks, limit = 5) {
+  const totalPostponements = tasks.reduce(
+    (total, task) => total + (task.postponeHistory?.length ?? 0),
+    0,
+  )
+  const delayedTasks = tasks.filter((task) => (task.postponeHistory?.length ?? 0) > 0)
+  const topTasks = [...delayedTasks]
+    .sort(
+      (a, b) =>
+        b.postponeHistory.length - a.postponeHistory.length ||
+        a.title.localeCompare(b.title),
+    )
+    .slice(0, limit)
+  const tagCounts = new Map()
+
+  tasks.forEach((task) => {
+    const count = task.postponeHistory?.length ?? 0
+    if (count === 0) return
+    ;(task.tags ?? []).forEach((tag) => tagCounts.set(tag, (tagCounts.get(tag) ?? 0) + count))
+  })
+
+  const tags = [...tagCounts.entries()]
+    .map(([tag, count]) => ({ bucket: tag, label: tag, count, delta: 0 }))
+    .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label))
+    .slice(0, limit)
+
+  return {
+    totalPostponements,
+    delayedTaskCount: delayedTasks.length,
+    average: tasks.length === 0 ? 0 : totalPostponements / tasks.length,
+    topTasks,
+    tags,
   }
 }

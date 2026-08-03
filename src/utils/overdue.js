@@ -1,4 +1,5 @@
 import { daysUntil } from './dates'
+import { isTaskPlannedForToday, isTaskUpcoming } from './taskFields'
 
 /**
  * Severity rises with age: 1 = yesterday, 3 = a week or more.
@@ -15,7 +16,15 @@ export function daysOverdue(task, referenceDate = new Date()) {
 }
 
 export function isOverdue(task, referenceDate = new Date()) {
-  return !task.done && !task.archived && daysUntil(task.deadline, referenceDate) < 0
+  return (
+    !task.done &&
+    !task.archived &&
+    Boolean(task.deadline) &&
+    task.status !== 'waiting' &&
+    !isTaskUpcoming(task, referenceDate) &&
+    !isTaskPlannedForToday(task, referenceDate) &&
+    daysUntil(task.deadline, referenceDate) < 0
+  )
 }
 
 export function overdueSeverity(task, referenceDate = new Date()) {
