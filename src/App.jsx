@@ -14,6 +14,7 @@ import { SettingsPage } from './pages/SettingsPage'
 import { useTasks } from './hooks/useTasks'
 import { useReminderNotifications } from './hooks/useReminderNotifications'
 import { useTheme } from './hooks/useTheme'
+import { useBucketConfig } from './hooks/useBucketConfig'
 import { useShortcuts } from './hooks/useShortcuts'
 
 const DELETE_CONFIRM_KEY = 'tidyline:confirm-delete'
@@ -36,6 +37,7 @@ function activeTaskId() {
 function App() {
   const taskState = useTasks()
   const appearance = useTheme()
+  const bucketConfig = useBucketConfig()
   const [location, navigate] = useLocation()
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [isCollapsed, setIsCollapsed] = useState(false)
@@ -237,6 +239,7 @@ function App() {
                 {...taskState}
                 addTask={createTask}
                 deleteTask={requestDelete}
+                bucketOrder={bucketConfig.bucketOrder}
               />
             </Route>
             <Route path="/calendar">
@@ -247,7 +250,7 @@ function App() {
               />
             </Route>
             <Route path="/analytics">
-              <AnalyticsPage tasks={taskState.tasks} />
+              <AnalyticsPage tasks={taskState.tasks} bucketOrder={bucketConfig.bucketOrder} />
             </Route>
             <Route path="/settings">
               <SettingsPage
@@ -257,6 +260,9 @@ function App() {
                 clearCompleted={taskState.clearCompleted}
                 askBeforeDelete={askBeforeDelete}
                 onAskBeforeDeleteChange={setAskBeforeDelete}
+                bucketOrder={bucketConfig.bucketOrder}
+                onToggleBucket={bucketConfig.toggleBucket}
+                onResetBuckets={bucketConfig.resetBuckets}
               />
             </Route>
           </Switch>

@@ -76,7 +76,8 @@ existing palette rather than introducing a new hue:
 ## Shape and elevation
 
 - Card corner radius: 16–20px. Buttons: 10–12px. Nothing is a full pill/capsule
-  shape except a genuine toggle switch.
+  shape except a genuine toggle switch and the explicitly documented distance
+  rail track. The rail is positional chart geometry, never a badge or button.
 - No drop shadows for depth. Cards are separated by background color contrast
   (white card on `#F2F0EC` page, or a solid dark card) — not `box-shadow` blur.
 - If a shadow is used at all, it's a 1px hard-edge or none. Never a soft
@@ -108,6 +109,12 @@ draws attention to itself.
   element that moves, not a border toggling on and off per item.
 - Everything above collapses to ~0ms under `prefers-reduced-motion: reduce`,
   set globally in `index.css`.
+- The sticky due-today summary uses two fixed, out-of-flow
+  `IntersectionObserver` markers before the bucket grid: one collapse marker
+  and one earlier expand marker. Keep scroll anchoring disabled on the dynamic
+  bucket region so the summary's own height transition cannot feed back into
+  its compact state. Do not derive this state from the summary card's geometry
+  or a raw `window.scrollY` threshold.
 - **Living timeline (FLIP).** When wall-clock time moves a task into a
   different bucket, the card animates from its old column position to its new
   one instead of teleporting. Implemented as measure → apply → invert → play
@@ -164,13 +171,13 @@ new chart type for a new page without adding it here first.
   **outlined** = nothing. Hatching is a 45° repeating hard-stop stripe, not a
   blended gradient. This is the standard renderer for any date-shaped data.
 
-- **Distance rail** (`DistanceRail.jsx`) — seven small square nodes joined by
-  one thin line, one node per bucket, sitting at the top of every bucket card.
-  Earlier nodes are solid neutral marks, the current node is enlarged and uses
-  the active accent, and later nodes remain outlined. This makes the seven
-  bucket cards read as one Today → Later sequence while staying immediately
-  distinct from percentage bars: the connector never fills and no segment
-  changes width. Dark cards use the same geometry with on-dark line tokens.
+- **Distance rail** (`DistanceRail.jsx`) — the one intentional pill-shaped
+  chart container in the system. A muted rounded track holds one evenly spaced
+  circular node per currently enabled bucket, joined by a thin **dashed** line.
+  The current bucket node is solid `--accent`; every other node stays outlined
+  and muted. The dashed connector never fills, so the rail reads as ordered
+  timeline position rather than completion percentage. Dark cards keep the
+  same geometry and switch only to the existing on-dark line tokens.
 
 Deltas render as plain signed text (`+2`, `-1`, `–` for zero) — never a
 coloured pill, and never a green/red semantic pair.
@@ -241,9 +248,18 @@ coloured pill, and never a green/red semantic pair.
   checklist progress (`1/3`) and duration. Glyphs only appear when the field
   has content, so a bare task stays bare. This is what keeps rich detail from
   making every card noisy.
-- **Expandable detail panel** (`.task-details-panel`) — opens inside the card
-  under a top rule, never as a modal or drawer. Holds notes, checklist, links,
-  attachments, location, estimate, recurrence and reminders.
+- **Task detail dialog** (`TaskDetailDialog.jsx`, `.task-detail-*`) — the task
+  card's maximize-style open-details icon launches the complete Notes/
+  Checklist/Links/Attachments/Location/
+  Estimate/Repeat/Reminders editor in a centred overlay card. It uses the same
+  token-derived scrim, border, radius and restrained fade/scale/translate
+  motion as confirmation dialogs, closes on outside click or Escape, and
+  never expands the bucket column inline.
+- **Bucket configuration menu** (`BucketConfigMenu.jsx`, `.bucket-config-*`) —
+  a multi-select Settings dropdown built from the shared custom checkbox and
+  select-surface language. Options retain canonical chronological order;
+  Today and Later are disabled/required anchors. The panel uses the standard
+  short translate/fade transition and no shadow.
 - **Overdue tier card** (`.overdue-group`) — severity is expressed only by
   left-border weight and palette intensity: 3px `--line` (yesterday) → 3px
   lavender (a few days) → 5px accent (a week or more). No new hues, no red,
@@ -395,6 +411,12 @@ These are behavioural contracts, not styling. Change them deliberately.
 - **Overdue is not a bucket.** Overdue tasks are removed from the bucket grid
   entirely and rendered in their own section. Any that do surface elsewhere
   still carry the overdue treatment, so they never read as on-time.
+- **Visible bucket configuration is a persisted ordered subset.** Stored in
+  `localStorage` as `tidyline:bucket-order`, normalized against the canonical
+  Today → Later order on every load. Today and Later are always restored if a
+  stored value omits them. When an intermediate bucket is hidden, its deadline
+  range rolls forward into the next visible stage; Analytics and every distance
+  rail use that same active subset rather than the fixed seven-stage list.
 
 ## Component-specific direction (TidyLine)
 
@@ -435,16 +457,17 @@ These are behavioural contracts, not styling. Change them deliberately.
   - Deliberately *not* built: mood tracking, a projects list, and a team
     section from the reference. This app has no data for any of them, and
     inventing placeholder data for a dashboard would make it lie.
-- Bucket columns (Today/Week/2 Weeks/etc.): render as the bento grid above, not
-  seven identical white boxes. Give "Today" the dark card treatment since it's
-  the highest-priority bucket, and give every bucket a distance rail so the set
-  reads as an ordered sequence.
+- Bucket columns (Today/Week/2 Weeks/etc.): render the currently enabled subset
+  as the bento grid above, not identical white boxes. Give "Today" the dark card
+  treatment since it's the highest-priority bucket, and give every visible
+  bucket a distance rail so the set reads as an ordered sequence.
 - Dropping a task into another bucket rewrites its **actual deadline** to the
-  earliest date that still falls in that bucket (`BUCKET_START_DAYS`: 0/1/8/15/
-  31/91/366 days out). Earliest-in-range is chosen over a midpoint because it
-  preserves urgency, is deterministic, and is reversible — dragging back and
-  forth lands on predictable dates rather than drifting. Drag-and-drop is
-  mouse-only; the edit form is the keyboard-accessible equivalent.
+  earliest date represented by that bucket in the current visible subset. The
+  start is one day after the previous visible bucket's canonical upper bound;
+  for example, if Week is hidden, 2 Weeks begins at day 1 instead of day 8.
+  Earliest-in-range preserves urgency and remains deterministic/reversible.
+  Drag-and-drop is mouse-only; the edit form is the keyboard-accessible
+  equivalent.
 - Archiving sets an `archived` flag and hides the task from the board, Home and
   Analytics; it never deletes. Hard delete stays available as a separate,
   clearly destructive action. Both are undoable.

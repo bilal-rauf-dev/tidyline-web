@@ -3,6 +3,8 @@ import { parseImportedTasks, serializeTasks } from '../utils/tasksIO'
 import { isSoundEnabled, playChime, setSoundEnabled } from '../utils/notifications'
 import { ACCENT_OPTIONS, DENSITY_OPTIONS } from '../hooks/useTheme'
 import { Checkbox } from '../components/Checkbox'
+import { BucketConfigMenu } from '../components/BucketConfigMenu'
+import { BUCKET_ORDER } from '../utils/buckets'
 
 export function SettingsPage({
   tasks,
@@ -11,6 +13,9 @@ export function SettingsPage({
   clearCompleted,
   askBeforeDelete,
   onAskBeforeDeleteChange,
+  bucketOrder = BUCKET_ORDER,
+  onToggleBucket = () => {},
+  onResetBuckets = () => {},
 }) {
   const fileInputRef = useRef(null)
   const [soundOn, setSoundOn] = useState(isSoundEnabled)
@@ -136,6 +141,24 @@ export function SettingsPage({
           <button type="button" className="secondary" onClick={toggleSound}>
             {soundOn ? 'Mute' : 'Unmute'}
           </button>
+        </div>
+      </section>
+
+      <section className="entry-card" id="board-buckets">
+        <h2>Board timeline</h2>
+
+        <div className="settings-row">
+          <span>
+            Visible buckets
+            <small className="settings-note">
+              Today and Later stay visible; Overdue remains automatic and separate.
+            </small>
+          </span>
+          <BucketConfigMenu
+            bucketOrder={bucketOrder}
+            onToggleBucket={onToggleBucket}
+            onReset={onResetBuckets}
+          />
         </div>
       </section>
 

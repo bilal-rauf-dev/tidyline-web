@@ -640,38 +640,14 @@ button {
   gap: 1rem;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   grid-auto-rows: minmax(150px, auto);
-  grid-template-areas:
-    "today today week week"
-    "today today twoWeeks month"
-    "quarter year later later";
+  grid-auto-flow: dense;
+  overflow-anchor: none;
 }
 
-.bucket-today {
-  grid-area: today;
-}
-
-.bucket-week {
-  grid-area: week;
-}
-
-.bucket-twoWeeks {
-  grid-area: twoWeeks;
-}
-
-.bucket-month {
-  grid-area: month;
-}
-
-.bucket-quarter {
-  grid-area: quarter;
-}
-
-.bucket-year {
-  grid-area: year;
-}
-
+.bucket-today,
+.bucket-week,
 .bucket-later {
-  grid-area: later;
+  grid-column: span 2;
 }
 
 .bucket-column {
@@ -689,16 +665,21 @@ button {
   color: var(--text-on-dark);
 }
 
-/* Primitive: distance rail — connected bucket stages, never percentage fill */
+/* Primitive: distance rail — explicit pill exception requested for timeline stages */
 
 .distance-rail {
   position: relative;
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-template-columns: repeat(var(--rail-stages, 7), minmax(0, 1fr));
   align-items: center;
   justify-items: center;
-  height: 14px;
+  height: 28px;
+  padding-inline: 0.65rem;
   margin-bottom: 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--bg);
+  overflow: hidden;
   transition:
     height var(--dur-move) var(--ease),
     margin-bottom var(--dur-move) var(--ease),
@@ -708,50 +689,55 @@ button {
 .distance-rail::before {
   content: '';
   position: absolute;
-  left: calc(100% / 14);
-  right: calc(100% / 14);
+  left: 1rem;
+  right: 1rem;
   top: 50%;
-  height: 1px;
-  background: var(--line);
-  transform: translateY(-50%);
+  border-top: 1px dashed var(--text-soft);
+  opacity: 0.55;
+  transform: translateY(-0.5px);
 }
 
 .rail-node {
   position: relative;
   z-index: 1;
-  width: 7px;
-  height: 7px;
-  border: 1px solid var(--line);
-  border-radius: 2px;
-  background: var(--surface);
+  width: 9px;
+  height: 9px;
+  border: 1px solid var(--text-soft);
+  border-radius: 50%;
+  background: var(--bg);
 }
 
 .rail-node.passed {
   border-color: var(--text-soft);
-  background: var(--text-soft);
-  opacity: 0.5;
+  background: var(--bg);
+  opacity: 1;
 }
 
 .rail-node.current {
-  width: 11px;
-  height: 11px;
+  width: 12px;
+  height: 12px;
   border-color: var(--accent);
   background: var(--accent);
 }
 
 .bucket-column.dark .distance-rail::before {
-  background: var(--line-on-dark);
+  border-top-color: var(--text-on-dark-soft);
+}
+
+.bucket-column.dark .distance-rail {
+  border-color: var(--line-on-dark);
+  background: rgba(245, 244, 242, 0.06);
 }
 
 .bucket-column.dark .rail-node {
-  border-color: var(--line-on-dark);
+  border-color: var(--text-on-dark-soft);
   background: var(--surface-dark);
 }
 
 .bucket-column.dark .rail-node.passed {
   border-color: var(--text-on-dark-soft);
-  background: var(--text-on-dark-soft);
-  opacity: 0.65;
+  background: var(--surface-dark);
+  opacity: 1;
 }
 
 .bucket-column.dark .rail-node.current {
@@ -837,7 +823,7 @@ button {
 
 .task.pinned {
   border-left: 2px solid var(--accent-soft);
-  padding-left: 0.55rem;
+  padding-left: 0.75rem;
 }
 
 .task.selected {
@@ -1069,6 +1055,11 @@ button {
   animation: menu-in var(--dur-fast) var(--ease);
 }
 
+.select-menu.closing {
+  pointer-events: none;
+  animation: menu-out var(--dur-fast) var(--ease) forwards;
+}
+
 @keyframes menu-in {
   from {
     transform: translateY(-0.3rem);
@@ -1078,6 +1069,18 @@ button {
   to {
     transform: translateY(0);
     opacity: 1;
+  }
+}
+
+@keyframes menu-out {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+
+  to {
+    transform: translateY(-0.25rem);
+    opacity: 0;
   }
 }
 
@@ -1170,17 +1173,17 @@ button {
 
 .task.overdue-1 {
   border-left: 2px solid var(--line);
-  padding-left: 0.55rem;
+  padding-left: 0.75rem;
 }
 
 .task.overdue-2 {
   border-left: 3px solid var(--accent-soft);
-  padding-left: 0.55rem;
+  padding-left: 0.75rem;
 }
 
 .task.overdue-3 {
   border-left: 4px solid var(--accent);
-  padding-left: 0.55rem;
+  padding-left: 0.75rem;
 }
 
 .overdue-section {
@@ -1262,6 +1265,25 @@ button {
   transform: rotate(-90deg);
 }
 
+.bucket-content {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  opacity: 1;
+  transition:
+    grid-template-rows var(--dur-fast) var(--ease),
+    opacity var(--dur-fast) var(--ease);
+}
+
+.bucket-content.collapsed {
+  grid-template-rows: minmax(0, 0fr);
+  opacity: 0;
+}
+
+.bucket-content-inner {
+  min-height: 0;
+  overflow: hidden;
+}
+
 .bucket-progress {
   height: 3px;
   background: var(--line);
@@ -1289,8 +1311,26 @@ button {
 
 .today-sticky-sentinel {
   display: block;
+  position: relative;
   height: 0;
   pointer-events: none;
+  overflow-anchor: none;
+}
+
+.today-expand-marker,
+.today-collapse-marker {
+  position: absolute;
+  left: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.today-expand-marker {
+  top: 1rem;
+}
+
+.today-collapse-marker {
+  top: 3.5rem;
 }
 
 /* Shared square checkbox control — the accent carries the checked state. */
@@ -1353,6 +1393,14 @@ button {
   outline-offset: 2px;
 }
 
+.custom-checkbox input:disabled {
+  cursor: not-allowed;
+}
+
+.custom-checkbox input:disabled + .custom-checkbox-mark {
+  opacity: 0.55;
+}
+
 .bucket-column.dark .custom-checkbox-mark {
   border-color: var(--line-on-dark);
   background: transparent;
@@ -1389,7 +1437,7 @@ button {
   margin-bottom: 0.35rem;
 }
 
-/* Expanded task details */
+/* Task detail content, hosted by the overlay dialog. */
 
 .task-details-panel {
   display: grid;
@@ -1415,19 +1463,25 @@ button {
   gap: 0.8rem;
   padding-top: 0.8rem;
   border-top: 1px solid var(--line);
-  animation: detail-in var(--dur-move) var(--ease);
 }
 
-@keyframes detail-in {
-  from {
-    transform: translateY(-0.35rem);
-    opacity: 0;
-  }
+.task-entry-details {
+  display: grid;
+  grid-template-rows: minmax(0, 0fr);
+  opacity: 0;
+  transition:
+    grid-template-rows var(--dur-fast) var(--ease),
+    opacity var(--dur-fast) var(--ease);
+}
 
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
+.task-entry-details.open {
+  grid-template-rows: minmax(0, 1fr);
+  opacity: 1;
+}
+
+.task-entry-details-inner {
+  min-height: 0;
+  overflow: hidden;
 }
 
 .task-draft-details textarea {
@@ -1451,10 +1505,6 @@ button {
 
 .detail-add-row.draft-single-row {
   grid-template-columns: minmax(0, 1fr) auto;
-}
-
-.bucket-column.dark .task-details-panel {
-  border-top-color: var(--line-on-dark);
 }
 
 .task-details-panel textarea {
@@ -1648,6 +1698,81 @@ button {
 .accent-choices {
   display: flex;
   gap: 0.4rem;
+}
+
+.bucket-config {
+  position: relative;
+  width: min(17rem, 100%);
+}
+
+.bucket-config-panel {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  right: 0;
+  z-index: 30;
+  width: 100%;
+  min-width: 15rem;
+  visibility: hidden;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-0.3rem);
+  transition:
+    opacity var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease),
+    visibility 0s linear var(--dur-fast);
+}
+
+.bucket-config-panel.open {
+  visibility: visible;
+  pointer-events: auto;
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    opacity var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease),
+    visibility 0s;
+}
+
+.bucket-config-surface {
+  display: grid;
+  gap: 0.65rem;
+  padding: 0.55rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-btn);
+  background: var(--surface);
+}
+
+.bucket-config-list {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.bucket-config-option {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 2.25rem;
+  padding: 0.35rem 0.45rem;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.bucket-config-option > span:last-child {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.6rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.bucket-config-option small {
+  color: var(--text-soft);
+  font-size: 0.68rem;
+}
+
+.bucket-config-reset {
+  justify-self: stretch;
 }
 
 .accent-swatch {
@@ -1883,6 +2008,96 @@ button {
   }
 }
 
+@keyframes dialog-out {
+  from {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+
+  to {
+    transform: translateY(0.45rem) scale(0.985);
+    opacity: 0;
+  }
+}
+
+@keyframes scrim-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scrim-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+.task-detail-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
+.task-detail-scrim {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: rgba(20, 20, 22, 0.45);
+  background: color-mix(in srgb, var(--surface-dark) 45%, transparent);
+  animation: scrim-in var(--dur-fast) var(--ease);
+}
+
+.task-detail-dialog {
+  position: relative;
+  width: min(720px, 100%);
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+  padding: 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  color: var(--text);
+  animation: dialog-in var(--dur-move) var(--ease);
+}
+
+.task-detail-layer.closing .task-detail-scrim {
+  pointer-events: none;
+  animation: scrim-out var(--dur-fast) var(--ease) forwards;
+}
+
+.task-detail-layer.closing .task-detail-dialog {
+  pointer-events: none;
+  animation: dialog-out var(--dur-fast) var(--ease) forwards;
+}
+
+.task-detail-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.task-detail-heading h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  overflow-wrap: anywhere;
+}
+
+.task-detail-heading span {
+  display: block;
+  margin-top: 0.3rem;
+  color: var(--text-soft);
+  font-size: 0.8rem;
+}
+
+.task-detail-dialog .task-details-panel {
+  margin-top: 1rem;
+  padding-top: 1rem;
+}
+
 .confirm-dialog h2 {
   margin: 0;
   font-size: 1.2rem;
@@ -1939,12 +2154,13 @@ button {
 .task-body {
   display: flex;
   align-items: flex-start;
-  gap: 0.8rem;
+  gap: 0.95rem;
   margin-top: 0.5rem;
 }
 
 .deadline-stat {
   flex-shrink: 0;
+  padding-inline: 0.25rem 0.45rem;
   text-align: center;
   line-height: 1;
 }
@@ -2771,11 +2987,12 @@ button {
 @container app-content (max-width: 1120px) {
   .buckets {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-areas:
-      "today today"
-      "week twoWeeks"
-      "month quarter"
-      "year later";
+  }
+
+  .bucket-today,
+  .bucket-week,
+  .bucket-later {
+    grid-column: 1 / -1;
   }
 
   .analytics-grid {
@@ -2815,6 +3032,10 @@ button {
   .analytics-grid > *,
   .home-grid > * {
     grid-area: auto;
+  }
+
+  .buckets > * {
+    grid-column: 1 / -1;
   }
 
   .field-group {
@@ -2906,6 +3127,10 @@ button {
   .analytics-grid > *,
   .home-grid > * {
     grid-area: auto;
+  }
+
+  .buckets > * {
+    grid-column: 1 / -1;
   }
 
   .entry-card,
@@ -3042,6 +3267,25 @@ button {
 
   .toast-message span {
     max-width: 100%;
+  }
+
+  .bucket-config {
+    width: 100%;
+  }
+
+  .bucket-config-panel {
+    left: 0;
+    right: auto;
+    min-width: 0;
+  }
+
+  .task-detail-layer {
+    padding: 0.75rem;
+  }
+
+  .task-detail-dialog {
+    max-height: calc(100dvh - 1.5rem);
+    padding: 1rem;
   }
 }
 

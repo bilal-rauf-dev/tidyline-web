@@ -210,11 +210,16 @@ export function TaskForm({
 
         <TagList tags={draftTags} />
 
-        {detailsOpen && (
-          <div id="task-entry-details">
+        <div
+          id="task-entry-details"
+          className={detailsOpen ? 'task-entry-details open' : 'task-entry-details'}
+          inert={detailsOpen ? undefined : true}
+          aria-hidden={!detailsOpen}
+        >
+          <div className="task-entry-details-inner">
             <TaskDraftDetails draft={details} onChange={setDetails} />
           </div>
-        )}
+        </div>
 
         <div className="form-footer">
           <button type="submit" className="primary">

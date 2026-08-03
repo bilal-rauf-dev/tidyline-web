@@ -14,12 +14,13 @@ import { RingStat } from '../components/RingStat'
 import { Sparkline } from '../components/Sparkline'
 import { TrendBars } from '../components/TrendBars'
 import { ActivityGrid } from '../components/ActivityGrid'
+import { BUCKET_ORDER } from '../utils/buckets'
 
-export function AnalyticsPage({ tasks: allTasks }) {
+export function AnalyticsPage({ tasks: allTasks, bucketOrder = BUCKET_ORDER }) {
   const tasks = useMemo(() => allTasks.filter((task) => !task.archived), [allTasks])
   const completion = useMemo(() => getCompletionStat(tasks), [tasks])
-  const topBuckets = useMemo(() => getTopBuckets(tasks, 2), [tasks])
-  const trends = useMemo(() => getBucketTrends(tasks), [tasks])
+  const topBuckets = useMemo(() => getTopBuckets(tasks, 2, bucketOrder), [tasks, bucketOrder])
+  const trends = useMemo(() => getBucketTrends(tasks, bucketOrder), [tasks, bucketOrder])
   const busiest = useMemo(() => getBusiestDay(tasks), [tasks])
   const heatmap = useMemo(() => getActivityHeatmap(tasks), [tasks])
   const heatmapSummary = useMemo(() => summarizeHeatmap(heatmap), [heatmap])

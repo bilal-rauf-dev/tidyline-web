@@ -229,8 +229,8 @@ export function useTasks() {
     commit('Task rescheduled', mapTask(id, { deadline }))
   }
 
-  function moveTaskToBucket(id, bucketKey) {
-    setDeadline(id, deadlineForBucket(bucketKey))
+  function moveTaskToBucket(id, bucketKey, bucketOrder) {
+    setDeadline(id, deadlineForBucket(bucketKey, new Date(), bucketOrder))
   }
 
   function setRecurrence(id, recurrence) {

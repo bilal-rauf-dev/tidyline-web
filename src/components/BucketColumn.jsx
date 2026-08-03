@@ -12,6 +12,7 @@ export function BucketColumn({
   compact = false,
   onToggleCollapse,
   selectedIds = [],
+  bucketOrder,
   ...taskHandlers
 }) {
   const [isOver, setIsOver] = useState(false)
@@ -56,7 +57,7 @@ export function BucketColumn({
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      <DistanceRail bucketKey={bucketKey} />
+      <DistanceRail bucketKey={bucketKey} bucketOrder={bucketOrder} />
 
       <div className="bucket-header">
         {isToday ? (
@@ -94,21 +95,28 @@ export function BucketColumn({
         <div className="bucket-progress-fill" style={{ width: `${percent}%` }} />
       </div>
 
-      {!collapsed &&
-        (tasks.length === 0 ? (
-          <p className="empty">No tasks yet.</p>
-        ) : (
-          <ul className="task-list">
-            {tasks.map((task) => (
-              <TaskCard
-                key={task.id}
-                task={task}
-                selected={selectedIds.includes(task.id)}
-                {...taskHandlers}
-              />
-            ))}
-          </ul>
-        ))}
+      <div
+        className={collapsed ? 'bucket-content collapsed' : 'bucket-content'}
+        inert={collapsed ? true : undefined}
+        aria-hidden={collapsed}
+      >
+        <div className="bucket-content-inner">
+          {tasks.length === 0 ? (
+            <p className="empty">No tasks yet.</p>
+          ) : (
+            <ul className="task-list">
+              {tasks.map((task) => (
+                <TaskCard
+                  key={task.id}
+                  task={task}
+                  selected={selectedIds.includes(task.id)}
+                  {...taskHandlers}
+                />
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
     </article>
   )
 }

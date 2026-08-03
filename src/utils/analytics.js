@@ -24,10 +24,10 @@ export function getCompletionStat(tasks) {
  * Top buckets by task count, with per-bucket completion.
  * Feeds the ring-stat tiles.
  */
-export function getTopBuckets(tasks, limit = 2) {
-  const grouped = groupTasksByBucket(tasks)
+export function getTopBuckets(tasks, limit = 2, bucketOrder = BUCKET_ORDER) {
+  const grouped = groupTasksByBucket(tasks, new Date(), undefined, bucketOrder)
 
-  return BUCKET_ORDER.map((bucket) => {
+  return bucketOrder.map((bucket) => {
     const list = grouped[bucket]
     const done = list.filter((task) => task.done).length
 
@@ -49,15 +49,15 @@ export function getTopBuckets(tasks, limit = 2) {
  * existed a week ago (by createdAt) are re-bucketed against a reference date
  * of today-7d. No new task fields are introduced.
  */
-export function getBucketTrends(tasks) {
+export function getBucketTrends(tasks, bucketOrder = BUCKET_ORDER) {
   const now = new Date()
   const lastWeek = new Date(now.getTime() - WEEK_MS)
 
-  const current = groupTasksByBucket(tasks, now)
+  const current = groupTasksByBucket(tasks, now, undefined, bucketOrder)
   const existedLastWeek = tasks.filter((task) => new Date(task.createdAt) <= lastWeek)
-  const prior = groupTasksByBucket(existedLastWeek, lastWeek)
+  const prior = groupTasksByBucket(existedLastWeek, lastWeek, undefined, bucketOrder)
 
-  return BUCKET_ORDER.map((bucket) => ({
+  return bucketOrder.map((bucket) => ({
     bucket,
     label: BUCKET_LABELS[bucket],
     count: current[bucket].length,

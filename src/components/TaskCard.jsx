@@ -6,12 +6,12 @@ import { describeRecurrence } from '../utils/recurrence'
 import {
   ArchiveIcon,
   CalendarIcon,
-  ChevronDownIcon,
   CopyIcon,
   EditIcon,
   GripIcon,
   LinkIcon,
   NotesIcon,
+  OpenDetailsIcon,
   PinIcon,
   RepeatIcon,
   TagIcon,
@@ -19,7 +19,7 @@ import {
 } from './icons'
 import { TagList } from './TagList'
 import { DayContext } from './DayContext'
-import { TaskDetails } from './TaskDetails'
+import { TaskDetailDialog } from './TaskDetailDialog'
 import { Checkbox } from './Checkbox'
 
 export function TaskCard({
@@ -50,17 +50,12 @@ export function TaskCard({
       return undefined
     }
 
-    let scrollFrame
     const expandFrame = requestAnimationFrame(() => {
       setIsExpanded(true)
-      scrollFrame = requestAnimationFrame(() => {
-        taskRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      })
     })
 
     return () => {
       cancelAnimationFrame(expandFrame)
-      cancelAnimationFrame(scrollFrame)
     }
   }, [expandTaskId, task.id])
 
@@ -234,10 +229,10 @@ export function TaskCard({
                 className={isExpanded ? 'icon-mini is-on' : 'icon-mini'}
                 onClick={() => setIsExpanded((value) => !value)}
                 aria-expanded={isExpanded}
-                aria-label={isExpanded ? `Collapse ${task.title}` : `Expand ${task.title}`}
+                aria-label={isExpanded ? `Close ${task.title} details` : `Open ${task.title} details`}
                 title="Details"
               >
-                <ChevronDownIcon />
+                <OpenDetailsIcon />
               </button>
 
               <button
@@ -292,11 +287,16 @@ export function TaskCard({
               </button>
             </div>
 
-            {isExpanded && (
-              <TaskDetails task={task} handlers={{ ...detailHandlers, onUpdate }} />
-            )}
           </div>
         </div>
+      )}
+
+      {isExpanded && (
+        <TaskDetailDialog
+          task={task}
+          handlers={{ ...detailHandlers, onUpdate }}
+          onClose={() => setIsExpanded(false)}
+        />
       )}
     </li>
   )

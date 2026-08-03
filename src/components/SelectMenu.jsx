@@ -1,10 +1,29 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { ChevronDownIcon } from './icons'
 
 export function SelectMenu({ value, options, onChange, ariaLabel, className = '' }) {
   const [isOpen, setIsOpen] = useState(false)
+  const [isMounted, setIsMounted] = useState(false)
   const rootRef = useRef(null)
+  const closeTimerRef = useRef(null)
   const selected = options.find((option) => String(option.value) === String(value)) ?? options[0]
+
+  const closeMenu = useCallback(() => {
+    setIsOpen(false)
+    window.clearTimeout(closeTimerRef.current)
+    closeTimerRef.current = window.setTimeout(() => setIsMounted(false), 160)
+  }, [])
+
+  function toggleMenu() {
+    if (isOpen) {
+      closeMenu()
+      return
+    }
+
+    window.clearTimeout(closeTimerRef.current)
+    setIsMounted(true)
+    setIsOpen(true)
+  }
 
   useEffect(() => {
     if (!isOpen) {
@@ -13,13 +32,13 @@ export function SelectMenu({ value, options, onChange, ariaLabel, className = ''
 
     function handlePointerDown(event) {
       if (!rootRef.current?.contains(event.target)) {
-        setIsOpen(false)
+        closeMenu()
       }
     }
 
     function handleKeyDown(event) {
       if (event.key === 'Escape') {
-        setIsOpen(false)
+        closeMenu()
       }
     }
 
@@ -29,7 +48,9 @@ export function SelectMenu({ value, options, onChange, ariaLabel, className = ''
       document.removeEventListener('pointerdown', handlePointerDown)
       window.removeEventListener('keydown', handleKeyDown)
     }
-  }, [isOpen])
+  }, [closeMenu, isOpen])
+
+  useEffect(() => () => window.clearTimeout(closeTimerRef.current), [])
 
   return (
     <div ref={rootRef} className={['select-menu-control', className].filter(Boolean).join(' ')}>
@@ -39,14 +60,18 @@ export function SelectMenu({ value, options, onChange, ariaLabel, className = ''
         aria-label={ariaLabel}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
-        onClick={() => setIsOpen((open) => !open)}
+        onClick={toggleMenu}
       >
         <span>{selected?.label ?? ''}</span>
         <ChevronDownIcon />
       </button>
 
-      {isOpen && (
-        <div className="select-menu" role="listbox" aria-label={ariaLabel}>
+      {isMounted && (
+        <div
+          className={isOpen ? 'select-menu open' : 'select-menu closing'}
+          role="listbox"
+          aria-label={ariaLabel}
+        >
           {options.map((option) => {
             const isSelected = String(option.value) === String(value)
 
@@ -59,7 +84,7 @@ export function SelectMenu({ value, options, onChange, ariaLabel, className = ''
                 className={isSelected ? 'select-option selected' : 'select-option'}
                 onClick={() => {
                   onChange(option.value)
-                  setIsOpen(false)
+                  closeMenu()
                 }}
               >
                 {option.label}
