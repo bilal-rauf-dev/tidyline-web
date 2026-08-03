@@ -30,6 +30,7 @@ export function BoardPage({
 
   const boardRef = useRef(null)
   const todaySentinelRef = useRef(null)
+  const todayCompactRef = useRef(false)
   const tick = useTimeTick()
   // `now` is derived purely from the tick, so every time-sensitive memo below
   // has an honest dependency instead of a suppressed lint warning.
@@ -43,6 +44,8 @@ export function BoardPage({
   const [isTodayCompact, setIsTodayCompact] = useState(false)
 
   useEffect(() => {
+    let frameId = 0
+
     function syncTodaySummary() {
       const sentinelTop = todaySentinelRef.current?.getBoundingClientRect().top
 
@@ -50,17 +53,31 @@ export function BoardPage({
         return
       }
 
-      // The Today card becomes sticky at 0.75rem (12px). Compact only after
-      // its original position has travelled another ~52px past that point.
-      setIsTodayCompact(sentinelTop <= -40)
+      // Use separate enter/exit thresholds around a sentinel that lives
+      // outside the card. The fixed reference avoids card-height feedback,
+      // while the 40px hysteresis band absorbs scroll anchoring/layout shifts.
+      const nextCompact = todayCompactRef.current
+        ? sentinelTop < -16
+        : sentinelTop <= -56
+
+      if (nextCompact !== todayCompactRef.current) {
+        todayCompactRef.current = nextCompact
+        setIsTodayCompact(nextCompact)
+      }
+    }
+
+    function scheduleSync() {
+      cancelAnimationFrame(frameId)
+      frameId = requestAnimationFrame(syncTodaySummary)
     }
 
     syncTodaySummary()
-    window.addEventListener('scroll', syncTodaySummary, { passive: true })
-    window.addEventListener('resize', syncTodaySummary)
+    window.addEventListener('scroll', scheduleSync, { passive: true })
+    window.addEventListener('resize', scheduleSync)
     return () => {
-      window.removeEventListener('scroll', syncTodaySummary)
-      window.removeEventListener('resize', syncTodaySummary)
+      cancelAnimationFrame(frameId)
+      window.removeEventListener('scroll', scheduleSync)
+      window.removeEventListener('resize', scheduleSync)
     }
   }, [])
 

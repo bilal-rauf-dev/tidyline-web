@@ -164,12 +164,13 @@ new chart type for a new page without adding it here first.
   **outlined** = nothing. Hatching is a 45° repeating hard-stop stripe, not a
   blended gradient. This is the standard renderer for any date-shaped data.
 
-- **Distance rail** (`DistanceRail.jsx`) — seven ticks, one per bucket, sitting
-  at the top of every bucket card. The tick for the current bucket is a
-  full-height accent bar; ticks nearer than it stay solid, ticks beyond it
-  fade to the border colour. This is what makes the seven bucket cards read as
-  one Today → Later sequence rather than seven interchangeable boxes. It is a
-  positional glyph, not a progress bar — nothing "fills up".
+- **Distance rail** (`DistanceRail.jsx`) — seven small square nodes joined by
+  one thin line, one node per bucket, sitting at the top of every bucket card.
+  Earlier nodes are solid neutral marks, the current node is enlarged and uses
+  the active accent, and later nodes remain outlined. This makes the seven
+  bucket cards read as one Today → Later sequence while staying immediately
+  distinct from percentage bars: the connector never fills and no segment
+  changes width. Dark cards use the same geometry with on-dark line tokens.
 
 Deltas render as plain signed text (`+2`, `-1`, `–` for zero) — never a
 coloured pill, and never a green/red semantic pair.
@@ -338,8 +339,15 @@ The following are the default outputs of AI-generated UI and are banned outright
   is `visibility: hidden` so off-screen nav items are not focusable.
 - The desktop collapse preference is explicitly ignored below 720px — the
   drawer always shows full labels regardless of collapse state.
+- Route grids also respond to the **available content width**: at 680px or
+  less beside the sidebar, Board buckets and Home/Analytics cards become one
+  full-width column. This covers small tablets where the outer viewport is
+  wide but the permanent sidebar leaves phone-sized route space.
 - Backdrop is the dark surface token at 45% alpha (`color-mix`), not a new
-  color and not a frosted/blurred panel.
+  color and not a frosted/blurred panel. A preceding
+  `rgba(20, 20, 22, 0.45)` declaration is the compatibility fallback for
+  browsers without `color-mix()`; supporting browsers override it with the
+  token-derived value.
 - Main content area keeps the `#F2F0EC` background and existing card
   tokens exactly as defined above; only the sidebar introduces the dark
   surface as permanent chrome.
