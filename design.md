@@ -76,7 +76,8 @@ existing palette rather than introducing a new hue:
 ## Shape and elevation
 
 - Card corner radius: 16–20px. Buttons: 10–12px. Nothing is a full pill/capsule
-  shape except a genuine toggle switch.
+  shape except a genuine toggle switch and the explicitly documented distance
+  rail track. The rail is positional chart geometry, never a badge or button.
 - No drop shadows for depth. Cards are separated by background color contrast
   (white card on `#F2F0EC` page, or a solid dark card) — not `box-shadow` blur.
 - If a shadow is used at all, it's a 1px hard-edge or none. Never a soft
@@ -108,6 +109,12 @@ draws attention to itself.
   element that moves, not a border toggling on and off per item.
 - Everything above collapses to ~0ms under `prefers-reduced-motion: reduce`,
   set globally in `index.css`.
+- The sticky due-today summary uses two fixed, out-of-flow
+  `IntersectionObserver` markers before the bucket grid: one collapse marker
+  and one earlier expand marker. Keep scroll anchoring disabled on the dynamic
+  bucket region so the summary's own height transition cannot feed back into
+  its compact state. Do not derive this state from the summary card's geometry
+  or a raw `window.scrollY` threshold.
 - **Living timeline (FLIP).** When wall-clock time moves a task into a
   different bucket, the card animates from its old column position to its new
   one instead of teleporting. Implemented as measure → apply → invert → play
@@ -164,12 +171,13 @@ new chart type for a new page without adding it here first.
   **outlined** = nothing. Hatching is a 45° repeating hard-stop stripe, not a
   blended gradient. This is the standard renderer for any date-shaped data.
 
-- **Distance rail** (`DistanceRail.jsx`) — seven ticks, one per bucket, sitting
-  at the top of every bucket card. The tick for the current bucket is a
-  full-height accent bar; ticks nearer than it stay solid, ticks beyond it
-  fade to the border colour. This is what makes the seven bucket cards read as
-  one Today → Later sequence rather than seven interchangeable boxes. It is a
-  positional glyph, not a progress bar — nothing "fills up".
+- **Distance rail** (`DistanceRail.jsx`) — the one intentional pill-shaped
+  chart container in the system. A muted rounded track holds one evenly spaced
+  circular node per currently enabled bucket, joined by a thin **dashed** line.
+  The current bucket node is solid `--accent`; every other node stays outlined
+  and muted. The dashed connector never fills, so the rail reads as ordered
+  timeline position rather than completion percentage. Dark cards keep the
+  same geometry and switch only to the existing on-dark line tokens.
 
 Deltas render as plain signed text (`+2`, `-1`, `–` for zero) — never a
 coloured pill, and never a green/red semantic pair.
@@ -206,13 +214,18 @@ coloured pill, and never a green/red semantic pair.
   tokens. Board filters, reminder presets, recurrence and duration all use it.
 - **Creation detail panel** (`TaskDraftDetails.jsx`, `.task-draft-details`) —
   the optional inline extension of Add Task. It reuses the same Notes,
-  Checklist, Links, Attachments, Location, Estimate and Repeat controls as an
-  expanded task, starts collapsed, and stays inside the utility form rather
-  than becoming a modal or separate workflow.
+  Checklist, Links, Attachments, Location, Estimate, Energy, Waiting and Repeat
+  controls as an expanded task, starts collapsed, and stays inside the utility
+  form rather than becoming a modal or separate workflow. Its template picker
+  prefills reusable details only; title and deadline always stay task-specific.
 - **Tag mark** (`TagList.jsx`) — flat rectangle with a 2px left border and no
   background, **never a rounded pill**. Tone is assigned deterministically by
   hashing the tag name across three palette values only (neutral, lavender,
   coral), so a given tag is always the same colour and no new hues enter.
+- **Energy selector/mark** (`EnergyLevelControl.jsx`, `.energy-*`) — a compact
+  segmented control for the optional `low`, `normal`, and `deep-focus` values,
+  including an explicit Unset state. Task cards render the value as a small
+  dot plus plain label with a flat left rule, never as a filled pill badge.
 - **Day-context panel** (`DayContext.jsx`) — left-bordered lavender panel that
   appears under a date or time field once a value is picked, listing what is
   already scheduled that day (or within 2h, for reminders). Renders nothing
@@ -235,14 +248,49 @@ coloured pill, and never a green/red semantic pair.
 - **Countdown label** (`.countdown`) — plain bold micro-text on the card
   ("3 days left", "today", "2 days overdue"), turning accent-coloured once
   negative. Text only; never a coloured pill.
+- **Deadline risk mark** (`risk.js`, `.risk-mark`) — a derived plain-text mark
+  with a 2px left rule. Neutral = low risk, lavender = getting tight, accent =
+  at risk. It is never stored or backfilled and never becomes a filled badge;
+  the score recomputes from time, estimate, open checklist work, postponements,
+  same-day load and optional energy on each Board time tick. The exact weights
+  and thresholds live beside the heuristic in `risk.js`.
 - **Task flag row** (`.task-meta`) — the collapsed card's summary line: the
   countdown plus small glyphs for repeat/notes/links and text counts for
   checklist progress (`1/3`) and duration. Glyphs only appear when the field
   has content, so a bare task stays bare. This is what keeps rich detail from
   making every card noisy.
-- **Expandable detail panel** (`.task-details-panel`) — opens inside the card
-  under a top rule, never as a modal or drawer. Holds notes, checklist, links,
-  attachments, location, estimate, recurrence and reminders.
+- **Task detail dialog** (`TaskDetailDialog.jsx`, `.task-detail-*`) — the task
+  card's maximize-style open-details icon launches the complete Notes/
+  Checklist/Links/Attachments/Location/
+  Estimate/Repeat/Reminders editor in a centred overlay card. It uses the same
+  token-derived scrim, border, radius and restrained fade/scale/translate
+  motion as confirmation dialogs, closes on outside click or Escape, and
+  never expands the bucket column inline.
+- **Bucket configuration menu** (`BucketConfigMenu.jsx`, `.bucket-config-*`) —
+  a multi-select Settings dropdown built from the shared custom checkbox and
+  select-surface language. Options retain canonical chronological order;
+  Today and Later are disabled/required anchors. The panel uses the standard
+  short translate/fade transition and no shadow.
+- **Saved filter bar** (`SavedFilterBar.jsx`, `.saved-filter-*`) — a flat
+  left-ruled surface above Board filters. A standard select menu applies named
+  filter snapshots; adjacent plain inputs save/delete them. Saved views compose
+  existing search, tag, status, energy, duration, pin, date and sort fields and
+  never create a second project/category taxonomy.
+- **Planner block** (`PlannerPage.jsx`, `.planner-block`) — a rectangular dark
+  time block on an hourly ruled surface. Vertical position encodes
+  `scheduledStart`; height encodes the existing duration. The coral resize edge
+  is functional chart geometry, not decoration. No shadows, rounded pills or
+  calendar-event gradients.
+- **Workload redistribution dialog** (`WorkloadRedistributeDialog.jsx`) — the
+  standard confirmation-dialog surface showing a proposed list of deadline
+  moves before any mutation. Flexible means active, unpinned, non-waiting,
+  non-recurring and not already time-blocked. Candidate dates are the next
+  three days and respect start dates; confirmation uses normal Calendar
+  rescheduling so later moves enter postpone history.
+- **Daily shutdown dialog** (`ShutdownDialog.jsx`) — a manually opened standard
+  dialog from Home. It summarizes actionable due/planned work for the local
+  day and gives each unfinished task Tomorrow, another date, keep, and archive
+  actions. It never auto-opens and adds no prompt preference or stored status.
 - **Overdue tier card** (`.overdue-group`) — severity is expressed only by
   left-border weight and palette intensity: 3px `--line` (yesterday) → 3px
   lavender (a few days) → 5px accent (a week or more). No new hues, no red,
@@ -338,8 +386,15 @@ The following are the default outputs of AI-generated UI and are banned outright
   is `visibility: hidden` so off-screen nav items are not focusable.
 - The desktop collapse preference is explicitly ignored below 720px — the
   drawer always shows full labels regardless of collapse state.
+- Route grids also respond to the **available content width**: at 680px or
+  less beside the sidebar, Board buckets and Home/Analytics cards become one
+  full-width column. This covers small tablets where the outer viewport is
+  wide but the permanent sidebar leaves phone-sized route space.
 - Backdrop is the dark surface token at 45% alpha (`color-mix`), not a new
-  color and not a frosted/blurred panel.
+  color and not a frosted/blurred panel. A preceding
+  `rgba(20, 20, 22, 0.45)` declaration is the compatibility fallback for
+  browsers without `color-mix()`; supporting browsers override it with the
+  token-derived value.
 - Main content area keeps the `#F2F0EC` background and existing card
   tokens exactly as defined above; only the sidebar introduces the dark
   surface as permanent chrome.
@@ -364,8 +419,11 @@ These are behavioural contracts, not styling. Change them deliberately.
   deadline tool that is the correct bias — the board shows what is actually
   owed, not a projection.
   Carried to the next instance: title, tags, notes, links, attachments,
-  location, duration, reminders, recurrence rule. Reset: `done`,
-  `completedAt`, `pinned`, and every checklist tick.
+  location, duration, energy, reminders, recurrence rule, and the number of
+  lead days between start and deadline (shifted onto the new occurrence, not
+  copied as an old absolute date). Reset: `done`, `completedAt`, `pinned`,
+  `plannedDate`, `scheduledStart`, waiting state, `postponeHistory`, and every
+  checklist tick; the new deadline becomes that instance's `originalDeadline`.
 - **Relative reminders resolve at check time, not save time.** A "1 hour
   before" reminder stores `minutesBefore`, never a frozen timestamp, so
   editing the deadline moves the reminder with it. Freezing at save time would
@@ -387,6 +445,71 @@ These are behavioural contracts, not styling. Change them deliberately.
 - **Overdue is not a bucket.** Overdue tasks are removed from the bucket grid
   entirely and rendered in their own section. Any that do surface elsewhere
   still carry the overdue treatment, so they never read as on-time.
+- **Start date gates Board availability.** `startDate` is nullable and remains
+  separate from `deadline`. While `startDate` is after the local current date,
+  the task appears only in the Board's Upcoming section and is omitted from
+  deadline buckets and overdue calculations. At or after the start date it
+  enters normal bucketing automatically. Creation and editing block
+  `startDate > deadline`; imported invalid start dates normalize to null.
+- **Energy is opt-in.** `energyLevel` is nullable and accepts only `low`,
+  `normal`, or `deep-focus`. Existing tasks stay unset; no default is
+  backfilled. Board filtering is exact-match, including an Unset option.
+- **Planning does not rewrite the deadline.** `plannedDate` stores a local
+  `YYYY-MM-DD`, not a boolean. A task planned for the current date appears in
+  Today while continuing to display its real deadline. Stale dates are ignored
+  immediately and cleared from storage on the minute maintenance tick. A
+  future start date still gates the task; bucket drag clears `plannedDate` so
+  the drop remains authoritative.
+- **Postponements are append-only task history.** `postponeHistory` contains
+  `{ from, to, at, source }` records. A record is appended only when a real
+  deadline moves later, whether through manual edit, Board drag, or Calendar
+  drag; earlier moves never count. `originalDeadline` is captured when the
+  task instance is created, so an earlier edit before the first postponement
+  cannot erase the true original date. Recurring next instances and duplicates
+  capture their own new original deadline and begin with empty history.
+- **Time blocking is additive.** `scheduledStart` is a nullable local datetime.
+  The Day planner positions the task from that value and sizes it from the
+  existing duration (30 minutes when unset). Moving a block rewrites only
+  `scheduledStart`; resizing rewrites duration; removing it clears only
+  `scheduledStart`. Deadline bucketing is unaffected.
+- **Templates contain reusable configuration only.** Stored separately in
+  `localStorage` as `tidyline:task-templates`. A template may contain notes,
+  tags, checklist text, duration, reminder settings and recurrence. It never
+  stores title, deadline, start date, energy, planning, waiting, completion or
+  scheduling state. Applied checklist items receive fresh IDs.
+- **Saved views are filter snapshots.** Stored in `localStorage` as
+  `tidyline:saved-filters`; applying one replaces the complete Board filter and
+  sort state. Duration values are normalized to minutes for comparison, and
+  tasks without an estimate count as zero minutes.
+- **Waiting is blocked, not completed.** `status: 'waiting'` carries
+  `waitingFor` and `followUpDate`. Waiting cards stay in their deadline bucket
+  with a muted lavender left rule but are excluded from actionable Today and
+  overdue metrics. At the local follow-up date the minute maintenance pass
+  restores `status: 'active'` and clears both waiting fields. No implicit
+  browser notification is fired: notification permission remains tied to an
+  explicit reminder choice, while release back to the Board is automatic.
+- **Someday/Maybe has a genuinely null deadline.** `deadline: null` records live
+  only on the Someday page and are excluded from Board buckets, Calendar, Home
+  and Analytics deadline metrics. Promotion assigns the first real deadline
+  and captures it as `originalDeadline`; it does not recreate or duplicate the
+  task.
+- **Calendar overload is estimate-only and user-configurable.** The persisted
+  `tidyline:overload-hours` threshold defaults to 6 hours. Calendar cells sum
+  real task estimates and separately disclose unestimated tasks; missing
+  estimates add zero rather than fabricated time. Overloaded days use a flat
+  accent outline. Redistribution is always previewed and confirmed, never
+  automatic.
+- **Postpone Analytics reads append-only history.** Average postponements uses
+  every deadline-bearing task, including zero-history tasks. The top-task list
+  sorts by history length; tag columns add each task's full postpone count to
+  every existing tag on that task. Untagged tasks affect the average but do not
+  invent an “untagged” category.
+- **Visible bucket configuration is a persisted ordered subset.** Stored in
+  `localStorage` as `tidyline:bucket-order`, normalized against the canonical
+  Today → Later order on every load. Today and Later are always restored if a
+  stored value omits them. When an intermediate bucket is hidden, its deadline
+  range rolls forward into the next visible stage; Analytics and every distance
+  rail use that same active subset rather than the fixed seven-stage list.
 
 ## Component-specific direction (TidyLine)
 
@@ -427,16 +550,17 @@ These are behavioural contracts, not styling. Change them deliberately.
   - Deliberately *not* built: mood tracking, a projects list, and a team
     section from the reference. This app has no data for any of them, and
     inventing placeholder data for a dashboard would make it lie.
-- Bucket columns (Today/Week/2 Weeks/etc.): render as the bento grid above, not
-  seven identical white boxes. Give "Today" the dark card treatment since it's
-  the highest-priority bucket, and give every bucket a distance rail so the set
-  reads as an ordered sequence.
+- Bucket columns (Today/Week/2 Weeks/etc.): render the currently enabled subset
+  as the bento grid above, not identical white boxes. Give "Today" the dark card
+  treatment since it's the highest-priority bucket, and give every visible
+  bucket a distance rail so the set reads as an ordered sequence.
 - Dropping a task into another bucket rewrites its **actual deadline** to the
-  earliest date that still falls in that bucket (`BUCKET_START_DAYS`: 0/1/8/15/
-  31/91/366 days out). Earliest-in-range is chosen over a midpoint because it
-  preserves urgency, is deterministic, and is reversible — dragging back and
-  forth lands on predictable dates rather than drifting. Drag-and-drop is
-  mouse-only; the edit form is the keyboard-accessible equivalent.
+  earliest date represented by that bucket in the current visible subset. The
+  start is one day after the previous visible bucket's canonical upper bound;
+  for example, if Week is hidden, 2 Weeks begins at day 1 instead of day 8.
+  Earliest-in-range preserves urgency and remains deterministic/reversible.
+  Drag-and-drop is mouse-only; the edit form is the keyboard-accessible
+  equivalent.
 - Archiving sets an `archived` flag and hides the task from the board, Home and
   Analytics; it never deletes. Hard delete stays available as a separate,
   clearly destructive action. Both are undoable.

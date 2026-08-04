@@ -1,5 +1,6 @@
 import {
   ClockIcon,
+  CalendarIcon,
   CloseIcon,
   LinkIcon,
   MapPinIcon,
@@ -9,6 +10,8 @@ import {
 } from './icons'
 import { RecurrencePicker } from './RecurrencePicker'
 import { SelectMenu } from './SelectMenu'
+import { EnergyLevelControl } from './EnergyLevelControl'
+import { toDateStr } from '../utils/calendar'
 
 function addNamedUrl(draft, onChange, type) {
   const labelKey = type === 'links' ? 'linkLabel' : 'attachmentLabel'
@@ -82,7 +85,7 @@ function UrlDraft({ draft, onChange, type, label, urlLabel }) {
   )
 }
 
-export function TaskDraftDetails({ draft, onChange }) {
+export function TaskDraftDetails({ draft, deadline, onChange }) {
   function addChecklistItem() {
     const text = draft.checklistDraft.trim()
 
@@ -99,6 +102,68 @@ export function TaskDraftDetails({ draft, onChange }) {
 
   return (
     <div className="task-draft-details">
+      <div className="detail-grid detail-foundations">
+        <label className="field-icon">
+          <span className="field-icon-head">
+            <CalendarIcon />
+            Start date
+          </span>
+          <input
+            type="date"
+            value={draft.startDate}
+            max={deadline || undefined}
+            onChange={(event) => onChange({ ...draft, startDate: event.target.value })}
+          />
+        </label>
+
+        <EnergyLevelControl
+          value={draft.energyLevel}
+          onChange={(energyLevel) => onChange({ ...draft, energyLevel })}
+        />
+      </div>
+
+      <div className="waiting-control">
+        <div className="segmented" role="group" aria-label="Task status">
+          <button
+            type="button"
+            className={draft.status === 'active' ? 'segment active' : 'segment'}
+            onClick={() => onChange({ ...draft, status: 'active', waitingFor: '', followUpDate: '' })}
+          >
+            Actionable
+          </button>
+          <button
+            type="button"
+            className={draft.status === 'waiting' ? 'segment active' : 'segment'}
+            onClick={() => onChange({ ...draft, status: 'waiting' })}
+          >
+            Waiting
+          </button>
+        </div>
+
+        {draft.status === 'waiting' && (
+          <div className="detail-grid waiting-fields">
+            <label className="field-icon">
+              <span className="field-icon-head">Waiting for</span>
+              <input
+                type="text"
+                value={draft.waitingFor}
+                placeholder="Name or response"
+                onChange={(event) => onChange({ ...draft, waitingFor: event.target.value })}
+              />
+            </label>
+            <label className="field-icon">
+              <span className="field-icon-head">Follow up</span>
+              <input
+                type="date"
+                min={toDateStr(new Date())}
+                value={draft.followUpDate}
+                onChange={(event) => onChange({ ...draft, followUpDate: event.target.value })}
+              />
+            </label>
+          </div>
+        )}
+      </div>
+
       <label className="field-icon">
         <span className="field-icon-head">
           <NotesIcon />

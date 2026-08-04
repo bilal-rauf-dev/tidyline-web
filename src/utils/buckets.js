@@ -1,6 +1,8 @@
 import { daysUntil } from './dates'
+import { isTaskPlannedForToday, isTaskUpcoming } from './taskFields'
 
 export const BUCKET_ORDER = ['today', 'week', 'twoWeeks', 'month', 'quarter', 'year', 'later']
+export const REQUIRED_BUCKETS = ['today', 'later']
 
 export const BUCKET_LABELS = {
   today: 'Today',
@@ -12,23 +14,31 @@ export const BUCKET_LABELS = {
   later: 'Later',
 }
 
-/**
- * Earliest day offset that still lands inside each bucket. Dropping a task
- * into a bucket assigns this offset — the soonest date satisfying the
- * bucket, which preserves urgency and is deterministic/reversible.
- */
-export const BUCKET_START_DAYS = {
+export const BUCKET_END_DAYS = {
   today: 0,
-  week: 1,
-  twoWeeks: 8,
-  month: 15,
-  quarter: 31,
-  year: 91,
-  later: 366,
+  week: 7,
+  twoWeeks: 14,
+  month: 30,
+  quarter: 90,
+  year: 365,
+  later: Number.POSITIVE_INFINITY,
 }
 
-export function deadlineForBucket(bucketKey, referenceDate = new Date()) {
-  const offset = BUCKET_START_DAYS[bucketKey] ?? 0
+export function normalizeBucketOrder(bucketOrder = BUCKET_ORDER) {
+  const requested = new Set(Array.isArray(bucketOrder) ? bucketOrder : [])
+  REQUIRED_BUCKETS.forEach((bucket) => requested.add(bucket))
+  return BUCKET_ORDER.filter((bucket) => requested.has(bucket))
+}
+
+export function deadlineForBucket(
+  bucketKey,
+  referenceDate = new Date(),
+  bucketOrder = BUCKET_ORDER,
+) {
+  const activeBuckets = normalizeBucketOrder(bucketOrder)
+  const index = activeBuckets.indexOf(bucketKey)
+  const previousBucket = index > 0 ? activeBuckets[index - 1] : null
+  const offset = previousBucket ? BUCKET_END_DAYS[previousBucket] + 1 : 0
   const date = new Date(
     referenceDate.getFullYear(),
     referenceDate.getMonth(),
@@ -41,16 +51,19 @@ export function deadlineForBucket(bucketKey, referenceDate = new Date()) {
   return `${date.getFullYear()}-${month}-${day}`
 }
 
-export function getTaskBucket(deadline, referenceDate = new Date()) {
+export function getTaskBucket(
+  deadline,
+  referenceDate = new Date(),
+  bucketOrder = BUCKET_ORDER,
+) {
   const daysUntilDeadline = daysUntil(deadline, referenceDate)
+  const activeBuckets = normalizeBucketOrder(bucketOrder)
 
   if (daysUntilDeadline <= 0) return 'today'
-  if (daysUntilDeadline <= 7) return 'week'
-  if (daysUntilDeadline <= 14) return 'twoWeeks'
-  if (daysUntilDeadline <= 30) return 'month'
-  if (daysUntilDeadline <= 90) return 'quarter'
-  if (daysUntilDeadline <= 365) return 'year'
-  return 'later'
+
+  return activeBuckets.find(
+    (bucket) => bucket !== 'today' && daysUntilDeadline <= BUCKET_END_DAYS[bucket],
+  ) ?? 'later'
 }
 
 const byDeadline = (a, b) => a.deadline.localeCompare(b.deadline)
@@ -59,14 +72,32 @@ const byDeadline = (a, b) => a.deadline.localeCompare(b.deadline)
  * Group tasks into buckets. Within a bucket the order is always
  * pinned first, then not-done before done, then the supplied comparator.
  */
-export function groupTasksByBucket(tasks, referenceDate = new Date(), comparator = byDeadline) {
-  const grouped = Object.fromEntries(BUCKET_ORDER.map((bucket) => [bucket, []]))
+export function groupTasksByBucket(
+  tasks,
+  referenceDate = new Date(),
+  comparator = byDeadline,
+  bucketOrder = BUCKET_ORDER,
+  { includeUpcoming = false } = {},
+) {
+  const activeBuckets = normalizeBucketOrder(bucketOrder)
+  const grouped = Object.fromEntries(activeBuckets.map((bucket) => [bucket, []]))
 
   tasks.forEach((task) => {
-    grouped[getTaskBucket(task.deadline, referenceDate)].push(task)
+    if (!task.deadline) {
+      return
+    }
+
+    if (!includeUpcoming && isTaskUpcoming(task, referenceDate)) {
+      return
+    }
+
+    const bucket = isTaskPlannedForToday(task, referenceDate)
+      ? 'today'
+      : getTaskBucket(task.deadline, referenceDate, activeBuckets)
+    grouped[bucket].push(task)
   })
 
-  BUCKET_ORDER.forEach((bucket) => {
+  activeBuckets.forEach((bucket) => {
     grouped[bucket].sort((a, b) => {
       if (Boolean(a.pinned) !== Boolean(b.pinned)) {
         return Number(Boolean(b.pinned)) - Number(Boolean(a.pinned))

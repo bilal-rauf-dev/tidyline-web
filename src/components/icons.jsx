@@ -178,6 +178,14 @@ export function EditIcon() {
   );
 }
 
+export function OpenDetailsIcon() {
+  return (
+    <svg {...base} aria-hidden="true">
+      <path d="M7.5 3.5h-4v4M12.5 3.5h4v4M3.5 12.5v4h4M16.5 12.5v4h-4" />
+    </svg>
+  );
+}
+
 export function CloseIcon() {
   return (
     <svg {...base} aria-hidden="true">

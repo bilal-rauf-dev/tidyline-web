@@ -2,6 +2,7 @@ import { useState } from 'react'
 import {
   ArrowDownIcon,
   ArrowUpIcon,
+  CalendarIcon,
   ClockIcon,
   CloseIcon,
   LinkIcon,
@@ -15,6 +16,10 @@ import { RecurrencePicker } from './RecurrencePicker'
 import { mapsSearchUrl } from '../utils/maps'
 import { Checkbox } from './Checkbox'
 import { SelectMenu } from './SelectMenu'
+import { EnergyLevelControl } from './EnergyLevelControl'
+import { formatDate } from '../utils/dates'
+import { getPostponeSummary, validateStartDate } from '../utils/taskFields'
+import { toDateStr } from '../utils/calendar'
 
 function UrlRow({ label, placeholder, onAdd }) {
   const [name, setName] = useState('')
@@ -55,9 +60,103 @@ function UrlRow({ label, placeholder, onAdd }) {
 
 export function TaskDetails({ task, handlers }) {
   const [checklistDraft, setChecklistDraft] = useState('')
+  const [startDateDraft, setStartDateDraft] = useState(task.startDate ?? '')
+  const [templateName, setTemplateName] = useState('')
+  const [templateSaved, setTemplateSaved] = useState(false)
+  const startDateError = validateStartDate(startDateDraft, task.deadline)
+  const postpone = getPostponeSummary(task)
 
   return (
     <div className="task-details-panel">
+      <div className="detail-grid detail-foundations">
+        <label className="field-icon">
+          <span className="field-icon-head">
+            <CalendarIcon />
+            Start date
+          </span>
+          <input
+            type="date"
+            value={startDateDraft}
+            max={task.deadline}
+            onChange={(event) => {
+              const value = event.target.value
+              setStartDateDraft(value)
+
+              if (!validateStartDate(value, task.deadline)) {
+                handlers.onUpdate(task.id, { startDate: value || null })
+              }
+            }}
+          />
+          {startDateError && <span className="field-error">{startDateError}</span>}
+        </label>
+
+        <EnergyLevelControl
+          value={task.energyLevel ?? ''}
+          onChange={(energyLevel) =>
+            handlers.onUpdate(task.id, { energyLevel: energyLevel || null })
+          }
+        />
+      </div>
+
+      <div className="waiting-control">
+        <div className="segmented" role="group" aria-label="Task status">
+          <button
+            type="button"
+            className={task.status === 'waiting' ? 'segment' : 'segment active'}
+            onClick={() =>
+              handlers.onUpdate(task.id, {
+                status: 'active',
+                waitingFor: '',
+                followUpDate: null,
+              })
+            }
+          >
+            Actionable
+          </button>
+          <button
+            type="button"
+            className={task.status === 'waiting' ? 'segment active' : 'segment'}
+            onClick={() => handlers.onUpdate(task.id, { status: 'waiting' })}
+          >
+            Waiting
+          </button>
+        </div>
+
+        {task.status === 'waiting' && (
+          <div className="detail-grid waiting-fields">
+            <label className="field-icon">
+              <span className="field-icon-head">Waiting for</span>
+              <input
+                type="text"
+                value={task.waitingFor}
+                placeholder="Name or response"
+                onChange={(event) =>
+                  handlers.onUpdate(task.id, { waitingFor: event.target.value })
+                }
+              />
+            </label>
+            <label className="field-icon">
+              <span className="field-icon-head">Follow up</span>
+              <input
+                type="date"
+                min={toDateStr(new Date())}
+                value={task.followUpDate ?? ''}
+                onChange={(event) =>
+                  handlers.onUpdate(task.id, { followUpDate: event.target.value || null })
+                }
+              />
+            </label>
+          </div>
+        )}
+      </div>
+
+      {postpone.count > 0 && (
+        <div className="postpone-summary">
+          <strong>Postponed {postpone.count} {postpone.count === 1 ? 'time' : 'times'}</strong>
+          <span>Originally due {formatDate(postpone.originalDeadline)}</span>
+        </div>
+      )}
+
       <label className="field-icon">
         <span className="field-icon-head">
           <NotesIcon />
@@ -295,6 +394,35 @@ export function TaskDetails({ task, handlers }) {
         onAdd={(reminder) => handlers.onAddReminder(task.id, reminder)}
         onRemove={(reminderId) => handlers.onRemoveReminder(task.id, reminderId)}
       />
+
+      <div className="template-save">
+        <label className="field-icon">
+          <span className="field-icon-head">Save as template</span>
+          <input
+            type="text"
+            value={templateName}
+            placeholder="Template name"
+            onChange={(event) => {
+              setTemplateName(event.target.value)
+              setTemplateSaved(false)
+            }}
+          />
+        </label>
+        <button
+          type="button"
+          className="secondary"
+          disabled={!templateName.trim()}
+          onClick={() => {
+            const saved = handlers.onSaveTemplate?.(task, templateName)
+            if (!saved) return
+            setTemplateName('')
+            setTemplateSaved(true)
+          }}
+        >
+          Save template
+        </button>
+        {templateSaved && <span className="template-saved">Template saved</span>}
+      </div>
     </div>
   )
 }

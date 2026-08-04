@@ -64,6 +64,8 @@ const { BoardPage } = await import('../src/pages/BoardPage.jsx')
 const { CalendarPage } = await import('../src/pages/CalendarPage.jsx')
 const { AnalyticsPage } = await import('../src/pages/AnalyticsPage.jsx')
 const { SettingsPage } = await import('../src/pages/SettingsPage.jsx')
+const { PlannerPage } = await import('../src/pages/PlannerPage.jsx')
+const { SomedayPage } = await import('../src/pages/SomedayPage.jsx')
 const { normalizeTask } = await import('../src/hooks/useTasks.js')
 
 const today = new Date()
@@ -105,6 +107,14 @@ const tasks = [
   }),
   normalizeTask({ id: 'e', title: 'Archived item', deadline: iso(5), archived: true }),
   normalizeTask({ id: 'f', title: 'Far future', deadline: iso(400) }),
+  normalizeTask({
+    id: 'g',
+    title: 'Scheduled focus block',
+    deadline: iso(2),
+    scheduledStart: `${iso(0)}T10:00`,
+    duration: { value: 45, unit: 'min' },
+  }),
+  normalizeTask({ id: 'h', title: 'Maybe learn pottery', deadline: null, notes: 'Find a class' }),
 ]
 
 const noop = () => {}
@@ -126,7 +136,7 @@ const cases = [
   [
     'HomePage',
     <HomePage tasks={tasks} />,
-    ['Today at a glance', 'overdue', 'completed today', 'milestone-track', 'activity-dot'],
+    ['Today at a glance', 'Review the day', 'overdue', 'completed today', 'milestone-track', 'activity-dot'],
   ],
   [
     'BoardPage',
@@ -156,12 +166,28 @@ const cases = [
   [
     'CalendarPage',
     <CalendarPage tasks={tasks} addTask={noop} setDeadline={noop} />,
-    ['calendar-grid', 'calendar-day'],
+    ['calendar-grid', 'calendar-day', 'calendar-day-workload'],
   ],
   [
     'AnalyticsPage',
     <AnalyticsPage tasks={tasks} />,
-    ['milestone-track', 'ring-tile', 'trend-col', 'sparkline', 'activity-dot'],
+    ['milestone-track', 'ring-tile', 'trend-col', 'sparkline', 'activity-dot', 'Postpone patterns'],
+  ],
+  [
+    'PlannerPage',
+    <PlannerPage tasks={tasks} setScheduledStart={noop} updateTask={noop} />,
+    ['Day planner', 'Board tasks', 'planner-timeline', 'Scheduled focus block'],
+  ],
+  [
+    'SomedayPage',
+    <SomedayPage
+      tasks={tasks}
+      addSomedayTask={noop}
+      promoteSomeday={noop}
+      deleteTask={noop}
+      updateTask={noop}
+    />,
+    ['Someday / Maybe', 'Holding area', 'Maybe learn pottery'],
   ],
   [
     'SettingsPage',

@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from 'wouter'
 import {
   getActivityHeatmap,
@@ -15,6 +15,8 @@ import { Sparkline } from '../components/Sparkline'
 import { TagList } from '../components/TagList'
 import { isOverdue } from '../utils/overdue'
 import { toDateStr } from '../utils/calendar'
+import { isTaskPlannedForToday, isTaskUpcoming } from '../utils/taskFields'
+import { ShutdownDialog } from '../components/ShutdownDialog'
 
 const UPCOMING_LIMIT = 6
 const HOME_HEATMAP_DAYS = 35
@@ -28,9 +30,13 @@ function getGreeting(date = new Date()) {
   return 'Good evening'
 }
 
-export function HomePage({ tasks: allTasks }) {
+export function HomePage({ tasks: allTasks, setDeadline = () => {}, archiveTask = () => {} }) {
+  const [shutdownOpen, setShutdownOpen] = useState(false)
   const greeting = useMemo(() => getGreeting(), [])
-  const tasks = useMemo(() => allTasks.filter((task) => !task.archived), [allTasks])
+  const tasks = useMemo(
+    () => allTasks.filter((task) => !task.archived && task.deadline),
+    [allTasks],
+  )
   const heatmap = useMemo(() => getActivityHeatmap(tasks, HOME_HEATMAP_DAYS), [tasks])
   const heatmapSummary = useMemo(() => summarizeHeatmap(heatmap), [heatmap])
   const timeline = useMemo(() => getTodayTimeline(tasks), [tasks])
@@ -43,14 +49,22 @@ export function HomePage({ tasks: allTasks }) {
       tasks
         .filter((task) => !task.done)
         .filter((task) => task.deadline >= todayStr)
-        .sort((a, b) => a.deadline.localeCompare(b.deadline))
+        .sort((a, b) =>
+          (a.startDate ?? a.deadline).localeCompare(b.startDate ?? b.deadline) ||
+          a.deadline.localeCompare(b.deadline),
+        )
         .slice(0, UPCOMING_LIMIT),
     [tasks, todayStr],
   )
 
   const daily = useMemo(() => {
     const todayStr = toDateStr(new Date())
-    const dueToday = tasks.filter((task) => task.deadline === todayStr)
+    const dueToday = tasks.filter(
+      (task) =>
+        !isTaskUpcoming(task) &&
+        task.status !== 'waiting' &&
+        (task.deadline === todayStr || isTaskPlannedForToday(task)),
+    )
     const overdueCount = tasks.filter((task) => isOverdue(task)).length
     const completedToday = tasks.filter(
       (task) => task.done && task.completedAt?.slice(0, 10) === todayStr,
@@ -67,6 +81,7 @@ export function HomePage({ tasks: allTasks }) {
   }, [tasks])
 
   return (
+    <>
     <main className="app-shell">
       <section className="home-top">
         <header className="hero">
@@ -75,9 +90,14 @@ export function HomePage({ tasks: allTasks }) {
             Here&rsquo;s where your deadlines stand today. Add what&rsquo;s on your
             mind and it lands in the right bucket automatically.
           </p>
-          <Link href="/board?add=1" className="primary home-cta">
-            Add a task
-          </Link>
+          <div className="home-actions">
+            <Link href="/board?add=1" className="primary home-cta">
+              Add a task
+            </Link>
+            <button type="button" className="secondary home-cta" onClick={() => setShutdownOpen(true)}>
+              Review the day
+            </button>
+          </div>
         </header>
 
         <article className="entry-card home-timeline">
@@ -134,7 +154,7 @@ export function HomePage({ tasks: allTasks }) {
           <h2>Today at a glance</h2>
           <div className="bucket-stat">
             <strong>{daily.dueToday}</strong>
-            <span>due today</span>
+            <span>due or planned today</span>
           </div>
 
           <RingStat label="Cleared" value={daily.done} total={daily.dueToday} />
@@ -188,7 +208,9 @@ export function HomePage({ tasks: allTasks }) {
                     <div className="upcoming-copy">
                       <span className="upcoming-title">{task.title}</span>
                       <span className="upcoming-date">
-                        {formatDate(task.deadline)} · {getCountdownLabel(task.deadline)}
+                        {isTaskUpcoming(task)
+                          ? `Starts ${formatDate(task.startDate)} · due ${formatDate(task.deadline)}`
+                          : `${formatDate(task.deadline)} · ${getCountdownLabel(task.deadline)}`}
                       </span>
                       <TagList tags={task.tags} />
                     </div>
@@ -215,5 +237,14 @@ export function HomePage({ tasks: allTasks }) {
         </article>
       </section>
     </main>
+    {shutdownOpen && (
+      <ShutdownDialog
+        tasks={allTasks}
+        setDeadline={setDeadline}
+        archiveTask={archiveTask}
+        onClose={() => setShutdownOpen(false)}
+      />
+    )}
+    </>
   )
 }

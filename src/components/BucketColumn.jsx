@@ -12,13 +12,15 @@ export function BucketColumn({
   compact = false,
   onToggleCollapse,
   selectedIds = [],
+  bucketOrder,
   ...taskHandlers
 }) {
   const [isOver, setIsOver] = useState(false)
   const isToday = bucketKey === 'today'
 
-  const doneCount = tasks.filter((task) => task.done).length
-  const percent = tasks.length === 0 ? 0 : Math.round((doneCount / tasks.length) * 100)
+  const metricTasks = isToday ? tasks.filter((task) => task.status !== 'waiting') : tasks
+  const doneCount = metricTasks.filter((task) => task.done).length
+  const percent = metricTasks.length === 0 ? 0 : Math.round((doneCount / metricTasks.length) * 100)
 
   function handleDragOver(event) {
     event.preventDefault()
@@ -56,13 +58,13 @@ export function BucketColumn({
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      <DistanceRail bucketKey={bucketKey} />
+      <DistanceRail bucketKey={bucketKey} bucketOrder={bucketOrder} />
 
       <div className="bucket-header">
         {isToday ? (
           <div className="bucket-stat">
-            <strong>{tasks.length}</strong>
-            <span>due today</span>
+            <strong>{metricTasks.length}</strong>
+            <span>actionable today</span>
           </div>
         ) : (
           <h3>{label}</h3>
@@ -89,26 +91,33 @@ export function BucketColumn({
         aria-valuenow={percent}
         aria-valuemin={0}
         aria-valuemax={100}
-        aria-label={`${label}: ${doneCount} of ${tasks.length} done`}
+        aria-label={`${label}: ${doneCount} of ${metricTasks.length} actionable tasks done`}
       >
         <div className="bucket-progress-fill" style={{ width: `${percent}%` }} />
       </div>
 
-      {!collapsed &&
-        (tasks.length === 0 ? (
-          <p className="empty">No tasks yet.</p>
-        ) : (
-          <ul className="task-list">
-            {tasks.map((task) => (
-              <TaskCard
-                key={task.id}
-                task={task}
-                selected={selectedIds.includes(task.id)}
-                {...taskHandlers}
-              />
-            ))}
-          </ul>
-        ))}
+      <div
+        className={collapsed ? 'bucket-content collapsed' : 'bucket-content'}
+        inert={collapsed ? true : undefined}
+        aria-hidden={collapsed}
+      >
+        <div className="bucket-content-inner">
+          {tasks.length === 0 ? (
+            <p className="empty">No tasks yet.</p>
+          ) : (
+            <ul className="task-list">
+              {tasks.map((task) => (
+                <TaskCard
+                  key={task.id}
+                  task={task}
+                  selected={selectedIds.includes(task.id)}
+                  {...taskHandlers}
+                />
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
     </article>
   )
 }

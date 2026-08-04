@@ -1,17 +1,17 @@
 import { useEffect, useRef, useState } from 'react'
-import { getCountdownLabel, getDeadlineParts } from '../utils/dates'
+import { formatDate, getCountdownLabel, getDeadlineParts } from '../utils/dates'
 import { parseTags } from '../utils/tags'
 import { overdueSeverity } from '../utils/overdue'
 import { describeRecurrence } from '../utils/recurrence'
 import {
   ArchiveIcon,
   CalendarIcon,
-  ChevronDownIcon,
   CopyIcon,
   EditIcon,
   GripIcon,
   LinkIcon,
   NotesIcon,
+  OpenDetailsIcon,
   PinIcon,
   RepeatIcon,
   TagIcon,
@@ -19,8 +19,21 @@ import {
 } from './icons'
 import { TagList } from './TagList'
 import { DayContext } from './DayContext'
-import { TaskDetails } from './TaskDetails'
+import { TaskDetailDialog } from './TaskDetailDialog'
 import { Checkbox } from './Checkbox'
+import {
+  getPostponeSummary,
+  isTaskPlannedForToday,
+  isTaskUpcoming,
+  validateStartDate,
+} from '../utils/taskFields'
+import { getDeadlineRisk } from '../utils/risk'
+
+const ENERGY_LABELS = {
+  low: 'Low energy',
+  normal: 'Normal energy',
+  'deep-focus': 'Deep focus',
+}
 
 export function TaskCard({
   task,
@@ -35,6 +48,8 @@ export function TaskCard({
   onArchive,
   onUnarchive,
   onDuplicate,
+  onTogglePlan,
+  contextLabel,
   expandTaskId,
   ...detailHandlers
 }) {
@@ -50,17 +65,12 @@ export function TaskCard({
       return undefined
     }
 
-    let scrollFrame
     const expandFrame = requestAnimationFrame(() => {
       setIsExpanded(true)
-      scrollFrame = requestAnimationFrame(() => {
-        taskRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      })
     })
 
     return () => {
       cancelAnimationFrame(expandFrame)
-      cancelAnimationFrame(scrollFrame)
     }
   }, [expandTaskId, task.id])
 
@@ -74,7 +84,7 @@ export function TaskCard({
   function saveEdit(event) {
     event.preventDefault()
 
-    if (!editTitle.trim() || !editDeadline) {
+    if (!editTitle.trim() || !editDeadline || validateStartDate(task.startDate, editDeadline)) {
       return
     }
 
@@ -94,10 +104,15 @@ export function TaskCard({
   const { day, month } = getDeadlineParts(task.deadline)
   const severity = overdueSeverity(task)
   const checklistDone = task.checklist.filter((item) => item.done).length
+  const plannedForToday = isTaskPlannedForToday(task)
+  const upcoming = isTaskUpcoming(task)
+  const postpone = getPostponeSummary(task)
+  const risk = getDeadlineRisk(task, allTasks)
 
   const classNames = ['task']
   if (task.done) classNames.push('done')
   if (task.pinned) classNames.push('pinned')
+  if (task.status === 'waiting') classNames.push('waiting')
   if (selected) classNames.push('selected')
   if (severity > 0) classNames.push(`overdue-${severity}`)
 
@@ -153,12 +168,19 @@ export function TaskCard({
             <input
               type="date"
               value={editDeadline}
+              min={task.startDate || undefined}
               onChange={(event) => setEditDeadline(event.target.value)}
               required
             />
           </label>
 
           <DayContext mode="deadline" tasks={allTasks} value={editDeadline} excludeId={task.id} />
+
+          {validateStartDate(task.startDate, editDeadline) && (
+            <p className="field-error" role="alert">
+              Move the start date on or before the new deadline first.
+            </p>
+          )}
 
           <label className="field-icon">
             <span className="field-icon-head">
@@ -194,6 +216,43 @@ export function TaskCard({
               <span className={severity > 0 ? 'countdown overdue' : 'countdown'}>
                 {getCountdownLabel(task.deadline)}
               </span>
+
+              {contextLabel && <span className="task-context">{contextLabel}</span>}
+              {task.status === 'waiting' && (
+                <span className="task-context waiting-label">
+                  Waiting{task.waitingFor ? ` for ${task.waitingFor}` : ''}
+                  {task.followUpDate ? ` · follow up ${formatDate(task.followUpDate)}` : ''}
+                </span>
+              )}
+              {task.scheduledStart && (
+                <span className="task-context scheduled-label">
+                  Scheduled {formatDate(task.scheduledStart.slice(0, 10))} · {task.scheduledStart.slice(11, 16)}
+                </span>
+              )}
+              {plannedForToday && (
+                <span className="task-context planned">
+                  Planned today · due {formatDate(task.deadline)}
+                </span>
+              )}
+              {task.energyLevel && (
+                <span className={`energy-mark energy-${task.energyLevel}`}>
+                  <span className={`energy-dot energy-${task.energyLevel}`} aria-hidden="true" />
+                  {ENERGY_LABELS[task.energyLevel]}
+                </span>
+              )}
+              {postpone.count > 0 && (
+                <span className="task-flag text">
+                  Postponed {postpone.count}×
+                </span>
+              )}
+              {risk && (
+                <span
+                  className={`risk-mark risk-${risk.level}`}
+                  title={`Computed deadline risk score ${risk.score} of 100`}
+                >
+                  {risk.label}
+                </span>
+              )}
 
               {task.recurrence && (
                 <span className="task-flag" title={describeRecurrence(task.recurrence)}>
@@ -234,10 +293,34 @@ export function TaskCard({
                 className={isExpanded ? 'icon-mini is-on' : 'icon-mini'}
                 onClick={() => setIsExpanded((value) => !value)}
                 aria-expanded={isExpanded}
-                aria-label={isExpanded ? `Collapse ${task.title}` : `Expand ${task.title}`}
+                aria-label={isExpanded ? `Close ${task.title} details` : `Open ${task.title} details`}
                 title="Details"
               >
-                <ChevronDownIcon />
+                <OpenDetailsIcon />
+              </button>
+
+              <button
+                type="button"
+                className={plannedForToday ? 'icon-mini is-on' : 'icon-mini'}
+                onClick={() => onTogglePlan(task.id)}
+                disabled={upcoming || task.status === 'waiting'}
+                aria-pressed={plannedForToday}
+                aria-label={
+                  plannedForToday
+                    ? `Remove ${task.title} from today's plan`
+                    : `Plan ${task.title} for today`
+                }
+                title={
+                  upcoming
+                    ? `Available ${formatDate(task.startDate)}`
+                    : task.status === 'waiting'
+                      ? 'Waiting tasks are not actionable'
+                      : plannedForToday
+                        ? 'Remove from today'
+                        : 'Plan for today'
+                }
+              >
+                <CalendarIcon />
               </button>
 
               <button
@@ -292,11 +375,16 @@ export function TaskCard({
               </button>
             </div>
 
-            {isExpanded && (
-              <TaskDetails task={task} handlers={{ ...detailHandlers, onUpdate }} />
-            )}
           </div>
         </div>
+      )}
+
+      {isExpanded && (
+        <TaskDetailDialog
+          task={task}
+          handlers={{ ...detailHandlers, onUpdate }}
+          onClose={() => setIsExpanded(false)}
+        />
       )}
     </li>
   )

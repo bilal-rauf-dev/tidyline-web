@@ -15,14 +15,7 @@ export function parseImportedTasks(json) {
         item &&
         typeof item.id === 'string' &&
         typeof item.title === 'string' &&
-        typeof item.deadline === 'string',
+        (typeof item.deadline === 'string' || item.deadline === null),
     )
-    .map((item) => ({
-      id: item.id,
-      title: item.title,
-      deadline: item.deadline,
-      reminders: Array.isArray(item.reminders) ? item.reminders : [],
-      done: Boolean(item.done),
-      createdAt: typeof item.createdAt === 'string' ? item.createdAt : new Date().toISOString(),
-    }))
+    .map((item) => ({ ...item }))
 }

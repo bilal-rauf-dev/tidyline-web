@@ -9,7 +9,10 @@
     "build": "vite build",
     "lint": "eslint .",
     "smoke": "vite build --ssr scripts/smoke.jsx --outDir .smoke --logLevel warn && node .smoke/smoke.js",
-    "check": "npm run lint && npm run build && npm run smoke",
+    "check": "npm run lint && npm run build && npm run smoke && npm run phase1-smoke && npm run phase2-smoke && npm run phase3-smoke",
+    "phase1-smoke": "vite build --ssr scripts/phase1-smoke.js --outDir .phase1-smoke --logLevel warn && node .phase1-smoke/phase1-smoke.js",
+    "phase2-smoke": "vite build --ssr scripts/phase2-smoke.js --outDir .phase2-smoke --logLevel warn && node .phase2-smoke/phase2-smoke.js",
+    "phase3-smoke": "vite build --ssr scripts/phase3-smoke.js --outDir .phase3-smoke --logLevel warn && node .phase3-smoke/phase3-smoke.js",
     "preview": "vite preview"
   },
   "dependencies": {

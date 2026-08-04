@@ -10,6 +10,9 @@ import { BucketColumn } from '../components/BucketColumn'
 import { BoardToolbar } from '../components/BoardToolbar'
 import { OverdueSection } from '../components/OverdueSection'
 import { UndoToast } from '../components/UndoToast'
+import { UpcomingSection } from '../components/UpcomingSection'
+import { isTaskUpcoming } from '../utils/taskFields'
+import { SavedFilterBar } from '../components/SavedFilterBar'
 
 export function BoardPage({
   tasks,
@@ -21,6 +24,12 @@ export function BoardPage({
   undoState,
   undo,
   dismissUndo,
+  bucketOrder = BUCKET_ORDER,
+  templates = [],
+  onSaveTemplate = () => null,
+  savedFilters = [],
+  onSaveFilter = () => null,
+  onDeleteFilter = () => {},
   ...taskActions
 }) {
   const search = useSearch()
@@ -29,7 +38,9 @@ export function BoardPage({
   const expandTaskId = params.get('expand')
 
   const boardRef = useRef(null)
-  const todaySentinelRef = useRef(null)
+  const todayCollapseMarkerRef = useRef(null)
+  const todayExpandMarkerRef = useRef(null)
+  const todayCompactRef = useRef(false)
   const tick = useTimeTick()
   // `now` is derived purely from the tick, so every time-sensitive memo below
   // has an honest dependency instead of a suppressed lint warning.
@@ -43,32 +54,70 @@ export function BoardPage({
   const [isTodayCompact, setIsTodayCompact] = useState(false)
 
   useEffect(() => {
-    function syncTodaySummary() {
-      const sentinelTop = todaySentinelRef.current?.getBoundingClientRect().top
-
-      if (sentinelTop === undefined) {
+    function updateCompact(nextCompact) {
+      if (nextCompact === todayCompactRef.current) {
         return
       }
 
-      // The Today card becomes sticky at 0.75rem (12px). Compact only after
-      // its original position has travelled another ~52px past that point.
-      setIsTodayCompact(sentinelTop <= -40)
+      todayCompactRef.current = nextCompact
+      setIsTodayCompact(nextCompact)
     }
 
-    syncTodaySummary()
-    window.addEventListener('scroll', syncTodaySummary, { passive: true })
-    window.addEventListener('resize', syncTodaySummary)
+    const collapseMarker = todayCollapseMarkerRef.current
+    const expandMarker = todayExpandMarkerRef.current
+
+    if (!collapseMarker || !expandMarker) {
+      return undefined
+    }
+
+    if (typeof IntersectionObserver === 'undefined') {
+      function syncFallback() {
+        const collapseTop = collapseMarker.getBoundingClientRect().top
+        const expandTop = expandMarker.getBoundingClientRect().top
+
+        if (!todayCompactRef.current && collapseTop <= 0) {
+          updateCompact(true)
+        } else if (todayCompactRef.current && expandTop >= 0) {
+          updateCompact(false)
+        }
+      }
+
+      syncFallback()
+      window.addEventListener('scroll', syncFallback, { passive: true })
+      window.addEventListener('resize', syncFallback)
+      return () => {
+        window.removeEventListener('scroll', syncFallback)
+        window.removeEventListener('resize', syncFallback)
+      }
+    }
+
+    const collapseObserver = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting && entry.boundingClientRect.top < 0) {
+        updateCompact(true)
+      }
+    })
+    const expandObserver = new IntersectionObserver(([entry]) => {
+      // Also expand after a large upward scroll that skips the 1px marker's
+      // intersecting state entirely and lands with it below the viewport top.
+      if (entry.isIntersecting || entry.boundingClientRect.top >= 0) {
+        updateCompact(false)
+      }
+    })
+
+    collapseObserver.observe(collapseMarker)
+    expandObserver.observe(expandMarker)
+
     return () => {
-      window.removeEventListener('scroll', syncTodaySummary)
-      window.removeEventListener('resize', syncTodaySummary)
+      collapseObserver.disconnect()
+      expandObserver.disconnect()
     }
   }, [])
 
   const tags = useMemo(() => collectTags(tasks), [tasks])
 
   const visible = useMemo(() => {
-    const inView = tasks.filter((task) =>
-      view === 'archived' ? task.archived : !task.archived,
+    const inView = tasks.filter(
+      (task) => task.deadline && (view === 'archived' ? task.archived : !task.archived),
     )
     return filterTasks(inView, filters)
   }, [tasks, view, filters])
@@ -79,14 +128,33 @@ export function BoardPage({
     [visible, view, now],
   )
 
+  const upcomingTasks = useMemo(
+    () =>
+      view === 'archived'
+        ? []
+        : visible
+            .filter((task) => isTaskUpcoming(task, now))
+            .sort((a, b) =>
+              a.startDate.localeCompare(b.startDate) || a.deadline.localeCompare(b.deadline),
+            ),
+    [visible, view, now],
+  )
+
   const bucketed = useMemo(
-    () => visible.filter((task) => view === 'archived' || !isOverdue(task, now)),
+    () =>
+      visible.filter(
+        (task) =>
+          view === 'archived' || (!isTaskUpcoming(task, now) && !isOverdue(task, now)),
+      ),
     [visible, view, now],
   )
 
   const buckets = useMemo(
-    () => groupTasksByBucket(bucketed, now, buildComparator(filters)),
-    [bucketed, filters, now],
+    () =>
+      groupTasksByBucket(bucketed, now, buildComparator(filters), bucketOrder, {
+        includeUpcoming: view === 'archived',
+      }),
+    [bucketed, filters, now, bucketOrder, view],
   )
 
   useFlipReparent(boardRef, tick)
@@ -129,6 +197,7 @@ export function BoardPage({
     onDelete: taskActions.deleteTask,
     onUpdate: taskActions.updateTask,
     onTogglePin: taskActions.togglePin,
+    onTogglePlan: taskActions.togglePlanForToday,
     onArchive: taskActions.archiveTask,
     onUnarchive: taskActions.unarchiveTask,
     onDuplicate: taskActions.duplicateTask,
@@ -143,7 +212,12 @@ export function BoardPage({
     onRemoveLink: taskActions.removeLink,
     onAddAttachment: taskActions.addAttachment,
     onRemoveAttachment: taskActions.removeAttachment,
+    onSaveTemplate,
     expandTaskId,
+  }
+
+  function moveToVisibleBucket(taskId, bucketKey) {
+    moveTaskToBucket(taskId, bucketKey, bucketOrder)
   }
 
   return (
@@ -156,7 +230,12 @@ export function BoardPage({
         </p>
       </header>
 
-      <TaskForm onAddTask={addTask} allTasks={tasks} focusOnMount={focusForm} />
+      <TaskForm
+        onAddTask={addTask}
+        allTasks={tasks}
+        focusOnMount={focusForm}
+        templates={templates}
+      />
 
       <div className="board-controls">
         <div className="segmented" role="group" aria-label="View">
@@ -189,6 +268,13 @@ export function BoardPage({
         </button>
       </div>
 
+      <SavedFilterBar
+        savedFilters={savedFilters}
+        onApply={setFilters}
+        onSave={(name) => onSaveFilter(name, filters)}
+        onDelete={onDeleteFilter}
+      />
+
       <BoardToolbar filters={filters} onChange={setFilters} tags={tags} />
 
       {selectionMode && (
@@ -207,18 +293,32 @@ export function BoardPage({
       )}
 
       <div ref={boardRef}>
+        <UpcomingSection
+          tasks={upcomingTasks}
+          selectedIds={selectedIds}
+          {...taskHandlers}
+        />
+
         <OverdueSection groups={overdueGroups} selectedIds={selectedIds} {...taskHandlers} />
 
-        <span ref={todaySentinelRef} className="today-sticky-sentinel" aria-hidden="true" />
+        <span className="today-sticky-sentinel" aria-hidden="true">
+          <span ref={todayExpandMarkerRef} className="today-expand-marker" />
+          <span ref={todayCollapseMarkerRef} className="today-collapse-marker" />
+        </span>
 
-        <section className="buckets" aria-label="Task buckets">
-          {BUCKET_ORDER.map((bucket) => (
+        <section
+          className="buckets"
+          aria-label="Task buckets"
+          data-bucket-count={bucketOrder.length}
+        >
+          {bucketOrder.map((bucket) => (
             <BucketColumn
               key={bucket}
               bucketKey={bucket}
               label={BUCKET_LABELS[bucket]}
               tasks={buckets[bucket]}
-              onMoveTask={moveTaskToBucket}
+              onMoveTask={moveToVisibleBucket}
+              bucketOrder={bucketOrder}
               collapsed={collapsedBuckets.includes(bucket)}
               onToggleCollapse={toggleBucketCollapse}
               compact={bucket === 'today' && isTodayCompact}

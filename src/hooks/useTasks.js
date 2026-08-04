@@ -1,7 +1,17 @@
 import { useEffect, useState } from 'react'
 import { deadlineForBucket } from '../utils/buckets'
+import { toDateStr } from '../utils/calendar'
 import { nextOccurrence } from '../utils/recurrence'
 import { reminderKey } from '../utils/reminders'
+import {
+  applyTaskUpdates,
+  isTaskUpcoming,
+  normalizeEnergyLevel,
+  normalizePlannedDate,
+  normalizePostponeHistory,
+  normalizeStartDate,
+  shiftStartDateForDeadline,
+} from '../utils/taskFields'
 
 const STORAGE_KEY = 'tidyline:tasks'
 const UNDO_MS = 6000
@@ -25,10 +35,18 @@ function normalizeList(value) {
 }
 
 export function normalizeTask(task) {
+  const deadline = typeof task.deadline === 'string' ? task.deadline : null
+  const plannedDate = normalizePlannedDate(task.plannedDate)
+  const postponeHistory = normalizePostponeHistory(task.postponeHistory)
+  const originalDeadline =
+    normalizePlannedDate(task.originalDeadline) ?? postponeHistory[0]?.from ?? deadline
+  const followUpDate = normalizePlannedDate(task.followUpDate)
+  const waitingExpired = followUpDate && followUpDate <= toDateStr(new Date())
+
   return {
     id: task.id,
     title: task.title,
-    deadline: task.deadline,
+    deadline,
     reminders: normalizeList(task.reminders).map(normalizeReminder),
     tags: normalizeList(task.tags),
     done: Boolean(task.done),
@@ -42,6 +60,19 @@ export function normalizeTask(task) {
     checklist: normalizeList(task.checklist),
     links: normalizeList(task.links),
     attachments: normalizeList(task.attachments),
+    startDate: normalizeStartDate(task.startDate, deadline),
+    energyLevel: normalizeEnergyLevel(task.energyLevel),
+    plannedDate:
+      deadline && plannedDate && plannedDate >= toDateStr(new Date()) ? plannedDate : null,
+    originalDeadline,
+    postponeHistory,
+    scheduledStart: typeof task.scheduledStart === 'string' ? task.scheduledStart : null,
+    status: task.status === 'waiting' && !waitingExpired ? 'waiting' : 'active',
+    waitingFor:
+      task.status === 'waiting' && !waitingExpired && typeof task.waitingFor === 'string'
+        ? task.waitingFor
+        : '',
+    followUpDate: task.status === 'waiting' && !waitingExpired ? followUpDate : null,
     createdAt: typeof task.createdAt === 'string' ? task.createdAt : BOOT_TIME,
   }
 }
@@ -65,9 +96,17 @@ function nextInstance(task, deadline) {
     ...task,
     id: crypto.randomUUID(),
     deadline,
+    startDate: shiftStartDateForDeadline(task.startDate, task.deadline, deadline),
     done: false,
     completedAt: null,
     pinned: false,
+    plannedDate: null,
+    scheduledStart: null,
+    status: 'active',
+    waitingFor: '',
+    followUpDate: null,
+    originalDeadline: deadline,
+    postponeHistory: [],
     checklist: task.checklist.map((item) => ({ ...item, done: false })),
     createdAt: new Date().toISOString(),
   })
@@ -80,6 +119,37 @@ export function useTasks() {
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks))
   }, [tasks])
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      const today = toDateStr(new Date())
+      setTasks((current) => {
+        const needsMaintenance = current.some(
+          (task) =>
+            (task.plannedDate && task.plannedDate < today) ||
+            (task.status === 'waiting' && task.followUpDate && task.followUpDate <= today),
+        )
+
+        return needsMaintenance
+          ? current.map((task) => {
+              const releaseWaiting =
+                task.status === 'waiting' && task.followUpDate && task.followUpDate <= today
+
+              return {
+                ...task,
+                plannedDate:
+                  task.plannedDate && task.plannedDate < today ? null : task.plannedDate,
+                status: releaseWaiting ? 'active' : task.status,
+                waitingFor: releaseWaiting ? '' : task.waitingFor,
+                followUpDate: releaseWaiting ? null : task.followUpDate,
+              }
+            })
+          : current
+      })
+    }, 60_000)
+
+    return () => window.clearInterval(interval)
+  }, [])
 
   useEffect(() => {
     if (!undoState) {
@@ -117,6 +187,12 @@ export function useTasks() {
     attachments = [],
     location = '',
     duration = null,
+    startDate = null,
+    energyLevel = null,
+    scheduledStart = null,
+    status = 'active',
+    waitingFor = '',
+    followUpDate = null,
   }) {
     const task = normalizeTask({
       id: crypto.randomUUID(),
@@ -131,6 +207,15 @@ export function useTasks() {
       attachments,
       location,
       duration,
+      startDate,
+      energyLevel,
+      scheduledStart,
+      status,
+      waitingFor,
+      followUpDate,
+      plannedDate: null,
+      originalDeadline: deadline,
+      postponeHistory: [],
       createdAt: new Date().toISOString(),
     })
 
@@ -138,9 +223,24 @@ export function useTasks() {
     return task
   }
 
-  function updateTask(id, updates) {
+  function addSomedayTask({ title, notes = '', tags = [] }) {
+    const task = normalizeTask({
+      id: crypto.randomUUID(),
+      title,
+      deadline: null,
+      reminders: [],
+      tags,
+      notes,
+      createdAt: new Date().toISOString(),
+    })
+
+    setTasks((current) => [task, ...current])
+    return task
+  }
+
+  function updateTask(id, updates, source = 'edit') {
     setTasks((current) =>
-      current.map((task) => (task.id === id ? { ...task, ...updates } : task)),
+      current.map((task) => (task.id === id ? applyTaskUpdates(task, updates, source) : task)),
     )
   }
 
@@ -158,17 +258,19 @@ export function useTasks() {
     let next = tasks.map((task) =>
       task.id === id ? { ...task, done: true, completedAt: new Date().toISOString() } : task,
     )
+    let createdNext = false
 
     // Recurring tasks materialise their next instance on completion.
-    if (target.recurrence) {
+    if (target.recurrence && target.deadline) {
       const upcoming = nextOccurrence(target.recurrence, target.deadline)
 
       if (upcoming) {
         next = [nextInstance(target, upcoming), ...next]
+        createdNext = true
       }
     }
 
-    commit(target.recurrence ? 'Completed — next one scheduled' : 'Task completed', next)
+    commit(createdNext ? 'Completed — next one scheduled' : 'Task completed', next)
   }
 
   function toggleTask(id) {
@@ -210,6 +312,13 @@ export function useTasks() {
       completedAt: null,
       pinned: false,
       archived: false,
+      plannedDate: null,
+      scheduledStart: null,
+      status: 'active',
+      waitingFor: '',
+      followUpDate: null,
+      originalDeadline: target.deadline,
+      postponeHistory: [],
       createdAt: new Date().toISOString(),
     })
 
@@ -219,18 +328,66 @@ export function useTasks() {
     setTasks(next)
   }
 
-  function setDeadline(id, deadline) {
+  function setDeadline(id, deadline, source = 'calendar', extraUpdates = {}) {
     const target = tasks.find((task) => task.id === id)
 
-    if (!target || target.deadline === deadline) {
+    if (!target || (target.deadline === deadline && Object.keys(extraUpdates).length === 0)) {
       return
     }
 
-    commit('Task rescheduled', mapTask(id, { deadline }))
+    const updated = applyTaskUpdates(target, { ...extraUpdates, deadline }, source)
+
+    if (updated === target) {
+      return
+    }
+
+    commit(
+      'Task rescheduled',
+      tasks.map((task) => (task.id === id ? updated : task)),
+    )
   }
 
-  function moveTaskToBucket(id, bucketKey) {
-    setDeadline(id, deadlineForBucket(bucketKey))
+  function moveTaskToBucket(id, bucketKey, bucketOrder) {
+    setDeadline(id, deadlineForBucket(bucketKey, new Date(), bucketOrder), 'drag', {
+      plannedDate: null,
+    })
+  }
+
+  function promoteSomeday(id, deadline) {
+    if (!deadline) return
+
+    patch(id, (task) =>
+      task.deadline ? {} : { deadline, originalDeadline: deadline },
+    )
+  }
+
+  function setScheduledStart(id, scheduledStart) {
+    updateTask(id, { scheduledStart: scheduledStart || null })
+  }
+
+  function rescheduleTasks(moves, source = 'calendar') {
+    const byId = new Map(moves.map((move) => [move.id, move.deadline]))
+    let changed = false
+    const next = tasks.map((task) => {
+      const deadline = byId.get(task.id)
+      if (!deadline || deadline === task.deadline) return task
+      const updated = applyTaskUpdates(task, { deadline }, source)
+      if (updated !== task) changed = true
+      return updated
+    })
+
+    if (changed) commit(`${moves.length} tasks rescheduled`, next)
+  }
+
+  function togglePlanForToday(id) {
+    patch(id, (task) => {
+      if (isTaskUpcoming(task)) {
+        return {}
+      }
+
+      const today = toDateStr(new Date())
+      return { plannedDate: task.plannedDate === today ? null : today }
+    })
   }
 
   function setRecurrence(id, recurrence) {
@@ -366,15 +523,20 @@ export function useTasks() {
   return {
     tasks,
     addTask,
+    addSomedayTask,
     updateTask,
     deleteTask,
     toggleTask,
     completeTask,
     togglePin,
+    togglePlanForToday,
     archiveTask,
     unarchiveTask,
     duplicateTask,
     setDeadline,
+    promoteSomeday,
+    setScheduledStart,
+    rescheduleTasks,
     moveTaskToBucket,
     setRecurrence,
     addReminder,

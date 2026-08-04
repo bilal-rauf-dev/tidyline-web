@@ -62,7 +62,7 @@ export function useReminderNotifications(tasks, { onComplete } = {}) {
       const windowStart = startedAtRef.current
 
       tasksRef.current.forEach((task) => {
-        if (task.done || task.archived) {
+        if (task.done || task.archived || !task.deadline) {
           return
         }
 

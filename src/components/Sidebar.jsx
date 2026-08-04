@@ -8,6 +8,8 @@ import {
   SettingsIcon,
   ChevronLeftIcon,
   CommandIcon,
+  ClockIcon,
+  NotesIcon,
 } from './icons'
 import { BrandMonogram } from './BrandMonogram'
 
@@ -15,6 +17,8 @@ const NAV_ITEMS = [
   { href: '/', label: 'Home', Icon: HomeIcon },
   { href: '/board', label: 'Board', Icon: BoardIcon },
   { href: '/calendar', label: 'Calendar', Icon: CalendarIcon },
+  { href: '/planner', label: 'Day planner', Icon: ClockIcon },
+  { href: '/someday', label: 'Someday / Maybe', Icon: NotesIcon },
   { href: '/analytics', label: 'Analytics', Icon: AnalyticsIcon },
   { href: '/settings', label: 'Settings', Icon: SettingsIcon },
 ]
@@ -23,20 +27,46 @@ export function Sidebar({ isOpen, isCollapsed, onToggleCollapse, onNavigate, onO
   const [location] = useLocation()
   const activeIndex = NAV_ITEMS.findIndex((item) => item.href === location)
   const listRef = useRef(null)
-  const [indicatorTop, setIndicatorTop] = useState(0)
+  const [indicator, setIndicator] = useState({ top: 0, height: 42 })
 
   // Measure the active item rather than deriving its offset arithmetically:
   // a var()-based transform silently stops re-resolving once transitioned,
   // and measuring also survives any future change to nav item height.
   useLayoutEffect(() => {
     if (!listRef.current || activeIndex < 0) {
-      return
+      return undefined
     }
 
-    const active = listRef.current.querySelectorAll('.nav-item')[activeIndex]
+    const list = listRef.current
+    const active = list.querySelectorAll('.nav-item')[activeIndex]
+
+    function measure() {
+      if (!active) {
+        return
+      }
+
+      const listRect = list.getBoundingClientRect()
+      const activeRect = active.getBoundingClientRect()
+      setIndicator({
+        top: activeRect.top - listRect.top,
+        height: activeRect.height,
+      })
+    }
 
     if (active) {
-      setIndicatorTop(active.offsetTop)
+      measure()
+    }
+
+    const observer = typeof ResizeObserver === 'undefined'
+      ? null
+      : new ResizeObserver(measure)
+    observer?.observe(list)
+    observer?.observe(active)
+    window.addEventListener('resize', measure)
+
+    return () => {
+      observer?.disconnect()
+      window.removeEventListener('resize', measure)
     }
   }, [activeIndex, isCollapsed, isOpen])
 
@@ -64,7 +94,10 @@ export function Sidebar({ isOpen, isCollapsed, onToggleCollapse, onNavigate, onO
       <ul className="nav-list" ref={listRef}>
         <li
           className={activeIndex < 0 ? 'nav-indicator hidden' : 'nav-indicator'}
-          style={{ transform: `translateY(${indicatorTop}px)` }}
+          style={{
+            height: `${indicator.height}px`,
+            transform: `translateY(${indicator.top}px)`,
+          }}
           aria-hidden="true"
         />
 
