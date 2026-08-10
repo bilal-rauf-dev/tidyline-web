@@ -16,6 +16,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "chrono-node": "^2.10.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "wouter": "^3.10.0"

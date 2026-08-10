@@ -40,15 +40,22 @@ export function TaskForm({
   heading = 'Add task',
   focusOnMount = false,
   templates = [],
+  initialTitle = '',
+  initialTags = '',
+  initialDetails = null,
+  initialReminders = null,
 }) {
   const titleInputRef = useRef(null)
-  const [title, setTitle] = useState('')
+  const [title, setTitle] = useState(initialTitle)
   const [deadline, setDeadline] = useState(initialDeadline)
   const [reminderInput, setReminderInput] = useState('')
-  const [remindersDraft, setRemindersDraft] = useState([])
-  const [tagInput, setTagInput] = useState('')
-  const [detailsOpen, setDetailsOpen] = useState(false)
-  const [details, setDetails] = useState(createEmptyDetails)
+  const [remindersDraft, setRemindersDraft] = useState(initialReminders || [])
+  const [tagInput, setTagInput] = useState(initialTags)
+  const [detailsOpen, setDetailsOpen] = useState(Boolean(initialDetails))
+  const [details, setDetails] = useState(() => ({
+    ...createEmptyDetails(),
+    ...(initialDetails || {}),
+  }))
   const [selectedTemplateId, setSelectedTemplateId] = useState('')
 
   useEffect(() => {
@@ -56,6 +63,35 @@ export function TaskForm({
       titleInputRef.current?.focus()
     }
   }, [focusOnMount])
+
+  useEffect(() => {
+    // Clear prefilled values from the URL on mount so they are only consumed once
+    const params = new URLSearchParams(window.location.search)
+    let changed = false
+    const keysToDelete = [
+      'title',
+      'deadline',
+      'tags',
+      'startDate',
+      'reminderMinutes',
+      'durationMinutes',
+      'recurrence',
+      'priority',
+      'energy',
+      'planForToday',
+    ]
+    keysToDelete.forEach((key) => {
+      if (params.has(key)) {
+        params.delete(key)
+        changed = true
+      }
+    })
+    if (changed) {
+      const newSearch = params.toString()
+      const newUrl = window.location.pathname + (newSearch ? `?${newSearch}` : '')
+      window.history.replaceState(null, '', newUrl)
+    }
+  }, [])
 
   function addReminder() {
     if (!reminderInput) {

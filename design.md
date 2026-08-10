@@ -309,6 +309,15 @@ coloured pill, and never a green/red semantic pair.
   task row. Cards are `draggable` only when selection mode is off; in selection
   mode the grip is replaced by a checkbox and dragging is disabled so the two
   interactions cannot conflict.
+- **Quick Add Modal** (`QuickAddModal.jsx`, `.quick-add-palette`) — centred card on a
+  token-derived scrim, reusing `--surface`, `--radius-card` and a 1px `--line`
+  border (visually identical to the Command Palette). Features a top input field with
+  an underline border (`.input-underline`) and a live chip container showing matched
+  fields as removable/editable flat left-bordered tags (`.tag-list`, `.tag`), plus an
+  unambiguous resolved date preview. Triggered via the `N` or `Q` keyboard shortcuts
+  or the command palette, closing via `Esc` or background clicks. Supports `Shift+Enter`
+  to open the full inline form with prefilled fields.
+
 
 ## Never do this (explicit anti-patterns)
 

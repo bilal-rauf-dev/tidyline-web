@@ -4047,3 +4047,70 @@ button {
     left: 3.75rem;
   }
 }
+
+/* Quick Add modal */
+
+.quick-add-palette {
+  display: flex;
+  flex-direction: column;
+}
+
+.quick-add-body {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  background: var(--surface);
+}
+
+.quick-add-chips-container {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.quick-add-chips-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.quick-add-chip {
+  cursor: pointer;
+  transition: opacity var(--dur-fast) var(--ease);
+}
+
+.quick-add-chip:hover {
+  opacity: 0.8;
+}
+
+.quick-add-interpretation {
+  font-size: 0.8rem;
+  color: var(--text-soft);
+}
+
+.quick-add-interpretation strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.quick-add-error {
+  margin: 0;
+  font-size: 0.8rem;
+}
+
+.quick-add-hints {
+  font-size: 0.7rem;
+  color: var(--text-soft);
+  border-top: 1px solid var(--line);
+  padding-top: 0.6rem;
+  margin-top: 0.2rem;
+}
+
+.quick-add-hints strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
