@@ -200,9 +200,21 @@ export function parseNaturalTask(input, referenceDate = new Date()) {
     let startIdx = dateMatch.index
     let text = dateMatch.text
 
-    // Absorb preceding "due on / due / by" prepositions
+    // Absorb immediately-preceding deadline prepositions so they are stripped
+    // along with the date phrase and don't leave a dangling word in the title.
+    //
+    // List rationale:
+    //   due on / due / by  — original set
+    //   before             — "Complete app before September"
+    //   until / till / til — "Submit report until Friday"
+    //   no later than      — formal deadline language
+    //
+    // Deliberately excluded (high false-positive rate with non-deadline phrases):
+    //   on  — "meet on Monday at the office" should keep "on" in the title
+    //   at  — "call at 5pm" keeps "at" when there's no clear subject stripping
     const preceding = workingText.slice(0, startIdx)
-    const prepMatch = /\b(due\s+on|due|by)\s+$/i.exec(preceding)
+    const prepMatch =
+      /\b(no\s+later\s+than|due\s+on|due|before|until|till|til|by)\s+$/i.exec(preceding)
     if (prepMatch) {
       const prepLen = prepMatch[0].length
       startIdx -= prepLen

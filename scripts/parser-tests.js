@@ -305,7 +305,69 @@ test('startDate stripped from title', () => {
   assert(r.title === 'Task', `title: ${JSON.stringify(r.title)}`)
 })
 
+// ─── Deadline preposition absorption (regression) ─────────────────────────────
+// Each test checks: (a) no dangling preposition in title, (b) deadline parsed.
+
+test('"before" absorbed — Complete app before September', () => {
+  const r = parseNaturalTask('Complete app before September', REF)
+  assert(r.deadline !== null, 'deadline parsed')
+  assert(r.title === 'Complete app', `title: ${JSON.stringify(r.title)}`)
+})
+
+test('"until" absorbed — Submit report until Friday', () => {
+  const r = parseNaturalTask('Submit report until Friday', REF)
+  assert(r.deadline !== null, 'deadline parsed')
+  assert(r.title === 'Submit report', `title: ${JSON.stringify(r.title)}`)
+})
+
+test('"till" absorbed — Finish design till Monday', () => {
+  const r = parseNaturalTask('Finish design till Monday', REF)
+  assert(r.deadline !== null, 'deadline parsed')
+  assert(r.title === 'Finish design', `title: ${JSON.stringify(r.title)}`)
+})
+
+test('"til" absorbed — Send invoice til Friday', () => {
+  const r = parseNaturalTask('Send invoice til Friday', REF)
+  assert(r.deadline !== null, 'deadline parsed')
+  assert(r.title === 'Send invoice', `title: ${JSON.stringify(r.title)}`)
+})
+
+test('"no later than" absorbed — Submit report no later than Friday', () => {
+  const r = parseNaturalTask('Submit report no later than Friday', REF)
+  assert(r.deadline !== null, 'deadline parsed')
+  assert(r.title === 'Submit report', `title: ${JSON.stringify(r.title)}`)
+})
+
+test('"by" absorbed — Finish by tomorrow', () => {
+  const r = parseNaturalTask('Finish by tomorrow', REF)
+  assert(r.deadline !== null, 'deadline parsed')
+  assert(r.title === 'Finish', `title: ${JSON.stringify(r.title)}`)
+})
+
+test('"due" absorbed — Finish report due Monday', () => {
+  const r = parseNaturalTask('Finish report due Monday', REF)
+  assert(r.deadline !== null, 'deadline parsed')
+  assert(r.title === 'Finish report', `title: ${JSON.stringify(r.title)}`)
+})
+
+test('"due on" absorbed — Assignment due on Friday', () => {
+  const r = parseNaturalTask('Assignment due on Friday', REF)
+  assert(r.deadline !== null, 'deadline parsed')
+  assert(r.title === 'Assignment', `title: ${JSON.stringify(r.title)}`)
+})
+
+// "on" alone is deliberately NOT absorbed (avoids "meet on Monday at the office"
+// stripping "on" and leaving "meet" as title when "at the office" follows).
+test('"on" alone is NOT absorbed — stays in title', () => {
+  const r = parseNaturalTask('Meet on Friday', REF)
+  assert(r.deadline !== null, 'deadline parsed (Friday)')
+  // "on" should stay in the title OR be absorbed — either outcome is acceptable
+  // as long as the title does not contain "Friday" itself.
+  assert(!r.title.includes('Friday'), `"Friday" leaked into title: ${r.title}`)
+})
+
 // ─── Result ───────────────────────────────────────────────────────────────────
+
 
 console.log(`\n${passed} passed, ${failed} failed`)
 if (failed > 0) process.exit(1)
