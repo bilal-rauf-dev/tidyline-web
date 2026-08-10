@@ -353,6 +353,7 @@ function App() {
           onClose={() => setIsQuickAddOpen(false)}
           onAddTask={createTask}
           onOpenFullForm={handleOpenFullForm}
+          tasks={taskState.tasks}
         />
       )}
 

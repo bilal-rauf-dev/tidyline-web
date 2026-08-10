@@ -193,6 +193,7 @@ export function useTasks() {
     status = 'active',
     waitingFor = '',
     followUpDate = null,
+    plannedDate = null,
   }) {
     const task = normalizeTask({
       id: crypto.randomUUID(),
@@ -213,7 +214,7 @@ export function useTasks() {
       status,
       waitingFor,
       followUpDate,
-      plannedDate: null,
+      plannedDate,
       originalDeadline: deadline,
       postponeHistory: [],
       createdAt: new Date().toISOString(),
