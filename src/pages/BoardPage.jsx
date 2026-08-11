@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearch } from 'wouter'
 import { BUCKET_LABELS, BUCKET_ORDER, groupTasksByBucket } from '../utils/buckets'
+import { toDateStr } from '../utils/calendar'
 import { DEFAULT_FILTERS, buildComparator, filterTasks } from '../utils/filters'
 import { collectTags } from '../utils/tags'
 import { groupOverdue, isOverdue } from '../utils/overdue'
@@ -36,6 +37,53 @@ export function BoardPage({
   const params = new URLSearchParams(search)
   const focusForm = params.get('add') === '1'
   const expandTaskId = params.get('expand')
+
+  const prefilledTitle = params.get('title') || ''
+  const prefilledDeadline = params.get('deadline') || ''
+  const prefilledTags = params.get('tags') || ''
+
+  const prefilledDetails = useMemo(() => {
+    const localParams = new URLSearchParams(search)
+    const details = {}
+    const startDate = localParams.get('startDate')
+    if (startDate) details.startDate = startDate
+
+    const durationMinutes = localParams.get('durationMinutes')
+    if (durationMinutes) {
+      details.durationValue = durationMinutes
+      details.durationUnit = 'min'
+    }
+
+    const recurrence = localParams.get('recurrence')
+    if (recurrence) {
+      try {
+        details.recurrence = JSON.parse(recurrence)
+      } catch (error) {
+        console.warn('Invalid recurrence format:', error)
+      }
+    }
+
+    const energy = localParams.get('energy')
+    if (energy) {
+      details.energyLevel = energy === 'deep' ? 'deep-focus' : energy
+    }
+
+    const planForToday = localParams.get('planForToday')
+    if (planForToday === 'true') {
+      details.plannedDate = toDateStr(new Date())
+    }
+
+    return Object.keys(details).length > 0 ? details : null
+  }, [search])
+
+  const prefilledReminders = useMemo(() => {
+    const localParams = new URLSearchParams(search)
+    const minutes = localParams.get('reminderMinutes')
+    if (minutes) {
+      return [{ kind: 'relative', minutesBefore: Number(minutes) }]
+    }
+    return null
+  }, [search])
 
   const boardRef = useRef(null)
   const todayCollapseMarkerRef = useRef(null)
@@ -231,10 +279,16 @@ export function BoardPage({
       </header>
 
       <TaskForm
+        key={`${focusForm}:${prefilledTitle}:${prefilledDeadline}:${prefilledTags}`}
         onAddTask={addTask}
         allTasks={tasks}
         focusOnMount={focusForm}
         templates={templates}
+        initialTitle={prefilledTitle}
+        initialDeadline={prefilledDeadline}
+        initialTags={prefilledTags}
+        initialDetails={prefilledDetails}
+        initialReminders={prefilledReminders}
       />
 
       <div className="board-controls">

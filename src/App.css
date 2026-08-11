@@ -4047,3 +4047,158 @@ button {
     left: 3.75rem;
   }
 }
+
+/* Quick Add modal */
+
+.quick-add-palette {
+  display: flex;
+  flex-direction: column;
+}
+
+.quick-add-body {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  background: var(--surface);
+}
+
+.quick-add-chips-container {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.quick-add-chips-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.quick-add-chip {
+  cursor: pointer;
+  transition: opacity var(--dur-fast) var(--ease);
+}
+
+.quick-add-chip:hover {
+  opacity: 0.8;
+}
+
+.quick-add-interpretation {
+  font-size: 0.8rem;
+  color: var(--text-soft);
+}
+
+.quick-add-interpretation strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.quick-add-error {
+  margin: 0;
+  font-size: 0.8rem;
+}
+
+.quick-add-hints {
+  font-size: 0.7rem;
+  color: var(--text-soft);
+  border-top: 1px solid var(--line);
+  padding-top: 0.6rem;
+  margin-top: 0.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.quick-add-syntax {
+  font-family: monospace;
+  font-size: 0.68rem;
+  opacity: 0.7;
+}
+
+.quick-add-hints strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* Validation warning chip colour — same left-rule pattern, amber-like from text-soft */
+.tag-warning {
+  border-left-color: var(--accent);
+  opacity: 0.85;
+}
+
+/* Inline warning list below chips */
+.quick-add-warnings {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.quick-add-warning {
+  font-size: 0.75rem;
+  color: var(--accent);
+  padding-left: 0.5rem;
+  border-left: 2px solid var(--accent);
+}
+
+/* ── Autocomplete suggestion dropdown ─────────────────────────── */
+.quick-add-suggestions {
+  list-style: none;
+  margin: 0;
+  padding: 0.25rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.quick-add-suggestion {
+  padding: 0.35rem 1rem;
+  font-size: 0.8rem;
+  color: var(--text-soft);
+  cursor: pointer;
+  font-family: monospace;
+  transition: background 0.1s;
+}
+
+.quick-add-suggestion:hover,
+.quick-add-suggestion.is-active {
+  background: var(--surface-raised);
+  color: var(--text);
+}
+
+/* ── Clickable example hint pills ─────────────────────────────── */
+.quick-add-hint-pill {
+  display: inline-block;
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 0.1rem 0.4rem;
+  font-size: 0.65rem;
+  font-family: monospace;
+  color: var(--text-soft);
+  cursor: pointer;
+  margin: 0 0.15rem 0.2rem 0;
+  transition: border-color 0.15s, color 0.15s;
+  line-height: 1.5;
+}
+
+.quick-add-hint-pill:hover {
+  border-color: var(--text-soft);
+  color: var(--text);
+}
+
+/* ── "today" badge inside deadline interpretation line ─────────── */
+.interp-badge {
+  display: inline-block;
+  font-size: 0.65rem;
+  padding: 0.05rem 0.4rem;
+  background: var(--accent);
+  color: var(--bg);
+  border-radius: var(--radius-sm);
+  margin-left: 0.4rem;
+  font-weight: 600;
+  vertical-align: middle;
+}

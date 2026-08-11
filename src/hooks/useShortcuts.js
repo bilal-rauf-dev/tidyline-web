@@ -33,10 +33,12 @@ export function useShortcuts(handlers) {
       }
 
       switch (event.key) {
+        case 'q':
+        case 'Q':
         case 'n':
         case 'N':
           event.preventDefault()
-          handlers.onNewTask?.()
+          handlers.onQuickAdd?.()
           break
         case '/':
           event.preventDefault()

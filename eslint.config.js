@@ -5,8 +5,8 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  // `.smoke` holds generated SSR bundle output, not authored source.
-  globalIgnores(['dist', '.smoke']),
+  // `.smoke` and sibling dirs hold generated SSR bundle output, not authored source.
+  globalIgnores(['dist', '.smoke', '.phase1-smoke', '.phase2-smoke', '.phase3-smoke', '.parser-tests']),
   {
     // Build config and tooling scripts run in Node, not the browser.
     files: ['*.config.js', 'scripts/**/*.{js,jsx}'],

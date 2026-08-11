@@ -21,6 +21,8 @@ import { useSavedFilters } from './hooks/useSavedFilters'
 import { PlannerPage } from './pages/PlannerPage'
 import { SomedayPage } from './pages/SomedayPage'
 import { DEFAULT_OVERLOAD_HOURS } from './utils/workload'
+import { QuickAddModal } from './components/QuickAddModal'
+import { toDateStr } from './utils/calendar'
 
 const DELETE_CONFIRM_KEY = 'tidyline:confirm-delete'
 const OVERLOAD_HOURS_KEY = 'tidyline:overload-hours'
@@ -59,6 +61,7 @@ function App() {
   const [pendingDeleteId, setPendingDeleteId] = useState(null)
   const [taskAdded, setTaskAdded] = useState(null)
   const [overloadHours, setOverloadHours] = useState(loadOverloadHours)
+  const [isQuickAddOpen, setIsQuickAddOpen] = useState(false)
 
   const { completeTask, toggleTask, deleteTask } = taskState
 
@@ -81,6 +84,28 @@ function App() {
     navigate(`/board?expand=${encodeURIComponent(taskAdded.id)}`)
     setTaskAdded(null)
   }, [navigate, taskAdded])
+
+  const handleOpenFullForm = useCallback(
+    (parsed) => {
+      const params = new URLSearchParams()
+      params.set('add', '1')
+      if (parsed.title) params.set('title', parsed.title)
+      if (parsed.deadline) params.set('deadline', toDateStr(parsed.deadline))
+      if (parsed.tags && parsed.tags.length > 0) params.set('tags', parsed.tags.join(', '))
+      
+      // Phase 2/3 parameters
+      if (parsed.startDate) params.set('startDate', toDateStr(parsed.startDate))
+      if (parsed.reminderMinutes) params.set('reminderMinutes', String(parsed.reminderMinutes))
+      if (parsed.durationMinutes) params.set('durationMinutes', String(parsed.durationMinutes))
+      if (parsed.recurrence) params.set('recurrence', JSON.stringify(parsed.recurrence))
+      if (parsed.priority) params.set('priority', parsed.priority)
+      if (parsed.energy) params.set('energy', parsed.energy)
+      if (parsed.planForToday) params.set('planForToday', 'true')
+
+      navigate(`/board?${params.toString()}`)
+    },
+    [navigate],
+  )
 
   useEffect(() => {
     localStorage.setItem(DELETE_CONFIRM_KEY, String(askBeforeDelete))
@@ -156,14 +181,10 @@ function App() {
     setTimeout(() => document.querySelector('.toolbar-search input')?.focus(), 80)
   }, [navigate])
 
-  const startNewTask = useCallback(() => {
-    navigate('/board?add=1')
-    setTimeout(() => document.querySelector('.input-underline')?.focus(), 80)
-  }, [navigate])
 
   const commands = useMemo(
     () => [
-      { id: 'new', label: 'New task', hint: 'N', run: startNewTask },
+      { id: 'new', label: 'Create task', hint: 'N/Q', run: () => setIsQuickAddOpen(true) },
       { id: 'search', label: 'Focus search', hint: '/', run: focusSearch },
       { id: 'home', label: 'Go to Home', run: () => navigate('/') },
       { id: 'board', label: 'Go to Board', run: () => navigate('/board') },
@@ -185,15 +206,18 @@ function App() {
           appearance.setDensity(appearance.density === 'compact' ? 'comfortable' : 'compact'),
       },
     ],
-    [navigate, startNewTask, focusSearch, appearance],
+    [navigate, focusSearch, appearance],
   )
 
   useShortcuts(
     useMemo(
       () => ({
         onPalette: () => setIsPaletteOpen((open) => !open),
-        onEscape: () => setIsPaletteOpen(false),
-        onNewTask: startNewTask,
+        onEscape: () => {
+          setIsPaletteOpen(false)
+          setIsQuickAddOpen(false)
+        },
+        onQuickAdd: () => setIsQuickAddOpen(true),
         onFocusSearch: focusSearch,
         onToggleActive: () => {
           const id = activeTaskId()
@@ -208,7 +232,7 @@ function App() {
           return true
         },
       }),
-      [startNewTask, focusSearch, toggleTask, requestDelete],
+      [focusSearch, toggleTask, requestDelete],
     ),
   )
 
@@ -321,6 +345,16 @@ function App() {
 
       {isPaletteOpen && (
         <CommandPalette commands={commands} onClose={() => setIsPaletteOpen(false)} />
+      )}
+
+      {isQuickAddOpen && (
+        <QuickAddModal
+          isOpen={isQuickAddOpen}
+          onClose={() => setIsQuickAddOpen(false)}
+          onAddTask={createTask}
+          onOpenFullForm={handleOpenFullForm}
+          tasks={taskState.tasks}
+        />
       )}
 
       {pendingDeleteId && (

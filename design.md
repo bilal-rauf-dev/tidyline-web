@@ -309,6 +309,41 @@ coloured pill, and never a green/red semantic pair.
   task row. Cards are `draggable` only when selection mode is off; in selection
   mode the grip is replaced by a checkbox and dragging is disabled so the two
   interactions cannot conflict.
+- **Quick Add Modal** (`QuickAddModal.jsx`, `.quick-add-palette`) — centred card on a
+  token-derived scrim, reusing `--surface`, `--radius-card` and a 1px `--line`
+  border (visually identical to the Command Palette). Features a top input field and
+  a live chip container showing matched fields as removable/editable flat left-bordered
+  tags (`.tag-list`, `.tag`), plus an unambiguous resolved date preview.
+  Triggered via the `N` or `Q` keyboard shortcuts or the command palette.
+  Closes via `Esc` or background click. `Shift+Enter` opens the full inline form
+  with all parsed fields pre-filled.
+
+  **Supported natural-language syntax (stripping order preserves indices):**
+
+  | Token | Example | Field |
+  |-------|---------|-------|
+  | `#tag` | `#university` | `tags[]` |
+  | `!high` / `p1` | `!high`, `p2` | `priority` (preview chip only) |
+  | `@deep` / `@low` | `@deep-focus`, `@normal` | `energyLevel` |
+  | `for Nh` / `for Nm` | `for 2h`, `for 45m` | `duration` |
+  | `remind Nh before` | `remind 30m before` | `reminders[]` relative |
+  | `every …` | `every weekday`, `every Monday`, `every 2 weeks` | `recurrence` |
+  | `start <day>` | `start Monday`, `start next week` | `startDate` |
+  | `plan today` | *(two-word form)* | `plannedDate` = today |
+  | deadline phrase | `tomorrow 8pm`, `next Friday`, `due Monday` | `deadline` |
+
+  Prepositions `due on / due / by` immediately preceding a deadline phrase are
+  absorbed so they don't leak into the cleaned title.
+
+  **Autocomplete:** typing `#` followed by partial text shows a keyboard-navigable
+  dropdown of matching tags from existing tasks. Tab or Enter applies the top suggestion.
+  Example hint pills below the chip row append syntax tokens to the current input on click.
+
+  **Validation (live, never silent):** reminder-without-deadline and invalid duration
+  surface as amber left-rule warning chips and block submission with an inline message.
+  Zero-value durations are preserved in the preview but flagged.
+
+
 
 ## Never do this (explicit anti-patterns)
 
