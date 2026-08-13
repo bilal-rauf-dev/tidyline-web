@@ -17,6 +17,8 @@ radii, or shadow styles outside this list.
 - Surface (dark accent card): near-black `#141416`
 - Accent primary (warm): coral/orange `#FF5A36`
 - Accent secondary (cool): lavender `#C9C3F2`
+- Home soft blue surface: `#CFE5F2`
+- Home soft pink surface: `#EADCF0`
 - Text primary: `#14141A`
 - Text secondary: `#6B6B72`
 - Border/divider: `#E7E4DD` (barely-there, used sparingly, never a full outline around every card)
@@ -34,15 +36,17 @@ accent-coloured reads from `--accent`, so nothing needs per-hue special
 casing. `--accent-soft` (lavender) is unchanged by this and remains the
 secondary chart-geometry colour.
 
-**Override (data-dense pages):** the one-dark-card rule is relaxed on
-Analytics and Home, which are dashboards rather than task surfaces and need
-card-type variety to stay readable. Those pages may mix three surface types:
-white (`--surface`), dark (`--surface-dark`), and a solid **accent surface**
-(`--accent` as a card background, white text on it). The lavender secondary
-(`--accent-soft`) is admitted as a genuine second accent on these pages, used
-only for chart geometry — ring fills, milestone fill, sparkline peak, timeline
-points — never for text, borders, or a fourth card colour. Task-surface pages
-(Board, Calendar, Settings) keep the original one-dark-card discipline.
+**Override (data-dense pages):** Analytics may mix white (`--surface`), dark
+(`--surface-dark`), coral (`--accent`) and lavender chart geometry. Home has a
+broader, intentional editorial palette: white and dark anchors, coral for the
+progress card, lavender as a full activity-card surface, plus muted blue and
+soft pink surfaces. These extra surfaces are Home-only layout tools, not new
+semantic status colors and not available to task badges, forms, or Board cards.
+In dark mode they become opaque deep blue `#24353F` and plum `#382D3D`; they
+never use transparency or glass effects. Task-surface pages (Board, Calendar,
+Settings) keep the original one-dark-card discipline.
+Lavender remains a light surface in both themes and therefore always uses the
+light-theme dark ink `#14141A` for accessible contrast.
 
 ## Dark mode
 
@@ -549,24 +553,31 @@ These are behavioural contracts, not styling. Change them deliberately.
 ## Component-specific direction (TidyLine)
 
 - Home page (default route): a landing/summary view, not a data source of its
-  own — every number on it is derived from the same task list and the same
-  utils the other pages use. Structure, top to bottom:
-  1. Left-aligned time-of-day greeting as the `h1` (sentence case, not
-     centered, no gradient behind it, no eyebrow label above it), one line of
-     body-copy subtext, and one primary CTA that jumps straight to the Board's
-     add-task form with the title field focused (`/board?add=1`).
-  2. A "Daily activity" timeline card sitting *beside* the greeting, not
-     below it — today's reminders plotted on a 24-hour axis with a coral
-     current-time marker, lavender points for pending reminders and outlined
-     points for completed ones, followed by a compact time+title list. Reuses
-     existing reminder datetimes; adds no fields.
-  3. An asymmetric five-card bento grid below, using all three surface types:
-     a dark Today focus card with a cleared ring and real overdue/completed
-     counts; a white overall-progress milestone card; an accent activity card
-     with the shared dot grid; a wide upcoming-deadlines card with date,
-     countdown and existing tag marks; and a white completion-rhythm card with
-     a sparkline derived strictly from `completedAt` over the last 14 days.
-  - Reuse the chart primitives above. Do not invent a new stat card type here.
+  own. It uses a single 12-column **editorial mosaic**, not a hero followed by
+  a separate uniform card grid. Every number and task title is derived from the
+  shared task list and existing utilities.
+  1. The oversized time-aware greeting sits on a muted-blue card with Add Task
+     and Review the Day actions. It is wide but not full-width, allowing the
+     white Daily Activity timeline to sit alongside it. The timeline keeps its
+     real reminder points and coral current-time marker.
+  2. The tall dark Today card is the visual anchor. Lavender Activity, coral
+     Overall Progress, muted-blue Completion Rhythm, a wide white Coming Up
+     list, and cards of deliberately different widths/heights build around it.
+     Color blocks create depth; no card uses a shadow or translucent surface.
+  3. **Daybreak illustration** (`HomeDaybreak.jsx`, `.home-daybreak`) is the
+     one intentionally non-data card: an original inline SVG of an uneven path,
+     horizon and star on the soft-pink surface. Its short line of copy responds
+     only to the real due-today count. It must not acquire a fabricated metric,
+     stock image, avatar, team member, or mood state.
+  4. The mosaic responds to the content width beside the sidebar. It becomes a
+     deliberate two-column composition at 1120px, gives the tall Today anchor a
+     full row below 820px, and becomes one readable column below 680px. Source
+     order remains greeting, timeline, Today, Activity, illustration, progress,
+     upcoming, completion so mobile reading order is useful.
+  - Existing ring, milestone, activity-grid and sparkline primitives remain
+    valid, but Home is not required to force every new visual region into a
+    chart primitive. Its tinted surface cards and illustration are finalized
+    Home-specific primitives.
 - Analytics page: five cards of varied shapes, never a uniform grid.
   1. **Progress** (white, wide) — milestone bar for overall done/total, with
      two ring-stat tiles beneath for the two buckets holding the most tasks.

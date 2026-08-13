@@ -6,6 +6,8 @@
   --surface-dark: #141416;
   --accent: #ff5a36;
   --accent-soft: #c9c3f2;
+  --home-blue: #cfe5f2;
+  --home-pink: #eadcf0;
   --text: #14141a;
   --text-soft: #6b6b72;
   --text-on-dark: #f5f4f2;
@@ -38,7 +40,8 @@
  */
 :root[data-density="compact"] .entry-card,
 :root[data-density="compact"] .bucket-column,
-:root[data-density="compact"] .overdue-group {
+:root[data-density="compact"] .overdue-group,
+:root[data-density="compact"] .home-panel {
   padding: 0.7rem;
 }
 
@@ -47,7 +50,7 @@
 }
 
 :root[data-density="compact"] .buckets,
-:root[data-density="compact"] .home-grid,
+:root[data-density="compact"] .home-dashboard,
 :root[data-density="compact"] .analytics-grid {
   gap: 0.6rem;
 }
@@ -71,6 +74,8 @@
   --text: var(--text-on-dark);
   --text-soft: var(--text-on-dark-soft);
   --line: var(--line-on-dark);
+  --home-blue: #24353f;
+  --home-pink: #382d3d;
 }
 
 * {

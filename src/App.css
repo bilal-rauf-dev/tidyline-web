@@ -3447,26 +3447,89 @@ button {
 
 /* Home */
 
+.home-shell {
+  width: min(1320px, 94%);
+}
+
+.home-dashboard {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-template-rows: auto auto auto auto;
+  gap: clamp(0.75rem, 1.25vw, 1rem);
+  align-items: stretch;
+}
+
+.home-panel {
+  min-width: 0;
+  padding: clamp(1.1rem, 2vw, 1.6rem);
+  border-radius: var(--radius-card);
+}
+
+.home-card-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.home-card-heading h2 {
+  margin: 0;
+}
+
+.home-card-heading > span,
+.home-card-heading > a {
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  color: var(--text-soft);
+}
+
+.home-card-heading > a {
+  text-underline-offset: 0.2rem;
+}
+
 .home-cta {
   display: inline-flex;
   align-items: center;
-  margin-top: 1.1rem;
   padding: 0.68rem 1.1rem;
   border-radius: var(--radius-btn);
   font-weight: 600;
   text-decoration: none;
 }
 
-.home-top {
-  display: grid;
-  gap: 1rem;
-  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
-  align-items: start;
+.home-welcome {
+  grid-column: 1 / 6;
+  grid-row: 1;
+  display: flex;
+  min-height: 17rem;
+  flex-direction: column;
+  justify-content: space-between;
+  background: var(--home-blue);
+  color: var(--text);
+}
+
+.home-welcome h1 {
+  max-width: 8ch;
+  margin: 0;
+  font-size: clamp(2.5rem, 5vw, 4.8rem);
+  line-height: 0.96;
+  letter-spacing: -0.055em;
+}
+
+.home-welcome p {
+  max-width: 46ch;
+  margin: 1.1rem 0 0;
+  color: color-mix(in srgb, var(--text) 72%, transparent);
+  font-size: 0.92rem;
+  line-height: 1.55;
 }
 
 .home-timeline {
+  grid-column: 6 / 13;
+  grid-row: 1;
   display: flex;
   flex-direction: column;
+  min-height: 17rem;
 }
 
 .timeline {
@@ -3580,19 +3643,12 @@ button {
   text-decoration: line-through;
 }
 
-.home-grid {
-  display: grid;
-  gap: 1rem;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  grid-template-areas:
-    "focus progress  activity activity"
-    "focus upcoming upcoming completion";
-}
-
 .home-focus {
-  grid-area: focus;
+  grid-column: 1 / 4;
+  grid-row: 2 / span 2;
   justify-content: space-between;
   gap: 1rem;
+  min-height: 25rem;
 }
 
 .home-focus-notes {
@@ -3610,23 +3666,161 @@ button {
 }
 
 .home-activity {
-  grid-area: activity;
+  grid-column: 4 / 8;
+  grid-row: 2;
+  display: flex;
+  flex-direction: column;
+  background: var(--accent-soft);
+  color: #14141a;
+}
+
+.home-activity h2,
+.home-activity .home-card-heading > span {
+  color: #14141a;
 }
 
 .home-progress {
-  grid-area: progress;
+  grid-column: 4 / 7;
+  grid-row: 3;
+  justify-content: space-between;
+  min-height: 13rem;
 }
 
 .home-upcoming {
-  grid-area: upcoming;
+  grid-column: 7 / 13;
+  grid-row: 3 / span 2;
 }
 
 .home-completion {
-  grid-area: completion;
+  grid-column: 1 / 7;
+  grid-row: 4;
+  background: var(--home-blue);
+}
+
+.home-daybreak {
+  position: relative;
+  grid-column: 8 / 13;
+  grid-row: 2;
+  min-height: 15rem;
+  overflow: hidden;
+  background: var(--home-pink);
+}
+
+.home-daybreak-copy {
+  position: relative;
+  z-index: 1;
+  max-width: 48%;
+}
+
+.home-daybreak h2,
+.home-activity h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.home-daybreak p {
+  margin: 0.55rem 0 0;
+  color: color-mix(in srgb, var(--text) 68%, transparent);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.home-daybreak-art {
+  position: absolute;
+  right: -1rem;
+  bottom: -1.2rem;
+  width: min(70%, 19rem);
+  color: var(--text);
+}
+
+.home-daybreak-art path,
+.home-daybreak-art circle {
+  vector-effect: non-scaling-stroke;
+}
+
+.daybreak-sun,
+.daybreak-horizon,
+.daybreak-scribble {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+}
+
+.daybreak-scribble {
+  stroke-dasharray: 4 5;
+  opacity: 0.42;
+}
+
+.daybreak-path {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 5;
+}
+
+.daybreak-ray {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+}
+
+.daybreak-dot {
+  fill: var(--accent);
+}
+
+.daybreak-dot.dot-two {
+  fill: currentColor;
+  opacity: 0.5;
+}
+
+.home-activity .activity-stat {
+  margin-bottom: 1.15rem;
+}
+
+.home-activity .activity-dot.active {
+  background: currentColor;
+}
+
+.home-activity .activity-dot.empty {
+  border-color: currentColor;
+}
+
+.home-activity .activity-dot.overdue {
+  background: repeating-linear-gradient(
+    45deg,
+    currentColor 0 2px,
+    transparent 2px 4px
+  );
+}
+
+.home-activity .card-note {
+  color: color-mix(in srgb, currentColor 68%, transparent);
+}
+
+.home-progress .milestone-label,
+.home-progress .milestone-scale,
+.home-progress .home-progress-stat span {
+  color: var(--text-on-dark);
+  opacity: 0.78;
+}
+
+.home-progress .home-progress-stat strong {
+  color: var(--text-on-dark);
+}
+
+.home-progress .milestone-track {
+  background: color-mix(in srgb, var(--text-on-dark) 35%, transparent);
+}
+
+.home-progress .milestone-fill {
+  background: var(--surface-dark);
+}
+
+.home-progress .milestone-tick {
+  background: color-mix(in srgb, var(--text-on-dark) 70%, transparent);
 }
 
 .home-upcoming h2 {
-  margin: 0 0 0.9rem;
+  margin: 0;
   font-size: 1.1rem;
   font-weight: 700;
 }
@@ -3692,17 +3886,45 @@ button {
       "delaytags delaytags";
   }
 
-  .home-top {
-    grid-template-columns: 1fr;
-  }
-
-  .home-grid {
+  .home-dashboard {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     grid-template-areas:
-      "focus    progress"
-      "focus    activity"
-      "upcoming upcoming"
-      "completion completion";
+      "welcome welcome"
+      "timeline timeline"
+      "focus activity"
+      "focus daybreak"
+      "progress completion"
+      "upcoming upcoming";
+  }
+
+  .home-dashboard > * {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  .home-welcome { grid-area: welcome; min-height: 14rem; }
+  .home-timeline { grid-area: timeline; min-height: auto; }
+  .home-focus { grid-area: focus; }
+  .home-activity { grid-area: activity; }
+  .home-daybreak { grid-area: daybreak; }
+  .home-progress { grid-area: progress; }
+  .home-upcoming { grid-area: upcoming; }
+  .home-completion { grid-area: completion; }
+}
+
+@container app-content (max-width: 820px) {
+  .home-dashboard {
+    grid-template-areas:
+      "welcome welcome"
+      "timeline timeline"
+      "focus focus"
+      "activity daybreak"
+      "progress completion"
+      "upcoming upcoming";
+  }
+
+  .home-focus {
+    min-height: auto;
   }
 }
 
@@ -3711,15 +3933,23 @@ button {
 @container app-content (max-width: 680px) {
   .buckets,
   .analytics-grid,
-  .home-grid {
+  .home-dashboard {
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas: none;
   }
 
   .buckets > *,
   .analytics-grid > *,
-  .home-grid > * {
+  .home-dashboard > * {
     grid-area: auto;
+  }
+
+  .home-welcome {
+    min-height: 19rem;
+  }
+
+  .home-daybreak {
+    min-height: 14rem;
   }
 
   .buckets > * {
@@ -3806,14 +4036,14 @@ button {
 
   .buckets,
   .analytics-grid,
-  .home-grid {
+  .home-dashboard {
     grid-template-columns: 1fr;
     grid-template-areas: none;
   }
 
   .buckets > *,
   .analytics-grid > *,
-  .home-grid > * {
+  .home-dashboard > * {
     grid-area: auto;
   }
 
@@ -3823,7 +4053,8 @@ button {
 
   .entry-card,
   .bucket-column,
-  .accent-card {
+  .accent-card,
+  .home-panel {
     padding: 1rem;
   }
 
