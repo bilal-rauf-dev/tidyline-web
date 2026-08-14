@@ -605,10 +605,12 @@ These are behavioural contracts, not styling. Change them deliberately.
   own. It uses a single 12-column **editorial mosaic**, not a hero followed by
   a separate uniform card grid. Every number and task title is derived from the
   shared task list and existing utilities.
-  1. The oversized time-aware greeting sits on a muted-blue card with Add Task
-     and Review the Day actions. It is wide but not full-width, allowing the
-     white Daily Activity timeline to sit alongside it. The timeline keeps its
-     real reminder points and coral current-time marker.
+  1. The oversized time-aware greeting is an unframed editorial introduction
+     with Add Task and Review the Day actions—no colored card behind it. A
+     bordered white Daily Activity planner canvas sits alongside it. The canvas
+     renders only tasks actually placed in Day Planner (`scheduledStart` plus
+     duration), with compact colored schedule blocks, collision-aware lanes,
+     and a coral current-time marker. Reminder times do not appear there.
   2. The dark Today card is the visual anchor, but it occupies one content row
      only—it never spans later dashboard rows and must not inherit their total
      height. Lavender Activity and dark Weekly Pace are an explicit equal-width

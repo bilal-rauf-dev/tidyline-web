@@ -138,7 +138,7 @@ export function HomePage({
     <>
       <main className="app-shell home-shell">
         <section className="home-dashboard" aria-label="Home dashboard">
-          <header className="home-panel home-welcome">
+          <header className="home-welcome">
             <div>
               <h1>{workspaceName ? `${greeting}` : greeting}</h1>
               <p>
@@ -163,51 +163,58 @@ export function HomePage({
           <article className="entry-card home-timeline">
             <div className="home-card-heading">
               <h2>Daily activity</h2>
-              <span>{timeline.items.length} scheduled</span>
+              <Link href="/planner">Open day planner</Link>
             </div>
 
-            <div className="timeline">
-              <div className="timeline-axis">
+            <div className="home-schedule" style={{ '--schedule-lanes': timeline.laneCount }}>
+              <div className="home-schedule-scale" aria-hidden="true">
                 {TIMELINE_TICKS.map((tick) => (
                   <span
                     key={tick}
-                    className="timeline-tick"
-                    style={{ left: `${(tick / 24) * 100}%` }}
+                    style={{ left: `${((tick - 6) / 16) * 100}%` }}
+                  >
+                    {String(tick).padStart(2, '0')}:00
+                  </span>
+                ))}
+              </div>
+
+              <div className="home-schedule-rail">
+                {TIMELINE_TICKS.map((tick) => (
+                  <span
+                    key={tick}
+                    className="home-schedule-tick"
+                    style={{ left: `${((tick - 6) / 16) * 100}%` }}
                   />
                 ))}
 
                 {timeline.items.map((item) => (
-                  <span
+                  <div
                     key={item.key}
-                    className={item.done ? 'timeline-point done' : 'timeline-point'}
-                    style={{ left: `${item.position}%` }}
+                    className="home-schedule-block"
+                    style={{
+                      left: `${item.position}%`,
+                      width: `${item.width}%`,
+                      top: `calc(${item.lane} * 3.05rem + 0.8rem)`,
+                    }}
                     title={`${item.time} — ${item.title}`}
-                  />
+                  >
+                    <strong>{item.title}</strong>
+                    <span>{item.time} · {item.duration} min</span>
+                  </div>
                 ))}
 
-                <span className="timeline-now" style={{ left: `${timeline.nowPosition}%` }} />
-              </div>
-
-              <div className="timeline-scale" aria-hidden="true">
-                {TIMELINE_TICKS.map((tick) => (
-                  <span key={tick}>{String(tick).padStart(2, '0')}</span>
-                ))}
+                {timeline.nowPosition >= 0 && timeline.nowPosition <= 100 && (
+                  <span className="home-schedule-now" style={{ left: `${timeline.nowPosition}%` }} />
+                )}
               </div>
             </div>
 
             {timeline.items.length === 0 ? (
-              <p className="empty">No reminders set for today.</p>
+              <p className="empty">Nothing is placed in today&rsquo;s plan yet.</p>
             ) : (
-              <ul className="timeline-list">
-                {timeline.items.map((item) => (
-                  <li key={item.key}>
-                    <span className="timeline-time">{item.time}</span>
-                    <span className={item.done ? 'timeline-title done' : 'timeline-title'}>
-                      {item.title}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+              <p className="home-schedule-summary">
+                {timeline.items.length} {timeline.items.length === 1 ? 'task is' : 'tasks are'} placed in today&rsquo;s plan.
+              </p>
             )}
           </article>
 
