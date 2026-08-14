@@ -32,6 +32,7 @@ export function Sidebar({
   onToggleCollapse,
   onNavigate,
   onOpenPalette,
+  onOpenShutdown,
   workspaceName = 'TidyLine',
   tasks = [],
   onOpenTask,
@@ -226,6 +227,16 @@ export function Sidebar({
           )
         })}
       </ul>
+
+      <button
+        type="button"
+        className="sidebar-review"
+        onClick={onOpenShutdown}
+        title="Review the day"
+      >
+        <ClockIcon />
+        <span>Review the day</span>
+      </button>
 
       <button
         type="button"

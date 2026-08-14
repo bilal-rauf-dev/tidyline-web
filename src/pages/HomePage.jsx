@@ -14,7 +14,6 @@ import { ActivityGrid } from '../components/ActivityGrid'
 import { Sparkline } from '../components/Sparkline'
 import { TagList } from '../components/TagList'
 import { HomeDaybreak } from '../components/HomeDaybreak'
-import { ShutdownDialog } from '../components/ShutdownDialog'
 import { isOverdue } from '../utils/overdue'
 import { toDateStr } from '../utils/calendar'
 import { isTaskPlannedForToday, isTaskUpcoming } from '../utils/taskFields'
@@ -49,10 +48,7 @@ function getGreeting(date = new Date()) {
 export function HomePage({
   tasks: allTasks,
   workspaceName = '',
-  setDeadline = () => {},
-  archiveTask = () => {},
 }) {
-  const [shutdownOpen, setShutdownOpen] = useState(false)
   const [featureIndex, setFeatureIndex] = useState(0)
   const greeting = useMemo(() => getGreeting(), [])
   const tasks = useMemo(
@@ -147,16 +143,10 @@ export function HomePage({
               </p>
             </div>
             <div className="home-actions">
-              <Link href="/board?add=1" className="primary home-cta">
+              <Link href="/board?add=1" className="home-add-action">
+                <span className="home-add-mark" aria-hidden="true">+</span>
                 Add a task
               </Link>
-              <button
-                type="button"
-                className="secondary home-cta"
-                onClick={() => setShutdownOpen(true)}
-              >
-                Review the day
-              </button>
             </div>
           </header>
 
@@ -366,14 +356,6 @@ export function HomePage({
         </section>
       </main>
 
-      {shutdownOpen && (
-        <ShutdownDialog
-          tasks={allTasks}
-          setDeadline={setDeadline}
-          archiveTask={archiveTask}
-          onClose={() => setShutdownOpen(false)}
-        />
-      )}
     </>
   )
 }

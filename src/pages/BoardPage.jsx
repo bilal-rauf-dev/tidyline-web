@@ -292,17 +292,19 @@ export function BoardPage({
           initialReminders={prefilledReminders}
         />
 
-        <aside className="board-someday-prompt" aria-labelledby="board-someday-prompt-title">
+        <Link href="/someday" className="board-someday-prompt" aria-labelledby="board-someday-prompt-title">
           <span className="board-someday-prompt-kicker">No deadline yet?</span>
           <h2 id="board-someday-prompt-title">Give the idea some room.</h2>
           <p>
             Not sure when to have it done? Keep it in Someday / Maybe until the right
             date becomes clear.
           </p>
-          <Link href="/someday" className="board-someday-link">
-            Add to Someday / Maybe <span aria-hidden="true">→</span>
-          </Link>
-        </aside>
+          <svg className="board-someday-visual" viewBox="0 0 120 42" aria-hidden="true">
+            <path d="M3 34h71c18 0 27-10 39-24" />
+            <path d="m102 4 11 6-7 11" />
+            <circle cx="23" cy="14" r="4" />
+          </svg>
+        </Link>
       </div>
 
       <div className="board-controls">

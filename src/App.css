@@ -5895,6 +5895,160 @@ textarea,
 
 .settings-section-content[hidden] { display: none; }
 
+/* Purpose-specific actions: editorial add, global review, and task destinations. */
+.home-add-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: fit-content;
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 750;
+  text-decoration: none;
+}
+
+.home-add-mark {
+  display: inline-grid;
+  width: 1.35rem;
+  height: 1.35rem;
+  place-items: center;
+  border: 1px solid var(--accent);
+  border-radius: 50%;
+  color: var(--accent);
+  font-size: 1.1rem;
+  font-weight: 500;
+  line-height: 1;
+  transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+
+.home-add-action:active .home-add-mark {
+  background: var(--accent);
+  color: #fff;
+}
+
+.sidebar-review {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-height: var(--nav-item-h);
+  margin-top: auto;
+  padding: 0 0.75rem;
+  border: 1px solid var(--line-on-dark);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-on-dark);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.sidebar-review svg {
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+  color: var(--accent);
+}
+
+.sidebar-review + .sidebar-collapse {
+  margin-top: 0.45rem;
+}
+
+.app-layout.collapsed .sidebar-review {
+  justify-content: center;
+  padding-inline: 0.5rem;
+}
+
+.app-layout.collapsed .sidebar-review span {
+  display: none;
+}
+
+.form-footer {
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.task-save-action {
+  display: inline-grid;
+  width: 2.45rem;
+  min-height: 2.45rem;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--accent);
+  border-radius: 9px;
+  background: var(--accent);
+  color: #fff;
+}
+
+.task-save-action svg,
+.task-archive-action svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.task-archive-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.45rem;
+  padding: 0.35rem 0.15rem;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-soft);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.task-archive-action:active {
+  border-bottom-color: var(--accent);
+  color: var(--text);
+}
+
+.board-someday-prompt {
+  position: relative;
+  overflow: hidden;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.board-someday-prompt::after {
+  position: absolute;
+  right: 1.1rem;
+  bottom: 1rem;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: var(--accent);
+  content: '';
+}
+
+.board-someday-prompt:active .board-someday-visual {
+  transform: translateX(0.25rem);
+}
+
+.board-someday-visual {
+  width: min(100%, 9rem);
+  margin-top: auto;
+  color: var(--text);
+  transition: transform var(--dur-fast) var(--ease);
+}
+
+.board-someday-visual path,
+.board-someday-visual circle {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  vector-effect: non-scaling-stroke;
+}
+
+.board-someday-visual circle {
+  fill: var(--accent);
+  stroke: none;
+}
+
 .settings-profile-row {
   align-items: end;
 }

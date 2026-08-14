@@ -6,6 +6,7 @@ import { MenuIcon } from './components/icons'
 import { CommandPalette } from './components/CommandPalette'
 import { DeleteConfirmDialog } from './components/DeleteConfirmDialog'
 import { TaskAddedToast } from './components/TaskAddedToast'
+import { ShutdownDialog } from './components/ShutdownDialog'
 import { HomePage } from './pages/HomePage'
 import { BoardPage } from './pages/BoardPage'
 import { CalendarPage } from './pages/CalendarPage'
@@ -65,6 +66,7 @@ function App() {
   const [taskAdded, setTaskAdded] = useState(null)
   const [overloadHours, setOverloadHours] = useState(loadOverloadHours)
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false)
+  const [isShutdownOpen, setIsShutdownOpen] = useState(false)
 
   const { completeTask, toggleTask, deleteTask } = taskState
 
@@ -275,6 +277,10 @@ function App() {
           setIsDrawerOpen(false)
           setIsPaletteOpen(true)
         }}
+        onOpenShutdown={() => {
+          setIsDrawerOpen(false)
+          setIsShutdownOpen(true)
+        }}
         workspaceName={profile.name}
         tasks={taskState.tasks}
         onOpenTask={(taskId) => {
@@ -299,9 +305,6 @@ function App() {
               <HomePage
                 tasks={taskState.tasks}
                 workspaceName={profile.name}
-                setDeadline={taskState.setDeadline}
-                rescheduleTasks={taskState.rescheduleTasks}
-                archiveTask={taskState.archiveTask}
               />
             </Route>
             <Route path="/board">
@@ -393,6 +396,15 @@ function App() {
           title={taskAdded.title}
           onEdit={editAddedTask}
           onDismiss={dismissTaskAdded}
+        />
+      )}
+
+      {isShutdownOpen && (
+        <ShutdownDialog
+          tasks={taskState.tasks}
+          setDeadline={taskState.setDeadline}
+          archiveTask={taskState.archiveTask}
+          onClose={() => setIsShutdownOpen(false)}
         />
       )}
     </div>

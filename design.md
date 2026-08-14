@@ -249,6 +249,14 @@ coloured pill, and never a green/red semantic pair.
   bare glyph (`.icon-mini`, for row-level actions like pin/edit/duplicate/
   archive/delete). Both always carry an `aria-label` and a `title`. Never a
   circular floating action button.
+- **Purpose-specific actions** — important actions may depart from the generic
+  primary/secondary button when their role benefits from clearer identity. Home
+  Add Task is plain editorial text with a small circled plus; it is not a filled
+  rounded CTA. Daily Shutdown is a persistent bordered sidebar action so it can
+  be opened from every route. The Add Task footer uses a floppy-disk icon for
+  Save and an adjacent underlined Archive action; the latter creates the task
+  directly in the existing archived state rather than faking an archive view.
+  Decorative treatment never replaces an accessible label or working action.
 - **Custom checkbox** (`Checkbox.jsx`, `.custom-checkbox`) — a small square
   control using the shared line-icon language. Its unchecked state is a
   `--line` border; its checked state uses `--accent` with a white check glyph.
