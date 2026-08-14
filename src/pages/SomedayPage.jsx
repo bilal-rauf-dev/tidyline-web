@@ -54,7 +54,7 @@ export function SomedayPage({ tasks, addSomedayTask, promoteSomeday, deleteTask,
   }
 
   return (
-    <main className="app-shell">
+    <main className="app-shell someday-shell">
       <header className="hero">
         <h1>Someday / Maybe</h1>
         <p className="hero-copy">

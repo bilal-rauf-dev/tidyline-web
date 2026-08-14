@@ -4433,3 +4433,754 @@ button {
   font-weight: 600;
   vertical-align: middle;
 }
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Editorial application refresh
+   Shared visual language for every route; behavior remains in components.
+   ────────────────────────────────────────────────────────────────────────── */
+
+.app-layout {
+  --sidebar-w: 232px;
+}
+
+.app-layout.collapsed {
+  --sidebar-w: 72px;
+}
+
+.sidebar {
+  --nav-item-h: 40px;
+  padding: 1.15rem 0.8rem 1rem;
+  gap: 1rem;
+  border-right: 1px solid var(--line-on-dark);
+}
+
+.sidebar-brand {
+  min-height: 2.2rem;
+  padding-inline: 0.65rem;
+}
+
+.sidebar-search {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  min-height: 2.35rem;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid var(--line-on-dark);
+  border-radius: var(--radius-btn);
+  background: transparent;
+  color: var(--text-on-dark-soft);
+  font: inherit;
+  font-size: 0.75rem;
+  text-align: left;
+}
+
+.sidebar-search svg {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
+}
+
+.sidebar-search span {
+  flex: 1;
+  min-width: 0;
+}
+
+.sidebar-search kbd {
+  font: inherit;
+  font-size: 0.65rem;
+  color: var(--text-on-dark-soft);
+}
+
+.app-layout.collapsed .sidebar-search span,
+.app-layout.collapsed .sidebar-search kbd {
+  display: none;
+}
+
+.app-layout.collapsed .sidebar-search {
+  justify-content: center;
+  padding-inline: 0.5rem;
+}
+
+.nav-list {
+  gap: 0.2rem;
+}
+
+.nav-indicator {
+  width: calc(100% - 0.15rem);
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+  background: rgba(245, 244, 242, 0.08);
+}
+
+.nav-item {
+  position: relative;
+  z-index: 1;
+  height: var(--nav-item-h);
+  padding-inline: 0.65rem;
+  border-radius: 8px;
+  font-size: 0.84rem;
+}
+
+.nav-item svg {
+  width: 17px;
+  height: 17px;
+}
+
+.sidebar-collapse {
+  height: 2.35rem;
+  padding-inline: 0.65rem;
+  border-top: 1px solid var(--line-on-dark);
+  color: var(--text-on-dark-soft);
+}
+
+.app-content {
+  background: var(--bg);
+}
+
+.app-shell {
+  width: min(1380px, 94%);
+  margin-block: clamp(1.5rem, 3vw, 2.6rem) 3rem;
+  gap: clamp(1rem, 1.7vw, 1.4rem);
+}
+
+.hero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 2rem;
+}
+
+.hero h1 {
+  font-size: clamp(2rem, 3.4vw, 3.1rem);
+  letter-spacing: -0.045em;
+}
+
+.hero-copy {
+  max-width: 52ch;
+  margin-top: 0.45rem;
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.entry-card,
+.bucket-column,
+.overdue-group,
+.upcoming-section,
+.toolbar,
+.saved-filter-bar,
+.someday-card {
+  border: 1px solid var(--line);
+  box-shadow: none;
+}
+
+.entry-card,
+.bucket-column,
+.accent-card,
+.home-panel {
+  padding: clamp(1rem, 1.5vw, 1.35rem);
+}
+
+button,
+input,
+textarea,
+select {
+  font-family: var(--font);
+}
+
+.primary,
+.secondary,
+.calendar-nav,
+.select-trigger,
+.icon-action {
+  min-height: 2.35rem;
+  border-radius: 9px;
+  font-size: 0.78rem;
+  font-weight: 650;
+}
+
+.primary {
+  background: var(--accent);
+  color: #fff;
+}
+
+.secondary {
+  background: var(--surface);
+}
+
+input:not([type='checkbox']):not([type='radio']),
+textarea,
+.select-trigger {
+  border-color: var(--line);
+  background: var(--surface-raised);
+}
+
+.field-icon-head,
+.settings-note,
+.card-note {
+  font-size: 0.7rem;
+}
+
+/* Board */
+
+.board-shell {
+  width: min(1500px, 96%);
+}
+
+.board-shell .task-entry {
+  border-left: 4px solid var(--accent);
+}
+
+.board-controls {
+  padding: 0.15rem 0;
+}
+
+.toolbar,
+.saved-filter-bar {
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+
+.toolbar {
+  gap: 0.65rem;
+}
+
+.toolbar-search {
+  min-width: min(100%, 15rem);
+}
+
+.buckets {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 245px), 1fr));
+  gap: 0.8rem;
+  align-items: start;
+}
+
+.bucket-column {
+  border-radius: 16px;
+  background: var(--surface);
+}
+
+.bucket-column:not(.dark):nth-child(2) {
+  background: var(--surface-blue);
+}
+
+.bucket-column:not(.dark):nth-child(3),
+.bucket-column:not(.dark):nth-child(6) {
+  background: var(--surface-lavender);
+}
+
+.bucket-column:not(.dark):nth-child(4),
+.bucket-column:not(.dark):nth-child(7) {
+  background: var(--surface-pink);
+}
+
+.bucket-header h2 {
+  font-size: 0.92rem;
+}
+
+.task-list {
+  gap: 0.4rem;
+}
+
+.task-list li.task {
+  margin: 0;
+  padding: 0.72rem;
+  border: 1px solid color-mix(in srgb, var(--line) 82%, transparent);
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--surface) 86%, transparent);
+}
+
+.bucket-column.dark .task-list li.task {
+  border-color: var(--line-on-dark);
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.task-top strong {
+  font-size: 0.86rem;
+  line-height: 1.35;
+}
+
+.deadline-stat strong {
+  font-size: 1.35rem;
+}
+
+.task-actions {
+  padding-top: 0.45rem;
+  border-top: 1px solid var(--line);
+}
+
+.bucket-column.dark .task-actions {
+  border-color: var(--line-on-dark);
+}
+
+.overdue-section {
+  padding: 1rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 32%, var(--line));
+  border-radius: var(--radius-card);
+  background: color-mix(in srgb, var(--surface-pink) 72%, var(--surface));
+}
+
+.upcoming-section {
+  background: var(--surface-blue);
+}
+
+/* Calendar */
+
+.calendar-shell {
+  width: min(1420px, 95%);
+}
+
+.calendar-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.calendar-toolbar {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  padding: 1rem 1.15rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.calendar-toolbar h2 {
+  justify-self: start;
+  font-size: 1.3rem;
+}
+
+.calendar-today {
+  padding-inline: 0.8rem;
+}
+
+.calendar-weekdays {
+  padding: 0.75rem 0.5rem;
+  background: var(--surface-raised);
+}
+
+.calendar-grid {
+  gap: 0;
+  border-top: 1px solid var(--line);
+  border-left: 1px solid var(--line);
+}
+
+.calendar-day {
+  min-height: clamp(7rem, 10vw, 10rem);
+  padding: 0.65rem;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: 0;
+}
+
+.calendar-day.today {
+  box-shadow: inset 0 3px 0 var(--accent);
+}
+
+.calendar-day.overloaded {
+  background: color-mix(in srgb, var(--surface-pink) 72%, var(--surface));
+}
+
+.calendar-day-task {
+  margin-top: 0.25rem;
+  padding: 0.28rem 0.38rem;
+  border-left: 3px solid var(--accent-soft);
+  border-radius: 5px;
+  background: var(--surface-blue);
+  color: #26343d;
+}
+
+:root[data-theme='dark'] .calendar-day-task {
+  color: var(--text);
+}
+
+.calendar-overload-action {
+  margin: 1rem;
+  border-radius: 10px;
+  background: var(--surface-pink);
+}
+
+/* Day planner */
+
+.planner-shell {
+  width: min(1320px, 94%);
+}
+
+.planner-hero {
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.planner-layout {
+  grid-template-columns: minmax(0, 2.2fr) minmax(240px, 0.8fr);
+  gap: 1rem;
+}
+
+.planner-day {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.planner-source {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.planner-timeline {
+  border-left: 1px solid var(--line);
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0 59px,
+    color-mix(in srgb, var(--line) 65%, transparent) 59px 60px
+  );
+}
+
+.planner-block {
+  left: 5.2rem;
+  right: 0.8rem;
+  border: 1px solid color-mix(in srgb, var(--accent-soft) 70%, var(--line));
+  border-left: 4px solid var(--accent-soft);
+  border-radius: 7px;
+  background: var(--surface-lavender);
+  color: var(--text);
+}
+
+.planner-block:nth-of-type(3n + 1) {
+  background: var(--surface-blue);
+  border-left-color: #8dbed8;
+}
+
+.planner-block:nth-of-type(3n + 2) {
+  background: var(--surface-pink);
+  border-left-color: var(--accent);
+}
+
+.planner-source-list li {
+  padding: 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface-raised);
+}
+
+/* Someday / Maybe */
+
+.someday-shell {
+  width: min(1280px, 94%);
+  grid-template-columns: minmax(250px, 0.72fr) minmax(0, 2fr);
+  align-items: start;
+}
+
+.someday-shell .hero {
+  grid-column: 1 / -1;
+}
+
+.someday-entry {
+  position: sticky;
+  top: 1rem;
+  background: var(--surface-pink);
+}
+
+.someday-list-section {
+  min-width: 0;
+}
+
+.someday-list {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.someday-card {
+  min-height: 13rem;
+  padding: 1rem;
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.someday-card:nth-child(3n + 1) {
+  background: var(--surface-blue);
+}
+
+.someday-card:nth-child(3n + 2) {
+  background: var(--surface-lavender);
+}
+
+.someday-card:nth-child(3n + 3) {
+  background: var(--surface-pink);
+}
+
+.someday-promote {
+  margin-top: auto;
+  padding-top: 0.8rem;
+  border-top: 1px solid color-mix(in srgb, var(--line) 80%, transparent);
+}
+
+/* Analytics */
+
+.analytics-shell {
+  width: min(1380px, 94%);
+}
+
+.analytics-grid {
+  gap: 0.85rem;
+}
+
+.analytics-grid > article {
+  border-radius: 16px;
+}
+
+.analytics-progress {
+  background: var(--surface);
+}
+
+.analytics-activity {
+  background: var(--surface-lavender);
+  color: #14141a;
+}
+
+.analytics-activity h2,
+.analytics-activity .card-note {
+  color: #14141a;
+}
+
+.analytics-activity .activity-dot.active {
+  background: #14141a;
+}
+
+.analytics-activity .activity-dot.empty {
+  border-color: #14141a;
+}
+
+:root[data-theme='dark'] .analytics-activity,
+:root[data-theme='dark'] .analytics-activity h2,
+:root[data-theme='dark'] .analytics-activity .card-note {
+  color: var(--text-on-dark);
+}
+
+:root[data-theme='dark'] .analytics-activity .activity-dot.active {
+  background: var(--text-on-dark);
+}
+
+:root[data-theme='dark'] .analytics-activity .activity-dot.empty {
+  border-color: var(--text-on-dark);
+}
+
+.analytics-velocity {
+  background: var(--surface-blue);
+}
+
+.analytics-delays {
+  background: var(--surface-pink);
+}
+
+.analytics-delay-tags {
+  background: var(--surface-raised);
+}
+
+/* Settings */
+
+.settings-shell {
+  width: min(1180px, 92%);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+}
+
+.settings-shell .hero {
+  grid-column: 1 / -1;
+}
+
+.settings-shell > .entry-card {
+  height: 100%;
+}
+
+.settings-shell > .entry-card:first-of-type {
+  background: var(--surface-blue);
+}
+
+.settings-shell > .entry-card:nth-of-type(3) {
+  background: var(--surface-lavender);
+}
+
+.settings-row {
+  min-height: 4rem;
+}
+
+.accent-swatch {
+  width: 1.7rem;
+  height: 1.7rem;
+}
+
+/* Task details, Quick Add, and command palette */
+
+.task-detail-layer,
+.palette-layer,
+.quick-add-layer {
+  padding: clamp(0.75rem, 3vw, 2rem);
+}
+
+.task-detail-scrim,
+.palette-scrim,
+.quick-add-scrim {
+  background: rgba(10, 10, 12, 0.68);
+}
+
+.task-detail-dialog {
+  width: min(980px, calc(100vw - 2rem));
+  max-height: min(88vh, 900px);
+  padding: 0;
+  overflow: hidden auto;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface);
+}
+
+.task-detail-heading {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding: 1.1rem 1.3rem;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.task-detail-heading h2 {
+  font-size: clamp(1.35rem, 2.8vw, 2rem);
+  letter-spacing: -0.035em;
+}
+
+.task-detail-dialog .task-details-panel {
+  padding: 1.2rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.task-details-panel > .detail-block,
+.task-details-panel > .detail-grid,
+.task-details-panel > .waiting-control,
+.task-details-panel > .postpone-summary,
+.task-details-panel > .field-icon,
+.task-details-panel > .template-save,
+.task-details-panel > .recurrence-picker,
+.task-details-panel > .reminder-picker {
+  padding: 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-raised);
+}
+
+.palette,
+.quick-add-palette {
+  width: min(640px, calc(100vw - 1.5rem));
+  border: 1px solid var(--line);
+  border-radius: 17px;
+  background: var(--surface);
+  box-shadow: none;
+}
+
+.palette-search,
+.quick-add-input-wrap {
+  min-height: 3.4rem;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-raised);
+}
+
+.palette-item {
+  min-height: 2.75rem;
+  border-radius: 8px;
+}
+
+.palette-item.active {
+  border-left: 3px solid var(--accent);
+  background: var(--surface-blue);
+}
+
+.quick-add-body {
+  padding: 1rem 1.1rem 1.15rem;
+}
+
+.quick-add-chips-container,
+.quick-add-interpretation {
+  padding: 0.75rem;
+  border-radius: 10px;
+  background: var(--surface-raised);
+}
+
+.quick-add-chip,
+.quick-add-hint-pill {
+  border-radius: 6px;
+  background: var(--surface-blue);
+}
+
+/* Application-wide responsive composition */
+
+@container app-content (max-width: 980px) {
+  .someday-shell,
+  .settings-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .someday-shell .hero,
+  .settings-shell .hero {
+    grid-column: auto;
+  }
+
+  .someday-entry {
+    position: static;
+  }
+
+  .someday-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .planner-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .planner-source,
+  .planner-day {
+    grid-column: 1;
+  }
+
+  .planner-source { grid-row: 1; }
+  .planner-day { grid-row: 2; }
+}
+
+@container app-content (max-width: 680px) {
+  .hero {
+    display: block;
+  }
+
+  .hero h1 {
+    font-size: 2rem;
+  }
+
+  .someday-list {
+    grid-template-columns: 1fr;
+  }
+
+  .calendar-toolbar {
+    grid-template-columns: auto 1fr auto;
+  }
+
+  .calendar-toolbar h2 {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+
+  .calendar-toolbar .calendar-nav:first-of-type { grid-column: 1; }
+  .calendar-today { grid-column: 2; }
+  .calendar-toolbar .calendar-nav:last-of-type { grid-column: 3; }
+
+  .task-detail-dialog .task-details-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .task-detail-dialog {
+    width: calc(100vw - 1rem);
+    max-height: calc(100dvh - 1rem);
+  }
+}
+
+@media (max-width: 720px) {
+  .sidebar-search {
+    width: auto;
+    margin-inline: 0.65rem;
+  }
+}

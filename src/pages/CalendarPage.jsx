@@ -56,7 +56,7 @@ export function CalendarPage({
   }
 
   return (
-    <main className="app-shell">
+    <main className="app-shell calendar-shell">
       <header className="hero">
         <h1>Calendar</h1>
         <p className="hero-copy">
@@ -77,6 +77,13 @@ export function CalendarPage({
             <span>Prev</span>
           </button>
           <h2>{formatMonthLabel(viewDate)}</h2>
+          <button
+            type="button"
+            className="calendar-nav calendar-today"
+            onClick={() => setViewDate(new Date())}
+          >
+            Today
+          </button>
           <button
             type="button"
             className="calendar-nav"

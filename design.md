@@ -19,6 +19,10 @@ radii, or shadow styles outside this list.
 - Accent secondary (cool): lavender `#C9C3F2`
 - Home soft blue surface: `#CFE5F2`
 - Home soft pink surface: `#EADCF0`
+- Raised neutral surface: `#FAF9F7`
+- Editorial blue surface: `#D8EBF5`
+- Editorial pink surface: `#F0E2F1`
+- Editorial lavender surface: `#DED8F7`
 - Text primary: `#14141A`
 - Text secondary: `#6B6B72`
 - Border/divider: `#E7E4DD` (barely-there, used sparingly, never a full outline around every card)
@@ -136,6 +140,33 @@ draws attention to itself.
   pick the most important metric/action for it.
 - Dense information inside cards is fine; whitespace exists between cards,
   not padding everything into oblivion inside them.
+
+### Application-wide editorial composition
+
+- Every route uses the same dark navigation rail, large sentence-case page
+  heading, flat bordered surfaces, and compact controls. The rail includes a
+  real Search tasks control that opens the existing command palette; it is not
+  a decorative input.
+- The editorial blue, pink and lavender surfaces are hierarchy tools, not
+  categories. A page may use at most two of them alongside white and one dark
+  anchor. They never replace semantic overdue, risk, completion, or waiting
+  treatments.
+- Board columns may use tinted surfaces to make deadline distance scannable,
+  but task data and drag destinations continue to come from the configured
+  canonical bucket list. Calendar tasks use compact left-ruled blocks; Planner
+  blocks rotate through the same three quiet surfaces while position and height
+  remain the actual time and duration encodings.
+- Desktop Settings is a two-column collection of real setting groups rather
+  than a long undifferentiated stack. Someday / Maybe pairs a sticky capture
+  card with a three-column idea grid. Both collapse to one column based on the
+  route container, not the physical display resolution.
+- Dialogs use a shared maximum width, bordered surface, sticky heading and
+  grouped field regions. Quick Add and Command Palette share the same compact
+  command-surface proportions and selection language.
+- Responsive order is semantic source order. At narrow widths, navigation
+  becomes the existing drawer, mosaics stack, Planner returns unscheduled work
+  before the timeline, Settings becomes one column, and dialogs become nearly
+  full-viewport without horizontal overflow.
 
 ## Data visualization
 

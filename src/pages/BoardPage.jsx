@@ -269,9 +269,9 @@ export function BoardPage({
   }
 
   return (
-    <main className="app-shell">
+    <main className="app-shell board-shell">
       <header className="hero">
-        <h1>Reminder board</h1>
+        <h1>Board</h1>
         <p className="hero-copy">
           Add a task, set its due date, attach one or more reminders, and it
           lands automatically in the right time bucket.

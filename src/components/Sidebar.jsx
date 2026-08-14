@@ -10,6 +10,7 @@ import {
   CommandIcon,
   ClockIcon,
   NotesIcon,
+  SearchIcon,
 } from './icons'
 import { BrandMonogram } from './BrandMonogram'
 
@@ -90,6 +91,17 @@ export function Sidebar({ isOpen, isCollapsed, onToggleCollapse, onNavigate, onO
           <CommandIcon />
         </button>
       </div>
+
+      <button
+        type="button"
+        className="sidebar-search"
+        onClick={onOpenPalette}
+        aria-label="Search tasks and commands"
+      >
+        <SearchIcon />
+        <span>Search tasks...</span>
+        <kbd>Ctrl K</kbd>
+      </button>
 
       <ul className="nav-list" ref={listRef}>
         <li

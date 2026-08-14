@@ -77,7 +77,7 @@ export function SettingsPage({
   }
 
   return (
-    <main className="app-shell">
+    <main className="app-shell settings-shell">
       <header className="hero">
         <h1>Settings</h1>
       </header>

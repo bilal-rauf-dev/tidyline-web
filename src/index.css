@@ -8,6 +8,10 @@
   --accent-soft: #c9c3f2;
   --home-blue: #cfe5f2;
   --home-pink: #eadcf0;
+  --surface-raised: #faf9f7;
+  --surface-blue: #d8ebf5;
+  --surface-pink: #f0e2f1;
+  --surface-lavender: #ded8f7;
   --text: #14141a;
   --text-soft: #6b6b72;
   --text-on-dark: #f5f4f2;
@@ -76,6 +80,10 @@
   --line: var(--line-on-dark);
   --home-blue: #24353f;
   --home-pink: #382d3d;
+  --surface-raised: #252529;
+  --surface-blue: #253941;
+  --surface-pink: #3b303e;
+  --surface-lavender: #37324a;
 }
 
 * {
