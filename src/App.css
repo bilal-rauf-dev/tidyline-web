@@ -6082,6 +6082,27 @@ textarea,
   color: var(--accent);
 }
 
+.board-view-toggle {
+  border-color: var(--surface-dark);
+  background: var(--surface-dark);
+  color: var(--text-on-dark);
+}
+
+.board-view-toggle.archived {
+  border-color: var(--accent);
+  background: var(--surface-pink);
+  color: var(--text);
+}
+
+.board-select-toggle {
+  background: var(--surface-blue);
+}
+
+.saved-filter-trigger {
+  border-color: color-mix(in srgb, var(--accent-soft) 70%, var(--line));
+  background: var(--surface-lavender);
+}
+
 .board-utility-row .match-count {
   margin-left: 0.1rem;
   white-space: nowrap;
@@ -6104,12 +6125,28 @@ textarea,
 .board-utility-row .toolbar-search {
   flex: 1;
   min-width: 0;
+  min-height: 1.8rem;
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.board-utility-row .toolbar-search:focus-within {
+  border-bottom-color: transparent;
+  color: var(--text-soft);
+}
+
+.board-utility-row .toolbar-search input {
+  padding-block: 0;
+  font-size: 0.84rem;
 }
 
 .board-utility-row .toolbar-disclosure {
   flex-shrink: 0;
   width: 2.1rem;
   padding: 0;
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
 }
 
 .toolbar-disclosure svg,
@@ -6201,6 +6238,14 @@ textarea,
 
   .board-utility-row .match-count {
     display: none;
+  }
+}
+
+/* A four-bucket configuration is a complete row when the Board has room;
+   avoid leaving the fourth column stranded below a tall populated bucket. */
+@container app-content (min-width: 900px) {
+  .buckets[data-bucket-count='4'] {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
