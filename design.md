@@ -609,10 +609,12 @@ These are behavioural contracts, not styling. Change them deliberately.
      and Review the Day actions. It is wide but not full-width, allowing the
      white Daily Activity timeline to sit alongside it. The timeline keeps its
      real reminder points and coral current-time marker.
-  2. The tall dark Today card is the visual anchor. Lavender Activity, coral
-     Overall Progress, a compact dark Weekly Pace card, muted-blue Completion
-     Rhythm, a wide white Coming Up list, and cards of deliberately different
-     widths/heights build around it.
+  2. The dark Today card is the visual anchor, but it occupies one content row
+     only—it never spans later dashboard rows and must not inherit their total
+     height. Lavender Activity and dark Weekly Pace are an explicit equal-width
+     pair, coral Overall Progress, muted-blue Completion Rhythm, a wide white
+     Coming Up list, and cards of deliberately different widths/heights build
+     around it.
      Color blocks create depth; no card uses a shadow or translucent surface.
   3. **Home feature slideshow** (`HomeDaybreak.jsx`, `.home-daybreak`) is the
      intentionally non-metric editorial card. It rotates through three original
@@ -622,8 +624,9 @@ These are behavioural contracts, not styling. Change them deliberately.
      must not acquire fabricated metrics, stock imagery, avatars, team members,
      or mood states.
   4. The mosaic responds to the content width beside the sidebar. It becomes a
-     deliberate two-column composition at 1120px, gives the tall Today anchor a
-     full row below 820px, and becomes one readable column below 680px. The dark
+     deliberate two-column composition at 1120px, gives Today a full row below
+     820px, and becomes one readable column below 680px. Activity and Weekly
+     Pace stay in their 50/50 pair until that one-column threshold. The dark
      **Weekly Pace** card uses five real weekly `completedAt` totals and compares
      the current week against their average; it never reconstructs missing
      completion history. Source order remains greeting, timeline, Today,

@@ -3657,10 +3657,10 @@ button {
 
 .home-focus {
   grid-column: 1 / 4;
-  grid-row: 2 / span 2;
+  grid-row: 2;
   justify-content: space-between;
   gap: 1rem;
-  min-height: 25rem;
+  min-height: 0;
 }
 
 .home-focus-notes {
@@ -3677,9 +3677,15 @@ button {
   color: var(--text-on-dark);
 }
 
-.home-activity {
-  grid-column: 4 / 6;
+.home-activity-pair {
+  grid-column: 4 / 8;
   grid-row: 2;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(0.75rem, 1.25vw, 1rem);
+}
+
+.home-activity {
   display: flex;
   flex-direction: column;
   background: var(--accent-soft);
@@ -3692,15 +3698,13 @@ button {
 }
 
 .home-progress {
-  grid-column: 4 / 7;
+  grid-column: 1 / 4;
   grid-row: 3;
   justify-content: space-between;
   min-height: 13rem;
 }
 
 .home-completion-trend {
-  grid-column: 6 / 8;
-  grid-row: 2;
   display: flex;
   min-height: 0;
   flex-direction: column;
@@ -3758,12 +3762,12 @@ button {
 }
 
 .home-upcoming {
-  grid-column: 7 / 13;
+  grid-column: 8 / 13;
   grid-row: 3 / span 2;
 }
 
 .home-completion {
-  grid-column: 1 / 7;
+  grid-column: 4 / 8;
   grid-row: 4;
   background: var(--home-blue);
 }
@@ -4070,10 +4074,9 @@ button {
     grid-template-areas:
       "welcome welcome"
       "timeline timeline"
-      "focus activity"
-      "focus trend"
-      "focus daybreak"
-      "progress completion"
+      "focus activitypair"
+      "progress daybreak"
+      "completion completion"
       "upcoming upcoming";
   }
 
@@ -4085,8 +4088,7 @@ button {
   .home-welcome { grid-area: welcome; min-height: 14rem; }
   .home-timeline { grid-area: timeline; min-height: auto; }
   .home-focus { grid-area: focus; }
-  .home-activity { grid-area: activity; }
-  .home-completion-trend { grid-area: trend; }
+  .home-activity-pair { grid-area: activitypair; }
   .home-daybreak { grid-area: daybreak; }
   .home-progress { grid-area: progress; }
   .home-upcoming { grid-area: upcoming; }
@@ -4099,7 +4101,7 @@ button {
       "welcome welcome"
       "timeline timeline"
       "focus focus"
-      "activity trend"
+      "activitypair activitypair"
       "daybreak daybreak"
       "progress completion"
       "upcoming upcoming";
@@ -5906,16 +5908,24 @@ textarea,
 /* This override belongs after the base Home cards: grid-area must win over
    later desktop placement declarations when the route container narrows. */
 @container app-content (max-width: 1120px) {
-  .home-completion-trend {
-    grid-area: trend;
+  .home-activity-pair {
+    grid-area: activitypair;
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  .home-activity-pair > .home-activity,
+  .home-activity-pair > .home-completion-trend {
+    grid-area: auto;
     grid-column: auto;
     grid-row: auto;
   }
 }
 
 @container app-content (max-width: 680px) {
-  .home-completion-trend {
+  .home-activity-pair {
     grid-area: auto;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

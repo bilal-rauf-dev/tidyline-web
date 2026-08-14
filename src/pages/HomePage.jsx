@@ -140,7 +140,7 @@ export function HomePage({
         <section className="home-dashboard" aria-label="Home dashboard">
           <header className="home-panel home-welcome">
             <div>
-              <h1>{workspaceName ? `${greeting}, ${workspaceName}` : greeting}</h1>
+              <h1>{workspaceName ? `${greeting}` : greeting}</h1>
               <p>
                 See what needs your attention, make a little progress, and leave the rest
                 somewhere you can trust.
@@ -226,43 +226,45 @@ export function HomePage({
             </div>
           </article>
 
-          <article className="home-panel home-activity">
-            <div className="home-card-heading">
-              <h2>Activity</h2>
-              <span>Last 5 weeks</span>
-            </div>
-            <div className="activity-stat">
-              <strong>{heatmapSummary.activeDays}</strong>
-              <span>days with completed work</span>
-            </div>
-            <ActivityGrid cells={heatmap} label="Task activity by day, last 5 weeks" />
-            <p className="card-note">
-              {heatmapSummary.overdueDays} overdue {heatmapSummary.overdueDays === 1 ? 'day' : 'days'}
-            </p>
-          </article>
+          <section className="home-activity-pair" aria-label="Activity and weekly completion pace">
+            <article className="home-panel home-activity">
+              <div className="home-card-heading">
+                <h2>Activity</h2>
+                <span>Last 5 weeks</span>
+              </div>
+              <div className="activity-stat">
+                <strong>{heatmapSummary.activeDays}</strong>
+                <span>days with completed work</span>
+              </div>
+              <ActivityGrid cells={heatmap} label="Task activity by day, last 5 weeks" />
+              <p className="card-note">
+                {heatmapSummary.overdueDays} overdue {heatmapSummary.overdueDays === 1 ? 'day' : 'days'}
+              </p>
+            </article>
 
-          <article className="home-panel home-completion-trend">
-            <div className="home-card-heading">
-              <h2>Weekly pace</h2>
-              <span>5 weeks</span>
-            </div>
-            <div className="home-trend-stat">
-              <strong>{completionTrend.current}</strong>
-              <span>completed this week</span>
-            </div>
-            <Sparkline
-              series={completionTrend.weeklySeries}
-              peakIndex={completionTrend.peakIndex}
-              height={52}
-            />
-            <p className="home-trend-note">
-              {completionTrend.average === 0
-                ? 'No completed tasks in this five-week view yet.'
-                : `${Math.abs(completionTrend.difference).toFixed(1).replace(/\.0$/, '')} ${
-                    completionTrend.difference >= 0 ? 'above' : 'below'
-                  } your ${completionTrend.average.toFixed(1).replace(/\.0$/, '')}-task weekly average`}
-            </p>
-          </article>
+            <article className="home-panel home-completion-trend">
+              <div className="home-card-heading">
+                <h2>Weekly pace</h2>
+                <span>5 weeks</span>
+              </div>
+              <div className="home-trend-stat">
+                <strong>{completionTrend.current}</strong>
+                <span>completed this week</span>
+              </div>
+              <Sparkline
+                series={completionTrend.weeklySeries}
+                peakIndex={completionTrend.peakIndex}
+                height={52}
+              />
+              <p className="home-trend-note">
+                {completionTrend.average === 0
+                  ? 'No completed tasks in this five-week view yet.'
+                  : `${Math.abs(completionTrend.difference).toFixed(1).replace(/\.0$/, '')} ${
+                      completionTrend.difference >= 0 ? 'above' : 'below'
+                    } your ${completionTrend.average.toFixed(1).replace(/\.0$/, '')}-task weekly average`}
+              </p>
+            </article>
+          </section>
 
           <article className="home-panel home-daybreak">
             <div key={`feature-copy-${featureIndex}`} className="home-daybreak-copy home-feature-slide">
