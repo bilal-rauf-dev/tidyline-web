@@ -6038,7 +6038,8 @@ textarea,
 /* Compact Board utility row: only search stays persistent; controls reveal on demand. */
 .board-utility-row {
   position: relative;
-  z-index: 4;
+  /* Today is sticky at z-index:5; filters must remain above it when opened. */
+  z-index: 6;
   display: flex;
   align-items: center;
   gap: 0.55rem;
