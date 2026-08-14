@@ -63,10 +63,15 @@ export function SomedayPage({ tasks, addSomedayTask, promoteSomeday, deleteTask,
       </header>
 
       <section className="entry-card someday-entry">
-        <h2>Capture an idea</h2>
+        <div className="someday-entry-head">
+          <h2>Capture an idea</h2>
+          <p>Give it a name now. The details can stay loose until it is ready.</p>
+        </div>
         <form onSubmit={submit}>
           <div className="field-underline">
+            <label className="sr-only" htmlFor="someday-title">Idea title</label>
             <input
+              id="someday-title"
               type="text"
               className="input-underline"
               value={title}
@@ -75,12 +80,15 @@ export function SomedayPage({ tasks, addSomedayTask, promoteSomeday, deleteTask,
               required
             />
           </div>
-          <textarea
-            rows="3"
-            value={notes}
-            placeholder="Notes"
-            onChange={(event) => setNotes(event.target.value)}
-          />
+          <label className="someday-field">
+            <span>Notes</span>
+            <textarea
+              rows="4"
+              value={notes}
+              placeholder="What would make this worth returning to?"
+              onChange={(event) => setNotes(event.target.value)}
+            />
+          </label>
           <label className="field-icon">
             <span className="field-icon-head">Tags</span>
             <input

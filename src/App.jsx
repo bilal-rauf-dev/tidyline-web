@@ -261,6 +261,11 @@ function App() {
           setIsDrawerOpen(false)
           setIsPaletteOpen(true)
         }}
+        tasks={taskState.tasks}
+        onOpenTask={(taskId) => {
+          setIsDrawerOpen(false)
+          navigate(`/board?expand=${encodeURIComponent(taskId)}`)
+        }}
       />
 
       {isDrawerOpen && (

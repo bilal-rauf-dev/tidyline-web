@@ -5184,3 +5184,376 @@ textarea,
     margin-inline: 0.65rem;
   }
 }
+
+/* Focused refinement pass: complete states, task search, and disclosures */
+
+.nav-indicator {
+  left: 0;
+  width: 100%;
+  border: 0;
+  border-radius: 8px;
+  background: rgba(245, 244, 242, 0.1);
+}
+
+.nav-item,
+.sidebar-collapse {
+  border-left: 0;
+}
+
+.nav-item.active {
+  font-weight: 700;
+}
+
+.sidebar-collapse {
+  border: 1px solid transparent;
+  border-radius: 8px;
+}
+
+.sidebar-search-wrap {
+  position: relative;
+}
+
+.sidebar-search {
+  cursor: text;
+}
+
+.sidebar-search input {
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text-on-dark);
+  font: inherit;
+  font-size: 0.75rem;
+}
+
+.sidebar-search input::placeholder {
+  color: var(--text-on-dark-soft);
+  opacity: 1;
+}
+
+.sidebar-search:focus-within {
+  border-color: var(--accent-soft);
+  background: rgba(245, 244, 242, 0.05);
+}
+
+.sidebar-search-results {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 0.4rem);
+  right: 0;
+  left: 0;
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.35rem;
+  border: 1px solid var(--line-on-dark);
+  border-radius: var(--radius-btn);
+  background: var(--surface-dark);
+  animation: menu-in var(--dur-fast) var(--ease) both;
+}
+
+.sidebar-search-result {
+  display: grid;
+  gap: 0.15rem;
+  width: 100%;
+  padding: 0.55rem 0.6rem;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-on-dark);
+  text-align: left;
+}
+
+.sidebar-search-result.active {
+  border-color: var(--line-on-dark);
+  background: rgba(245, 244, 242, 0.09);
+}
+
+.sidebar-search-result strong {
+  overflow: hidden;
+  font-size: 0.78rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar-search-result span,
+.sidebar-search-empty {
+  margin: 0;
+  color: var(--text-on-dark-soft);
+  font-size: 0.7rem;
+}
+
+.sidebar-search-empty {
+  padding: 0.55rem 0.6rem;
+}
+
+.app-layout.collapsed .sidebar-search input {
+  display: none;
+}
+
+.app-layout.collapsed .sidebar-search-wrap:focus-within {
+  min-width: 13rem;
+}
+
+/* Replaces all decorative left-rule selection/card styling with whole surfaces. */
+.day-context,
+.bulk-bar,
+.upcoming-section,
+.postpone-summary,
+.waiting-fields,
+.template-save,
+.calendar-overload-action,
+.someday-card,
+.planner-source-list li,
+.calendar-day-task {
+  border: 1px solid var(--line);
+  border-left: 1px solid var(--line);
+}
+
+.tag {
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface-raised);
+}
+
+.tag-lavender { border-color: var(--accent-soft); }
+.tag-accent { border-color: var(--accent); }
+
+.task.pinned,
+.task.waiting,
+.task.overdue-1,
+.task.overdue-2,
+.task.overdue-3 {
+  padding-left: 0.7rem;
+  border: 1px solid var(--line);
+  border-left: 1px solid var(--line);
+}
+
+.task.pinned,
+.task.overdue-2,
+.task.waiting {
+  border-color: var(--accent-soft);
+}
+
+.task.overdue-3 { border-color: var(--accent); }
+
+.overdue-group {
+  border: 1px solid var(--line);
+}
+
+.overdue-group.severity-2 { border-color: var(--accent-soft); }
+.overdue-group.severity-3 { border-color: var(--accent); }
+
+.task-context,
+.energy-mark,
+.risk-mark {
+  padding-left: 0;
+  border-left: 0;
+}
+
+.task-context.planned,
+.task-context.scheduled-label,
+.risk-mark.risk-at-risk {
+  color: var(--accent);
+}
+
+.task-context.waiting-label,
+.risk-mark.risk-tight { color: var(--accent-soft); }
+
+.select-option,
+.palette-item.active {
+  border-left: 0;
+}
+
+.select-option.selected,
+.palette-item.active {
+  border: 1px solid var(--line);
+  background: var(--surface-raised);
+}
+
+.palette-item.active { background: var(--surface-blue); }
+
+.board-shell .task-entry {
+  border: 1px solid var(--line);
+}
+
+.calendar-day-task,
+.planner-block {
+  border: 1px solid var(--accent-soft);
+}
+
+.planner-block:nth-of-type(3n + 1) { border-color: #8dbed8; }
+.planner-block:nth-of-type(3n + 2) { border-color: var(--accent); }
+
+.quick-add-warning {
+  padding: 0.4rem 0.55rem;
+  border: 1px solid var(--accent);
+  background: var(--surface-pink);
+}
+
+/* Someday / Maybe idea capture is a first-class form, not loose inputs in a card. */
+.someday-entry {
+  gap: 1rem;
+  padding: clamp(1rem, 2vw, 1.4rem);
+  border: 1px solid var(--line);
+  background: var(--surface-blue);
+}
+
+.someday-entry-head {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.someday-entry-head h2,
+.someday-entry-head p {
+  margin: 0;
+}
+
+.someday-entry-head p {
+  max-width: 32rem;
+  color: var(--text-soft);
+  font-size: 0.85rem;
+}
+
+.someday-entry form {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.someday-entry textarea,
+.someday-entry input:not(.input-underline),
+.someday-card textarea,
+.someday-card input {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.someday-entry textarea:focus,
+.someday-entry input:not(.input-underline):focus,
+.someday-card textarea:focus,
+.someday-card input:focus {
+  border-color: var(--accent);
+  outline: 2px solid color-mix(in srgb, var(--accent) 25%, transparent);
+  outline-offset: 1px;
+}
+
+.someday-field {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-soft);
+}
+
+.someday-entry .primary {
+  min-height: 2.55rem;
+  padding-inline: 1rem;
+}
+
+/* Settings disclosures keep every existing control but reduce initial density. */
+.settings-section {
+  display: grid;
+  align-content: start;
+  height: auto;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.settings-section-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+  padding: 1rem 1.1rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+}
+
+.settings-section-toggle span {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.settings-section-toggle strong { font-size: 1rem; }
+.settings-section-toggle small { color: var(--text-soft); font-size: 0.76rem; font-weight: 500; }
+.settings-section-toggle svg { width: 1rem; height: 1rem; transition: transform var(--dur-fast) var(--ease); }
+.settings-section.expanded .settings-section-toggle svg { transform: rotate(180deg); }
+.settings-section-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
+
+.settings-section-content {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0 1.1rem 1.1rem;
+}
+
+.settings-section-content[hidden] { display: none; }
+
+:root[data-theme='dark'] .someday-entry textarea,
+:root[data-theme='dark'] .someday-entry input:not(.input-underline),
+:root[data-theme='dark'] .someday-card textarea,
+:root[data-theme='dark'] .someday-card input {
+  background: var(--surface-raised);
+}
+
+@media (max-width: 720px) {
+  .sidebar-search-wrap { margin-inline: 0.65rem; }
+  .sidebar-search { width: 100%; margin-inline: 0; }
+  .sidebar-search-results { position: fixed; right: 1rem; left: 1rem; top: 5.3rem; }
+}
+
+/* Field surfaces belong to their containing card; borders provide the control shape. */
+input:not([type='checkbox']):not([type='radio']),
+textarea,
+.select-trigger,
+.input-underline,
+.toolbar-search input,
+.sidebar-search input[type='search'],
+.someday-entry textarea,
+.someday-entry input:not([type='checkbox']):not([type='radio']),
+.someday-card textarea,
+.someday-card input:not([type='checkbox']):not([type='radio']) {
+  background: transparent;
+}
+
+:root[data-theme='dark'] .someday-entry textarea,
+:root[data-theme='dark'] .someday-entry input:not([type='checkbox']):not([type='radio']),
+:root[data-theme='dark'] .someday-card textarea,
+:root[data-theme='dark'] .someday-card input:not([type='checkbox']):not([type='radio']) {
+  background: transparent;
+}
+
+.sidebar-search input[type='search'] {
+  appearance: none;
+  color-scheme: dark;
+}
+
+.sidebar-search input[type='search']::-webkit-search-cancel-button {
+  filter: invert(1);
+  opacity: 0.65;
+}
+
+/* Restored original navigation selection: slim coral rail, no filled tile. */
+.nav-indicator {
+  left: 0;
+  width: 3px;
+  border: 0;
+  border-radius: 0;
+  background: var(--accent);
+}
+
+.nav-item.active {
+  background: transparent;
+  color: var(--text-on-dark);
+  font-weight: 700;
+}
