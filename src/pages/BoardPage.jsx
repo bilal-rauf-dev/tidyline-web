@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useSearch } from 'wouter'
+import { Link, useSearch } from 'wouter'
 import { BUCKET_LABELS, BUCKET_ORDER, groupTasksByBucket } from '../utils/buckets'
 import { toDateStr } from '../utils/calendar'
 import { DEFAULT_FILTERS, buildComparator, filterTasks } from '../utils/filters'
@@ -14,6 +14,7 @@ import { UndoToast } from '../components/UndoToast'
 import { UpcomingSection } from '../components/UpcomingSection'
 import { isTaskUpcoming } from '../utils/taskFields'
 import { SavedFilterBar } from '../components/SavedFilterBar'
+import { ArchiveIcon } from '../components/icons'
 
 export function BoardPage({
   tasks,
@@ -269,67 +270,73 @@ export function BoardPage({
   }
 
   return (
-    <main className="app-shell">
+    <main className="app-shell board-shell">
       <header className="hero">
-        <h1>Reminder board</h1>
+        <h1>Board</h1>
         <p className="hero-copy">
           Add a task, set its due date, attach one or more reminders, and it
           lands automatically in the right time bucket.
         </p>
       </header>
 
-      <TaskForm
-        key={`${focusForm}:${prefilledTitle}:${prefilledDeadline}:${prefilledTags}`}
-        onAddTask={addTask}
-        allTasks={tasks}
-        focusOnMount={focusForm}
-        templates={templates}
-        initialTitle={prefilledTitle}
-        initialDeadline={prefilledDeadline}
-        initialTags={prefilledTags}
-        initialDetails={prefilledDetails}
-        initialReminders={prefilledReminders}
-      />
+      <div className="board-entry-layout">
+        <TaskForm
+          key={`${focusForm}:${prefilledTitle}:${prefilledDeadline}:${prefilledTags}`}
+          onAddTask={addTask}
+          allTasks={tasks}
+          focusOnMount={focusForm}
+          templates={templates}
+          initialTitle={prefilledTitle}
+          initialDeadline={prefilledDeadline}
+          initialTags={prefilledTags}
+          initialDetails={prefilledDetails}
+          initialReminders={prefilledReminders}
+        />
 
-      <div className="board-controls">
-        <div className="segmented" role="group" aria-label="View">
-          <button
-            type="button"
-            className={view === 'active' ? 'segment active' : 'segment'}
-            onClick={() => setView('active')}
-          >
-            Active
-          </button>
-          <button
-            type="button"
-            className={view === 'archived' ? 'segment active' : 'segment'}
-            onClick={() => setView('archived')}
-          >
-            Archived
-          </button>
-        </div>
-
-        <span className="match-count">
-          {visible.length} {visible.length === 1 ? 'task' : 'tasks'}
-        </span>
-
-        <button
-          type="button"
-          className="secondary"
-          onClick={() => (selectionMode ? exitSelection() : setSelectionMode(true))}
-        >
-          {selectionMode ? 'Cancel selection' : 'Select'}
-        </button>
+        <Link href="/someday" className="board-someday-prompt" aria-labelledby="board-someday-prompt-title">
+          <span className="board-someday-prompt-kicker">No deadline yet?</span>
+          <h2 id="board-someday-prompt-title">Give the idea some room.</h2>
+          <p>
+            Not sure when to have it done? Keep it in Someday / Maybe until the right
+            date becomes clear.
+          </p>
+          <span className="board-someday-arrow" aria-hidden="true">→</span>
+        </Link>
       </div>
 
-      <SavedFilterBar
-        savedFilters={savedFilters}
-        onApply={setFilters}
-        onSave={(name) => onSaveFilter(name, filters)}
-        onDelete={onDeleteFilter}
-      />
+      <div className="board-utility-row">
+        <div className="board-controls">
+          <button
+            type="button"
+            className={view === 'archived' ? 'board-view-toggle archived' : 'board-view-toggle'}
+            onClick={() => setView((current) => (current === 'active' ? 'archived' : 'active'))}
+            aria-label={view === 'active' ? 'Show archived tasks' : 'Show active tasks'}
+            title={view === 'active' ? 'Show archived tasks' : 'Show active tasks'}
+          >
+            <ArchiveIcon />
+            <span>{view === 'active' ? 'Active' : 'Archived'}</span>
+          </button>
+          <button
+            type="button"
+            className={selectionMode ? 'board-select-toggle active' : 'board-select-toggle'}
+            onClick={() => (selectionMode ? exitSelection() : setSelectionMode(true))}
+          >
+            {selectionMode ? 'Done' : 'Select'}
+          </button>
+          <span className="match-count">
+            {visible.length} {visible.length === 1 ? 'task' : 'tasks'}
+          </span>
+        </div>
 
-      <BoardToolbar filters={filters} onChange={setFilters} tags={tags} />
+        <SavedFilterBar
+          savedFilters={savedFilters}
+          onApply={setFilters}
+          onSave={(name) => onSaveFilter(name, filters)}
+          onDelete={onDeleteFilter}
+        />
+
+        <BoardToolbar filters={filters} onChange={setFilters} tags={tags} />
+      </div>
 
       {selectionMode && (
         <div className="bulk-bar" role="group" aria-label="Bulk actions">

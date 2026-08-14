@@ -151,6 +151,15 @@ export function ArchiveIcon() {
   );
 }
 
+export function SaveIcon() {
+  return (
+    <svg {...base} aria-hidden="true">
+      <path d="M4 3.5h10.2l2 2v11H4z" />
+      <path d="M6.7 3.5v4.2h6V3.5M6.8 16.5v-5h6.4v5" />
+    </svg>
+  );
+}
+
 export function TrashIcon() {
   return (
     <svg {...base} aria-hidden="true">

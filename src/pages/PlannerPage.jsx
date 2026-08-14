@@ -81,7 +81,7 @@ export function PlannerPage({ tasks, setScheduledStart, updateTask }) {
   )
 
   return (
-    <main className="app-shell">
+    <main className="app-shell planner-shell">
       <header className="hero planner-hero">
         <div>
           <h1>Day planner</h1>

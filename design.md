@@ -19,6 +19,10 @@ radii, or shadow styles outside this list.
 - Accent secondary (cool): lavender `#C9C3F2`
 - Home soft blue surface: `#CFE5F2`
 - Home soft pink surface: `#EADCF0`
+- Raised neutral surface: `#FAF9F7`
+- Editorial blue surface: `#D8EBF5`
+- Editorial pink surface: `#F0E2F1`
+- Editorial lavender surface: `#DED8F7`
 - Text primary: `#14141A`
 - Text secondary: `#6B6B72`
 - Border/divider: `#E7E4DD` (barely-there, used sparingly, never a full outline around every card)
@@ -137,7 +141,51 @@ draws attention to itself.
 - Dense information inside cards is fine; whitespace exists between cards,
   not padding everything into oblivion inside them.
 
+### Application-wide editorial composition
+
+- Every route uses the same dark navigation rail, large sentence-case page
+  heading, flat bordered surfaces, and compact controls. The rail includes an
+  inline task search with task-only results; Command Palette remains a separate
+  command and navigation interface.
+- The editorial blue, pink and lavender surfaces are hierarchy tools, not
+  categories. A page may use at most two of them alongside white and one dark
+  anchor. They never replace semantic overdue, risk, completion, or waiting
+  treatments.
+- Board columns may use tinted surfaces to make deadline distance scannable,
+  but task data and drag destinations continue to come from the configured
+  canonical bucket list. Calendar tasks use compact, fully bordered blocks; Planner
+  blocks rotate through the same three quiet surfaces while position and height
+  remain the actual time and duration encodings.
+- Desktop Settings is a two-column collection of real setting groups rather
+  than a long undifferentiated stack. Someday / Maybe pairs a sticky capture
+  card with a three-column idea grid. Both collapse to one column based on the
+  route container, not the physical display resolution.
+- Dialogs use a shared maximum width, bordered surface, sticky heading and
+  grouped field regions. Quick Add and Command Palette share the same compact
+  command-surface proportions and selection language.
+- **Local profile setup** (`WelcomeDialog.jsx`, `useProfile.js`) is the first
+  screen on a fresh browser profile. It collects an optional workspace name,
+  lets the person pick the existing single accent token, and may import an
+  existing JSON task export before entering the app. “Start as guest” stores
+  the same local-only record with the name `Guest`. This is explicitly not
+  authentication: no network request, account, credential, or backend is
+  introduced. The stored name replaces the navigation wordmark and remains
+  editable from Settings.
+- Responsive order is semantic source order. At narrow widths, navigation
+  becomes the existing drawer, mosaics stack, Planner returns unscheduled work
+  before the timeline, Settings becomes one column, and dialogs become nearly
+  full-viewport without horizontal overflow.
+
 ## Data visualization
+
+## Complete-state styling
+
+TidyLine does not use one-sided accent borders or coloured edge strips as a
+general card treatment. Borders are normally complete and structural. The one
+deliberate exception is the persistent dark sidebar: its active route uses the
+original slim coral navigation rail, full-white text, and the existing line
+icon, with no filled active tile. Accent colour otherwise belongs in fills,
+controls, indicators, charts, or complete visual treatments.
 
 - Bars/charts are solid flat color rectangles, not gradient-filled, not rounded
   into pill shapes at the top.
@@ -201,6 +249,14 @@ coloured pill, and never a green/red semantic pair.
   bare glyph (`.icon-mini`, for row-level actions like pin/edit/duplicate/
   archive/delete). Both always carry an `aria-label` and a `title`. Never a
   circular floating action button.
+- **Purpose-specific actions** — important actions may depart from the generic
+  primary/secondary button when their role benefits from clearer identity. Home
+  Add Task is plain editorial text with a small circled plus; it is not a filled
+  rounded CTA. Daily Shutdown is a persistent bordered sidebar action so it can
+  be opened from every route. The Add Task footer uses a floppy-disk icon for
+  Save and an adjacent underlined Archive action; the latter creates the task
+  directly in the existing archived state rather than faking an archive view.
+  Decorative treatment never replaces an accessible label or working action.
 - **Custom checkbox** (`Checkbox.jsx`, `.custom-checkbox`) — a small square
   control using the shared line-icon language. Its unchecked state is a
   `--line` border; its checked state uses `--accent` with a white check glyph.
@@ -213,7 +269,7 @@ coloured pill, and never a green/red semantic pair.
 - **Select menu** (`SelectMenu.jsx`, `.select-*`) — the shared replacement for
   native `<select>` chrome. The trigger is a bordered `--surface` button with
   `--radius-btn`; the menu is another bordered surface with no shadow, small
-  gaps between options, and an accent left rule on the selected option. Its
+  gaps between options, and a quiet filled selected surface. Its
   short translate/fade entrance and item presses use the standard motion
   tokens. Board filters, reminder presets, recurrence and duration all use it.
 - **Creation detail panel** (`TaskDraftDetails.jsx`, `.task-draft-details`) —
@@ -222,15 +278,15 @@ coloured pill, and never a green/red semantic pair.
   controls as an expanded task, starts collapsed, and stays inside the utility
   form rather than becoming a modal or separate workflow. Its template picker
   prefills reusable details only; title and deadline always stay task-specific.
-- **Tag mark** (`TagList.jsx`) — flat rectangle with a 2px left border and no
-  background, **never a rounded pill**. Tone is assigned deterministically by
+- **Tag mark** (`TagList.jsx`) — flat, lightly bordered rectangle with a
+  restrained tinted surface, **never a rounded pill**. Tone is assigned deterministically by
   hashing the tag name across three palette values only (neutral, lavender,
   coral), so a given tag is always the same colour and no new hues enter.
 - **Energy selector/mark** (`EnergyLevelControl.jsx`, `.energy-*`) — a compact
   segmented control for the optional `low`, `normal`, and `deep-focus` values,
   including an explicit Unset state. Task cards render the value as a small
-  dot plus plain label with a flat left rule, never as a filled pill badge.
-- **Day-context panel** (`DayContext.jsx`) — left-bordered lavender panel that
+  dot plus plain label, never as a filled pill badge.
+- **Day-context panel** (`DayContext.jsx`) — fully bordered lavender panel that
   appears under a date or time field once a value is picked, listing what is
   already scheduled that day (or within 2h, for reminders). Renders nothing
   when the slot is clear, so it is a signal rather than constant chrome. It
@@ -253,7 +309,7 @@ coloured pill, and never a green/red semantic pair.
   ("3 days left", "today", "2 days overdue"), turning accent-coloured once
   negative. Text only; never a coloured pill.
 - **Deadline risk mark** (`risk.js`, `.risk-mark`) — a derived plain-text mark
-  with a 2px left rule. Neutral = low risk, lavender = getting tight, accent =
+  whose text and nearby dot provide its tone. Neutral = low risk, lavender = getting tight, accent =
   at risk. It is never stored or backfilled and never becomes a filled badge;
   the score recomputes from time, estimate, open checklist work, postponements,
   same-day load and optional energy on each Board time tick. The exact weights
@@ -275,11 +331,14 @@ coloured pill, and never a green/red semantic pair.
   select-surface language. Options retain canonical chronological order;
   Today and Later are disabled/required anchors. The panel uses the standard
   short translate/fade transition and no shadow.
-- **Saved filter bar** (`SavedFilterBar.jsx`, `.saved-filter-*`) — a flat
-  left-ruled surface above Board filters. A standard select menu applies named
-  filter snapshots; adjacent plain inputs save/delete them. Saved views compose
-  existing search, tag, status, energy, duration, pin, date and sort fields and
-  never create a second project/category taxonomy.
+- **Board utility row** (`BoardToolbar.jsx`, `SavedFilterBar.jsx`) — one compact
+  row keeps task search persistent while filters sit behind an arrow-triggered
+  popup and Saved Views sits behind a small Views trigger. Both panels use the
+  standard bordered menu surface and short fade/translate entrance; outside
+  press or Escape closes them. The tiny Active/Archived control beside Select
+  toggles the existing Board view directly. Saved views still compose existing
+  search, tag, status, energy, duration, pin, date and sort fields and never
+  create a second project/category taxonomy.
 - **Planner block** (`PlannerPage.jsx`, `.planner-block`) — a rectangular dark
   time block on an hourly ruled surface. Vertical position encodes
   `scheduledStart`; height encodes the existing duration. The coral resize edge
@@ -295,9 +354,9 @@ coloured pill, and never a green/red semantic pair.
   dialog from Home. It summarizes actionable due/planned work for the local
   day and gives each unfinished task Tomorrow, another date, keep, and archive
   actions. It never auto-opens and adds no prompt preference or stored status.
-- **Overdue tier card** (`.overdue-group`) — severity is expressed only by
-  left-border weight and palette intensity: 3px `--line` (yesterday) → 3px
-  lavender (a few days) → 5px accent (a week or more). No new hues, no red,
+- **Overdue tier card** (`.overdue-group`) — severity is expressed by complete
+  border and palette intensity: neutral (yesterday) → lavender (a few days) →
+  accent (a week or more). No new hues, no red,
   no alarm iconography.
 - **Bucket progress bar** (`.bucket-progress`) — 3px flat lavender fill on a
   `--line` track at the head of each bucket. Square ends, same language as the
@@ -305,7 +364,7 @@ coloured pill, and never a green/red semantic pair.
 - **Command palette** (`CommandPalette.jsx`) — centred card on a token-derived
   scrim, reusing `--surface`, `--radius-card` and a 1px `--line` border. The
   search row is an underline field, not a rounded pill, and the active row is
-  marked with an accent left border like a nav item. No shadow.
+  marked with a filled selected surface. No shadow.
 - **Accent swatch** (`.accent-swatch`) — small rounded-rect colour buttons in
   Settings; the selected one is ringed with a `--text` border rather than a
   checkmark.
@@ -316,7 +375,7 @@ coloured pill, and never a green/red semantic pair.
 - **Quick Add Modal** (`QuickAddModal.jsx`, `.quick-add-palette`) — centred card on a
   token-derived scrim, reusing `--surface`, `--radius-card` and a 1px `--line`
   border (visually identical to the Command Palette). Features a top input field and
-  a live chip container showing matched fields as removable/editable flat left-bordered
+  a live chip container showing matched fields as removable/editable flat bordered
   tags (`.tag-list`, `.tag`), plus an unambiguous resolved date preview.
   Triggered via the `N` or `Q` keyboard shortcuts or the command palette.
   Closes via `Esc` or background click. `Shift+Enter` opens the full inline form
@@ -344,7 +403,7 @@ coloured pill, and never a green/red semantic pair.
   Example hint pills below the chip row append syntax tokens to the current input on click.
 
   **Validation (live, never silent):** reminder-without-deadline and invalid duration
-  surface as amber left-rule warning chips and block submission with an inline message.
+  surface as amber bordered warning chips and block submission with an inline message.
   Zero-value durations are preserved in the preview but flagged.
 
 
@@ -371,8 +430,9 @@ The following are the default outputs of AI-generated UI and are banned outright
   anchor point, so it should feel like the same material).
 - Sidebar text: muted gray (`#9C9CA3`) for inactive items, full white for
   the active item.
-- Active nav item indicator: a solid coral (`#FF5A36`) left-border accent
-  (2–3px), not a filled pill background behind the label.
+- Active nav item indicator: the original slim coral rail at the left edge of
+  the active row, paired with full-white text and the existing line icon. The
+  row itself stays unfilled.
 - Nav items: plain text label plus one small outline-style line-icon per
   item (not emoji, not icon-in-a-circle), icon inherits the text color.
 - App name/wordmark at the top of the sidebar: bold, white, plain text,
@@ -522,7 +582,7 @@ These are behavioural contracts, not styling. Change them deliberately.
   tasks without an estimate count as zero minutes.
 - **Waiting is blocked, not completed.** `status: 'waiting'` carries
   `waitingFor` and `followUpDate`. Waiting cards stay in their deadline bucket
-  with a muted lavender left rule but are excluded from actionable Today and
+  with a muted complete border and reduced emphasis but are excluded from actionable Today and
   overdue metrics. At the local follow-up date the minute maintenance pass
   restores `status: 'active'` and clears both waiting fields. No implicit
   browser notification is fired: notification permission remains tied to an
@@ -556,24 +616,35 @@ These are behavioural contracts, not styling. Change them deliberately.
   own. It uses a single 12-column **editorial mosaic**, not a hero followed by
   a separate uniform card grid. Every number and task title is derived from the
   shared task list and existing utilities.
-  1. The oversized time-aware greeting sits on a muted-blue card with Add Task
-     and Review the Day actions. It is wide but not full-width, allowing the
-     white Daily Activity timeline to sit alongside it. The timeline keeps its
-     real reminder points and coral current-time marker.
-  2. The tall dark Today card is the visual anchor. Lavender Activity, coral
-     Overall Progress, muted-blue Completion Rhythm, a wide white Coming Up
-     list, and cards of deliberately different widths/heights build around it.
+  1. The oversized time-aware greeting is an unframed editorial introduction
+     with Add Task and Review the Day actions—no colored card behind it. A
+     bordered white Daily Activity planner canvas sits alongside it. The canvas
+     renders only tasks actually placed in Day Planner (`scheduledStart` plus
+     duration), with compact colored schedule blocks, collision-aware lanes,
+     and a coral current-time marker. Reminder times do not appear there.
+  2. The dark Today card is the visual anchor, but it occupies one content row
+     only—it never spans later dashboard rows and must not inherit their total
+     height. Lavender Activity and dark Weekly Pace are an explicit equal-width
+     pair, coral Overall Progress, muted-blue Completion Rhythm, a wide white
+     Coming Up list, and cards of deliberately different widths/heights build
+     around it.
      Color blocks create depth; no card uses a shadow or translucent surface.
-  3. **Daybreak illustration** (`HomeDaybreak.jsx`, `.home-daybreak`) is the
-     one intentionally non-data card: an original inline SVG of an uneven path,
-     horizon and star on the soft-pink surface. Its short line of copy responds
-     only to the real due-today count. It must not acquire a fabricated metric,
-     stock image, avatar, team member, or mood state.
+  3. **Home feature slideshow** (`HomeDaybreak.jsx`, `.home-daybreak`) is the
+     intentionally non-metric editorial card. It rotates through three original
+     inline SVG illustrations for real TidyLine capabilities—deadline planning,
+     focus planning, and end-of-day review—with text-only feature copy. Slides
+     advance automatically and can be changed with previous/next controls. It
+     must not acquire fabricated metrics, stock imagery, avatars, team members,
+     or mood states.
   4. The mosaic responds to the content width beside the sidebar. It becomes a
-     deliberate two-column composition at 1120px, gives the tall Today anchor a
-     full row below 820px, and becomes one readable column below 680px. Source
-     order remains greeting, timeline, Today, Activity, illustration, progress,
-     upcoming, completion so mobile reading order is useful.
+     deliberate two-column composition at 1120px, gives Today a full row below
+     820px, and becomes one readable column below 680px. Activity and Weekly
+     Pace stay in their 50/50 pair until that one-column threshold. The dark
+     **Weekly Pace** card uses five real weekly `completedAt` totals and compares
+     the current week against their average; it never reconstructs missing
+     completion history. Source order remains greeting, timeline, Today,
+     Activity, Weekly Pace, illustration, progress, upcoming, completion so
+     mobile reading order is useful.
   - Existing ring, milestone, activity-grid and sparkline primitives remain
     valid, but Home is not required to force every new visual region into a
     chart primitive. Its tinted surface cards and illustration are finalized
@@ -611,7 +682,7 @@ These are behavioural contracts, not styling. Change them deliberately.
   Analytics; it never deletes. Hard delete stays available as a separate,
   clearly destructive action. Both are undoable.
 - Pinning is orthogonal to done/undone: a pinned task sorts to the top of its
-  bucket *even when completed*, and is marked with a lavender left border —
+  bucket *even when completed*, and is marked with a lavender complete border —
   deliberately a different visual channel from the strikethrough used for done.
 - Task cards: no colored pill for the deadline. Show the date as a bold number
   + short label (e.g. large "12" over small "Aug"), similar to how the

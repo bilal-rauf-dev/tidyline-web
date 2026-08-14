@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useId, useRef, useState } from 'react'
 import { parseImportedTasks, serializeTasks } from '../utils/tasksIO'
 import { isSoundEnabled, playChime, setSoundEnabled } from '../utils/notifications'
 import { ACCENT_OPTIONS, DENSITY_OPTIONS } from '../hooks/useTheme'
@@ -6,6 +6,33 @@ import { Checkbox } from '../components/Checkbox'
 import { BucketConfigMenu } from '../components/BucketConfigMenu'
 import { BUCKET_ORDER } from '../utils/buckets'
 import { TemplateSettings } from '../components/TemplateSettings'
+import { ChevronDownIcon } from '../components/icons'
+
+function SettingsSection({ title, description, initiallyOpen = false, children }) {
+  const [isOpen, setIsOpen] = useState(initiallyOpen)
+  const contentId = useId()
+
+  return (
+    <section className={isOpen ? 'entry-card settings-section expanded' : 'entry-card settings-section'}>
+      <button
+        type="button"
+        className="settings-section-toggle"
+        aria-expanded={isOpen}
+        aria-controls={contentId}
+        onClick={() => setIsOpen((open) => !open)}
+      >
+        <span>
+          <strong>{title}</strong>
+          {description && <small>{description}</small>}
+        </span>
+        <ChevronDownIcon />
+      </button>
+      <div id={contentId} className="settings-section-content" hidden={!isOpen}>
+        {children}
+      </div>
+    </section>
+  )
+}
 
 export function SettingsPage({
   tasks,
@@ -22,9 +49,11 @@ export function SettingsPage({
   onDeleteTemplate = () => {},
   overloadHours = 6,
   onOverloadHoursChange = () => {},
+  profile = null,
 }) {
   const fileInputRef = useRef(null)
   const [soundOn, setSoundOn] = useState(isSoundEnabled)
+  const [workspaceName, setWorkspaceName] = useState(profile?.name ?? '')
   const completedCount = tasks.filter((task) => task.done).length
 
   function handleExport() {
@@ -77,13 +106,37 @@ export function SettingsPage({
   }
 
   return (
-    <main className="app-shell">
+    <main className="app-shell settings-shell">
       <header className="hero">
         <h1>Settings</h1>
       </header>
 
-      <section className="entry-card">
-        <h2>Appearance</h2>
+      {profile && (
+        <SettingsSection title="Local profile" description="This device only" initiallyOpen>
+          <div className="settings-row settings-profile-row">
+            <label className="settings-profile-field">
+              <span>
+                Workspace name
+                <small className="settings-note">
+                  Used to distinguish this local TidyLine workspace. No account is created.
+                </small>
+              </span>
+              <input
+                type="text"
+                maxLength="48"
+                value={workspaceName}
+                onChange={(event) => setWorkspaceName(event.target.value)}
+                aria-label="Workspace name"
+              />
+            </label>
+            <button type="button" className="secondary" onClick={() => profile.setName(workspaceName)}>
+              Save name
+            </button>
+          </div>
+        </SettingsSection>
+      )}
+
+      <SettingsSection title="Appearance" description="Theme, accent, and density" initiallyOpen>
 
         <div className="settings-row">
           <span>Theme</span>
@@ -132,10 +185,9 @@ export function SettingsPage({
             ))}
           </div>
         </div>
-      </section>
+      </SettingsSection>
 
-      <section className="entry-card">
-        <h2>Notifications</h2>
+      <SettingsSection title="Notifications" description="Reminder preferences" initiallyOpen>
 
         <div className="settings-row">
           <span>
@@ -148,10 +200,9 @@ export function SettingsPage({
             {soundOn ? 'Mute' : 'Unmute'}
           </button>
         </div>
-      </section>
+      </SettingsSection>
 
-      <section className="entry-card" id="board-buckets">
-        <h2>Board timeline</h2>
+      <SettingsSection title="Board timeline" description="Visible deadline buckets" initiallyOpen>
 
         <div className="settings-row">
           <span>
@@ -166,10 +217,9 @@ export function SettingsPage({
             onReset={onResetBuckets}
           />
         </div>
-      </section>
+      </SettingsSection>
 
-      <section className="entry-card">
-        <h2>Calendar workload</h2>
+      <SettingsSection title="Calendar workload" description="Overload threshold" initiallyOpen>
         <div className="settings-row">
           <span>
             Flag overloaded days above
@@ -192,10 +242,9 @@ export function SettingsPage({
             hours
           </label>
         </div>
-      </section>
+      </SettingsSection>
 
-      <section className="entry-card">
-        <h2>Task actions</h2>
+      <SettingsSection title="Task actions" description="Deletion confirmation" initiallyOpen>
 
         <div className="settings-row">
           <span>
@@ -212,10 +261,9 @@ export function SettingsPage({
             />
           </label>
         </div>
-      </section>
+      </SettingsSection>
 
-      <section className="entry-card">
-        <h2>Task templates</h2>
+      <SettingsSection title="Task templates" description="Reusable task details">
         <p className="card-note">
           Templates reuse task details while leaving the title and deadline blank.
         </p>
@@ -224,10 +272,9 @@ export function SettingsPage({
           onRename={onRenameTemplate}
           onDelete={onDeleteTemplate}
         />
-      </section>
+      </SettingsSection>
 
-      <section className="entry-card">
-        <h2>Your data</h2>
+      <SettingsSection title="Your data" description="Import, export, and cleanup">
 
         <div className="settings-row">
           <span>Export tasks</span>
@@ -260,7 +307,7 @@ export function SettingsPage({
             Clear completed
           </button>
         </div>
-      </section>
+      </SettingsSection>
     </main>
   )
 }

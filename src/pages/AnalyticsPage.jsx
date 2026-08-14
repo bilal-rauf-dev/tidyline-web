@@ -37,7 +37,7 @@ export function AnalyticsPage({ tasks: allTasks, bucketOrder = BUCKET_ORDER }) {
   )
 
   return (
-    <main className="app-shell">
+    <main className="app-shell analytics-shell">
       <header className="hero">
         <h1>Analytics</h1>
         <p className="hero-copy">

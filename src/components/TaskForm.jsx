@@ -2,7 +2,16 @@ import { useEffect, useRef, useState } from 'react'
 import { formatDateTime } from '../utils/dates'
 import { ensureNotificationPermission } from '../utils/notifications'
 import { parseTags } from '../utils/tags'
-import { BellIcon, CalendarIcon, ChevronDownIcon, CloseIcon, PlusIcon, TagIcon } from './icons'
+import {
+  ArchiveIcon,
+  BellIcon,
+  CalendarIcon,
+  ChevronDownIcon,
+  CloseIcon,
+  PlusIcon,
+  SaveIcon,
+  TagIcon,
+} from './icons'
 import { TagList } from './TagList'
 import { DayContext } from './DayContext'
 import { TaskDraftDetails } from './TaskDraftDetails'
@@ -153,6 +162,7 @@ export function TaskForm({
 
   function handleSubmit(event) {
     event.preventDefault()
+    const destination = event.nativeEvent.submitter?.value ?? 'active'
 
     if (
       !title.trim() ||
@@ -181,6 +191,7 @@ export function TaskForm({
       startDate: details.startDate || null,
       energyLevel: details.energyLevel || null,
       status: details.status,
+      archived: destination === 'archive',
       waitingFor: details.status === 'waiting' ? details.waitingFor.trim() : '',
       followUpDate: details.status === 'waiting' ? details.followUpDate : null,
     })
@@ -342,8 +353,18 @@ export function TaskForm({
         </div>
 
         <div className="form-footer">
-          <button type="submit" className="primary">
-            Save task
+          <button type="submit" value="archive" className="task-archive-action">
+            <ArchiveIcon />
+            Add to archive
+          </button>
+          <button
+            type="submit"
+            value="active"
+            className="task-save-action"
+            aria-label="Save task"
+            title="Save task"
+          >
+            <SaveIcon />
           </button>
         </div>
       </form>

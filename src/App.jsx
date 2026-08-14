@@ -6,6 +6,7 @@ import { MenuIcon } from './components/icons'
 import { CommandPalette } from './components/CommandPalette'
 import { DeleteConfirmDialog } from './components/DeleteConfirmDialog'
 import { TaskAddedToast } from './components/TaskAddedToast'
+import { ShutdownDialog } from './components/ShutdownDialog'
 import { HomePage } from './pages/HomePage'
 import { BoardPage } from './pages/BoardPage'
 import { CalendarPage } from './pages/CalendarPage'
@@ -14,6 +15,7 @@ import { SettingsPage } from './pages/SettingsPage'
 import { useTasks } from './hooks/useTasks'
 import { useReminderNotifications } from './hooks/useReminderNotifications'
 import { useTheme } from './hooks/useTheme'
+import { useProfile } from './hooks/useProfile'
 import { useBucketConfig } from './hooks/useBucketConfig'
 import { useShortcuts } from './hooks/useShortcuts'
 import { useTemplates } from './hooks/useTemplates'
@@ -23,6 +25,7 @@ import { SomedayPage } from './pages/SomedayPage'
 import { DEFAULT_OVERLOAD_HOURS } from './utils/workload'
 import { QuickAddModal } from './components/QuickAddModal'
 import { toDateStr } from './utils/calendar'
+import { WelcomeDialog } from './components/WelcomeDialog'
 
 const DELETE_CONFIRM_KEY = 'tidyline:confirm-delete'
 const OVERLOAD_HOURS_KEY = 'tidyline:overload-hours'
@@ -50,6 +53,7 @@ function activeTaskId() {
 function App() {
   const taskState = useTasks()
   const appearance = useTheme()
+  const profile = useProfile()
   const bucketConfig = useBucketConfig()
   const templateState = useTemplates()
   const savedFilterState = useSavedFilters()
@@ -62,6 +66,7 @@ function App() {
   const [taskAdded, setTaskAdded] = useState(null)
   const [overloadHours, setOverloadHours] = useState(loadOverloadHours)
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false)
+  const [isShutdownOpen, setIsShutdownOpen] = useState(false)
 
   const { completeTask, toggleTask, deleteTask } = taskState
 
@@ -236,6 +241,17 @@ function App() {
     ),
   )
 
+  if (!profile.isSetUp) {
+    return (
+      <WelcomeDialog
+        accent={appearance.accent}
+        onAccentChange={appearance.setAccent}
+        onImportTasks={taskState.importTasks}
+        onComplete={profile.completeSetup}
+      />
+    )
+  }
+
   return (
     <div className={isCollapsed ? 'app-layout collapsed' : 'app-layout'}>
       <header className="topbar">
@@ -249,7 +265,7 @@ function App() {
         >
           <MenuIcon />
         </button>
-        <span className="topbar-title">Tidyline</span>
+        <span className="topbar-title">{profile.name}</span>
       </header>
 
       <Sidebar
@@ -260,6 +276,16 @@ function App() {
         onOpenPalette={() => {
           setIsDrawerOpen(false)
           setIsPaletteOpen(true)
+        }}
+        onOpenShutdown={() => {
+          setIsDrawerOpen(false)
+          setIsShutdownOpen(true)
+        }}
+        workspaceName={profile.name}
+        tasks={taskState.tasks}
+        onOpenTask={(taskId) => {
+          setIsDrawerOpen(false)
+          navigate(`/board?expand=${encodeURIComponent(taskId)}`)
         }}
       />
 
@@ -278,9 +304,7 @@ function App() {
             <Route path="/">
               <HomePage
                 tasks={taskState.tasks}
-                setDeadline={taskState.setDeadline}
-                rescheduleTasks={taskState.rescheduleTasks}
-                archiveTask={taskState.archiveTask}
+                workspaceName={profile.name}
               />
             </Route>
             <Route path="/board">
@@ -337,6 +361,7 @@ function App() {
                 onDeleteTemplate={templateState.deleteTemplate}
                 overloadHours={overloadHours}
                 onOverloadHoursChange={setOverloadHours}
+                profile={profile}
               />
             </Route>
           </Switch>
@@ -371,6 +396,15 @@ function App() {
           title={taskAdded.title}
           onEdit={editAddedTask}
           onDismiss={dismissTaskAdded}
+        />
+      )}
+
+      {isShutdownOpen && (
+        <ShutdownDialog
+          tasks={taskState.tasks}
+          setDeadline={taskState.setDeadline}
+          archiveTask={taskState.archiveTask}
+          onClose={() => setIsShutdownOpen(false)}
         />
       )}
     </div>

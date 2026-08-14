@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'wouter'
 import {
   getActivityHeatmap,
@@ -14,13 +14,27 @@ import { ActivityGrid } from '../components/ActivityGrid'
 import { Sparkline } from '../components/Sparkline'
 import { TagList } from '../components/TagList'
 import { HomeDaybreak } from '../components/HomeDaybreak'
-import { ShutdownDialog } from '../components/ShutdownDialog'
 import { isOverdue } from '../utils/overdue'
 import { toDateStr } from '../utils/calendar'
 import { isTaskPlannedForToday, isTaskUpcoming } from '../utils/taskFields'
 
 const UPCOMING_LIMIT = 6
 const HOME_HEATMAP_DAYS = 35
+
+const HOME_FEATURES = [
+  {
+    title: 'Plan by deadline',
+    copy: 'Tasks find their place automatically, so your next step stays visible.',
+  },
+  {
+    title: 'Make space for focus',
+    copy: 'Use time blocks, reminders, and estimates to shape a day that feels doable.',
+  },
+  {
+    title: 'Review and reset',
+    copy: 'Close the day with a clear view of what moved forward and what can wait.',
+  },
+]
 
 function getGreeting(date = new Date()) {
   const hour = date.getHours()
@@ -31,8 +45,11 @@ function getGreeting(date = new Date()) {
   return 'Good evening'
 }
 
-export function HomePage({ tasks: allTasks, setDeadline = () => {}, archiveTask = () => {} }) {
-  const [shutdownOpen, setShutdownOpen] = useState(false)
+export function HomePage({
+  tasks: allTasks,
+  workspaceName = '',
+}) {
+  const [featureIndex, setFeatureIndex] = useState(0)
   const greeting = useMemo(() => getGreeting(), [])
   const tasks = useMemo(
     () => allTasks.filter((task) => !task.archived && task.deadline),
@@ -43,7 +60,39 @@ export function HomePage({ tasks: allTasks, setDeadline = () => {}, archiveTask 
   const timeline = useMemo(() => getTodayTimeline(tasks), [tasks])
   const completion = useMemo(() => getCompletionStat(tasks), [tasks])
   const completionHistory = useMemo(() => getCompletionHistory(tasks), [tasks])
+  const completionTrend = useMemo(() => {
+    const fiveWeekHistory = getCompletionHistory(tasks, HOME_HEATMAP_DAYS)
+    const weeklySeries = Array.from({ length: 5 }, (_, index) => {
+      const count = fiveWeekHistory.series
+        .slice(index * 7, index * 7 + 7)
+        .reduce((total, point) => total + point.count, 0)
+
+      return { count }
+    })
+    const current = weeklySeries.at(-1)?.count ?? 0
+    const average = weeklySeries.reduce((total, week) => total + week.count, 0) / weeklySeries.length
+    const peakIndex = weeklySeries.reduce(
+      (peak, week, index) => (week.count > weeklySeries[peak].count ? index : peak),
+      0,
+    )
+
+    return {
+      weeklySeries,
+      current,
+      average,
+      peakIndex,
+      difference: current - average,
+    }
+  }, [tasks])
   const todayStr = toDateStr(new Date())
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setFeatureIndex((current) => (current + 1) % HOME_FEATURES.length)
+    }, 5500)
+
+    return () => window.clearInterval(timer)
+  }, [])
 
   const upcoming = useMemo(
     () =>
@@ -85,76 +134,77 @@ export function HomePage({ tasks: allTasks, setDeadline = () => {}, archiveTask 
     <>
       <main className="app-shell home-shell">
         <section className="home-dashboard" aria-label="Home dashboard">
-          <header className="home-panel home-welcome">
+          <header className="home-welcome">
             <div>
-              <h1>{greeting}</h1>
+              <h1>{workspaceName ? `${greeting}` : greeting}</h1>
               <p>
                 See what needs your attention, make a little progress, and leave the rest
                 somewhere you can trust.
               </p>
             </div>
             <div className="home-actions">
-              <Link href="/board?add=1" className="primary home-cta">
+              <Link href="/board?add=1" className="home-add-action">
+                <span className="home-add-mark" aria-hidden="true">+</span>
                 Add a task
               </Link>
-              <button
-                type="button"
-                className="secondary home-cta"
-                onClick={() => setShutdownOpen(true)}
-              >
-                Review the day
-              </button>
             </div>
           </header>
 
           <article className="entry-card home-timeline">
             <div className="home-card-heading">
               <h2>Daily activity</h2>
-              <span>{timeline.items.length} scheduled</span>
+              <Link href="/planner">Open day planner</Link>
             </div>
 
-            <div className="timeline">
-              <div className="timeline-axis">
+            <div className="home-schedule" style={{ '--schedule-lanes': timeline.laneCount }}>
+              <div className="home-schedule-scale" aria-hidden="true">
                 {TIMELINE_TICKS.map((tick) => (
                   <span
                     key={tick}
-                    className="timeline-tick"
-                    style={{ left: `${(tick / 24) * 100}%` }}
+                    style={{ left: `${((tick - 6) / 16) * 100}%` }}
+                  >
+                    {String(tick).padStart(2, '0')}:00
+                  </span>
+                ))}
+              </div>
+
+              <div className="home-schedule-rail">
+                {TIMELINE_TICKS.map((tick) => (
+                  <span
+                    key={tick}
+                    className="home-schedule-tick"
+                    style={{ left: `${((tick - 6) / 16) * 100}%` }}
                   />
                 ))}
 
                 {timeline.items.map((item) => (
-                  <span
+                  <div
                     key={item.key}
-                    className={item.done ? 'timeline-point done' : 'timeline-point'}
-                    style={{ left: `${item.position}%` }}
+                    className="home-schedule-block"
+                    style={{
+                      left: `${item.position}%`,
+                      width: `${item.width}%`,
+                      top: `calc(${item.lane} * 3.05rem + 0.8rem)`,
+                    }}
                     title={`${item.time} — ${item.title}`}
-                  />
+                  >
+                    <strong>{item.title}</strong>
+                    <span>{item.time} · {item.duration} min</span>
+                  </div>
                 ))}
 
-                <span className="timeline-now" style={{ left: `${timeline.nowPosition}%` }} />
-              </div>
-
-              <div className="timeline-scale" aria-hidden="true">
-                {TIMELINE_TICKS.map((tick) => (
-                  <span key={tick}>{String(tick).padStart(2, '0')}</span>
-                ))}
+                {timeline.nowPosition >= 0 && timeline.nowPosition <= 100 && (
+                  <span className="home-schedule-now" style={{ left: `${timeline.nowPosition}%` }} />
+                )}
               </div>
             </div>
 
             {timeline.items.length === 0 ? (
-              <p className="empty">No reminders set for today.</p>
+              <p className="empty">Nothing is placed in today&rsquo;s plan yet.</p>
             ) : (
-              <ul className="timeline-list">
-                {timeline.items.map((item) => (
-                  <li key={item.key}>
-                    <span className="timeline-time">{item.time}</span>
-                    <span className={item.done ? 'timeline-title done' : 'timeline-title'}>
-                      {item.title}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+              <p className="home-schedule-summary">
+                {timeline.items.length} {timeline.items.length === 1 ? 'task is' : 'tasks are'} placed in today&rsquo;s plan.
+              </p>
             )}
           </article>
 
@@ -173,31 +223,76 @@ export function HomePage({ tasks: allTasks, setDeadline = () => {}, archiveTask 
             </div>
           </article>
 
-          <article className="home-panel home-activity">
-            <div className="home-card-heading">
-              <h2>Activity</h2>
-              <span>Last 5 weeks</span>
-            </div>
-            <div className="activity-stat">
-              <strong>{heatmapSummary.activeDays}</strong>
-              <span>days with completed work</span>
-            </div>
-            <ActivityGrid cells={heatmap} label="Task activity by day, last 5 weeks" />
-            <p className="card-note">
-              {heatmapSummary.overdueDays} overdue {heatmapSummary.overdueDays === 1 ? 'day' : 'days'}
-            </p>
-          </article>
+          <section className="home-activity-pair" aria-label="Activity and weekly completion pace">
+            <article className="home-panel home-activity">
+              <div className="home-card-heading">
+                <h2>Activity</h2>
+                <span>Last 5 weeks</span>
+              </div>
+              <div className="activity-stat">
+                <strong>{heatmapSummary.activeDays}</strong>
+                <span>days with completed work</span>
+              </div>
+              <ActivityGrid cells={heatmap} label="Task activity by day, last 5 weeks" />
+              <p className="card-note">
+                {heatmapSummary.overdueDays} overdue {heatmapSummary.overdueDays === 1 ? 'day' : 'days'}
+              </p>
+            </article>
+
+            <article className="home-panel home-completion-trend">
+              <div className="home-card-heading">
+                <h2>Weekly pace</h2>
+                <span>5 weeks</span>
+              </div>
+              <div className="home-trend-stat">
+                <strong>{completionTrend.current}</strong>
+                <span>completed this week</span>
+              </div>
+              <Sparkline
+                series={completionTrend.weeklySeries}
+                peakIndex={completionTrend.peakIndex}
+                height={52}
+              />
+              <p className="home-trend-note">
+                {completionTrend.average === 0
+                  ? 'No completed tasks in this five-week view yet.'
+                  : `${Math.abs(completionTrend.difference).toFixed(1).replace(/\.0$/, '')} ${
+                      completionTrend.difference >= 0 ? 'above' : 'below'
+                    } your ${completionTrend.average.toFixed(1).replace(/\.0$/, '')}-task weekly average`}
+              </p>
+            </article>
+          </section>
 
           <article className="home-panel home-daybreak">
-            <div className="home-daybreak-copy">
-              <h2>{daily.dueToday === 0 ? 'Room to begin' : 'Start with one'}</h2>
-              <p>
-                {daily.dueToday === 0
-                  ? 'Your day has some breathing room.'
-                  : `${daily.dueToday} ${daily.dueToday === 1 ? 'task is' : 'tasks are'} ready when you are.`}
-              </p>
+            <div key={`feature-copy-${featureIndex}`} className="home-daybreak-copy home-feature-slide">
+              <span className="home-feature-kicker">TidyLine in practice</span>
+              <h2>{HOME_FEATURES[featureIndex].title}</h2>
+              <p>{HOME_FEATURES[featureIndex].copy}</p>
             </div>
-            <HomeDaybreak />
+            <HomeDaybreak key={`feature-art-${featureIndex}`} variant={featureIndex} />
+            <div className="home-feature-controls" aria-label="Home feature slideshow">
+              <button
+                type="button"
+                className="home-feature-arrow"
+                aria-label="Previous feature"
+                onClick={() => setFeatureIndex((current) => (current - 1 + HOME_FEATURES.length) % HOME_FEATURES.length)}
+              >
+                ‹
+              </button>
+              <div className="home-feature-dots" aria-hidden="true">
+                {HOME_FEATURES.map((feature, index) => (
+                  <span key={feature.title} className={index === featureIndex ? 'active' : ''} />
+                ))}
+              </div>
+              <button
+                type="button"
+                className="home-feature-arrow"
+                aria-label="Next feature"
+                onClick={() => setFeatureIndex((current) => (current + 1) % HOME_FEATURES.length)}
+              >
+                ›
+              </button>
+            </div>
           </article>
 
           <article className="accent-card home-progress">
@@ -261,14 +356,6 @@ export function HomePage({ tasks: allTasks, setDeadline = () => {}, archiveTask 
         </section>
       </main>
 
-      {shutdownOpen && (
-        <ShutdownDialog
-          tasks={allTasks}
-          setDeadline={setDeadline}
-          archiveTask={archiveTask}
-          onClose={() => setShutdownOpen(false)}
-        />
-      )}
     </>
   )
 }
