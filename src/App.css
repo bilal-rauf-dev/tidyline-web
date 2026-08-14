@@ -3807,6 +3807,16 @@ button {
   gap: clamp(0.75rem, 1.25vw, 1rem);
 }
 
+.home-activity-pair .home-card-heading {
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.home-activity-pair .home-card-heading > span {
+  white-space: normal;
+}
+
 .home-activity {
   display: flex;
   flex-direction: column;
@@ -3885,12 +3895,12 @@ button {
 
 .home-upcoming {
   grid-column: 8 / 13;
-  grid-row: 3 / span 2;
+  grid-row: 3;
 }
 
 .home-completion {
   grid-column: 4 / 8;
-  grid-row: 4;
+  grid-row: 3;
   background: var(--home-blue);
 }
 
