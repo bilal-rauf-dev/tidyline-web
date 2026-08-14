@@ -299,11 +299,7 @@ export function BoardPage({
             Not sure when to have it done? Keep it in Someday / Maybe until the right
             date becomes clear.
           </p>
-          <svg className="board-someday-visual" viewBox="0 0 120 42" aria-hidden="true">
-            <path d="M3 34h71c18 0 27-10 39-24" />
-            <path d="m102 4 11 6-7 11" />
-            <circle cx="23" cy="14" r="4" />
-          </svg>
+          <span className="board-someday-arrow" aria-hidden="true">→</span>
         </Link>
       </div>
 

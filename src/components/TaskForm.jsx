@@ -353,6 +353,10 @@ export function TaskForm({
         </div>
 
         <div className="form-footer">
+          <button type="submit" value="archive" className="task-archive-action">
+            <ArchiveIcon />
+            Add to archive
+          </button>
           <button
             type="submit"
             value="active"
@@ -361,10 +365,6 @@ export function TaskForm({
             title="Save task"
           >
             <SaveIcon />
-          </button>
-          <button type="submit" value="archive" className="task-archive-action">
-            <ArchiveIcon />
-            Add to archive
           </button>
         </div>
       </form>

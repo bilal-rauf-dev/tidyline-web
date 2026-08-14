@@ -5902,6 +5902,8 @@ textarea,
   gap: 0.55rem;
   width: fit-content;
   color: var(--text);
+  margin-top: 0.7rem;
+  padding-block: 0.2rem;
   font-size: 0.9rem;
   font-weight: 750;
   text-decoration: none;
@@ -5969,6 +5971,10 @@ textarea,
   gap: 0.6rem;
 }
 
+.task-entry .form-footer {
+  justify-content: space-between;
+}
+
 .task-save-action {
   display: inline-grid;
   width: 2.45rem;
@@ -6014,39 +6020,19 @@ textarea,
   text-decoration: none;
 }
 
-.board-someday-prompt::after {
-  position: absolute;
-  right: 1.1rem;
-  bottom: 1rem;
-  width: 0.45rem;
-  height: 0.45rem;
-  border-radius: 50%;
-  background: var(--accent);
-  content: '';
-}
-
-.board-someday-prompt:active .board-someday-visual {
+.board-someday-prompt:active .board-someday-arrow {
   transform: translateX(0.25rem);
 }
 
-.board-someday-visual {
-  width: min(100%, 9rem);
-  margin-top: auto;
+.board-someday-arrow {
+  position: absolute;
+  right: 1rem;
+  bottom: 0.7rem;
+  font-size: 1.8rem;
+  font-weight: 500;
+  line-height: 1;
   color: var(--text);
   transition: transform var(--dur-fast) var(--ease);
-}
-
-.board-someday-visual path,
-.board-someday-visual circle {
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.4;
-  vector-effect: non-scaling-stroke;
-}
-
-.board-someday-visual circle {
-  fill: var(--accent);
-  stroke: none;
 }
 
 .settings-profile-row {
