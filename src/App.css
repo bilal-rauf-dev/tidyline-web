@@ -6203,7 +6203,8 @@ textarea,
 
 .saved-filter-popover {
   left: 0;
-  width: min(19rem, calc(100vw - 1.5rem));
+  width: min(19rem, calc(100vw - 12rem));
+  min-width: 12rem;
   gap: 0.5rem;
   padding: 0.7rem;
 }
