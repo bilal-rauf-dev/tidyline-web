@@ -46,69 +46,71 @@ export function ShutdownDialog({ tasks, setDeadline, archiveTask, onClose }) {
           <button type="button" className="icon-mini" onClick={close} aria-label="Close daily shutdown"><CloseIcon /></button>
         </header>
 
-        <div className="shutdown-stat">
-          <strong>{summary.completed}/{summary.tasks.length}</strong>
-          <span>tasks completed today</span>
-        </div>
+        <div className="shutdown-dialog-content">
+          <div className="shutdown-stat">
+            <strong>{summary.completed}/{summary.tasks.length}</strong>
+            <span>tasks completed today</span>
+          </div>
 
-        {unfinished.length === 0 ? (
-          <p className="empty">No unfinished tasks left to review.</p>
-        ) : (
-          <ul className="shutdown-list">
-            {unfinished.map((task) => (
-              <li key={task.id}>
-                <strong>{task.title}</strong>
-                <div className="shutdown-actions">
-                  <button
-                    type="button"
-                    className="secondary"
-                    onClick={() => {
-                      setDeadline(task.id, tomorrowDate(), 'edit', { plannedDate: null })
-                      resolve(task.id)
-                    }}
-                  >
-                    Tomorrow
-                  </button>
-                  <label>
-                    <span className="sr-only">New deadline for {task.title}</span>
-                    <input
-                      type="date"
-                      value={dates[task.id] ?? ''}
-                      onChange={(event) => setDates((current) => ({ ...current, [task.id]: event.target.value }))}
-                    />
-                  </label>
-                  <button
-                    type="button"
-                    className="secondary"
-                    disabled={!dates[task.id]}
-                    onClick={() => {
-                      setDeadline(task.id, dates[task.id], 'edit', { plannedDate: null })
-                      resolve(task.id)
-                    }}
-                  >
-                    Move
-                  </button>
-                  <button type="button" className="secondary" onClick={() => resolve(task.id)}>
-                    {task.deadline === summary.date ? 'Keep as overdue' : 'Keep as is'}
-                  </button>
-                  <button
-                    type="button"
-                    className="secondary"
-                    onClick={() => {
-                      archiveTask(task.id)
-                      resolve(task.id)
-                    }}
-                  >
-                    Archive
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
+          {unfinished.length === 0 ? (
+            <p className="empty">No unfinished tasks left to review.</p>
+          ) : (
+            <ul className="shutdown-list">
+              {unfinished.map((task) => (
+                <li key={task.id}>
+                  <strong>{task.title}</strong>
+                  <div className="shutdown-actions">
+                    <button
+                      type="button"
+                      className="secondary"
+                      onClick={() => {
+                        setDeadline(task.id, tomorrowDate(), 'edit', { plannedDate: null })
+                        resolve(task.id)
+                      }}
+                    >
+                      Tomorrow
+                    </button>
+                    <label>
+                      <span className="sr-only">New deadline for {task.title}</span>
+                      <input
+                        type="date"
+                        value={dates[task.id] ?? ''}
+                        onChange={(event) => setDates((current) => ({ ...current, [task.id]: event.target.value }))}
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      className="secondary"
+                      disabled={!dates[task.id]}
+                      onClick={() => {
+                        setDeadline(task.id, dates[task.id], 'edit', { plannedDate: null })
+                        resolve(task.id)
+                      }}
+                    >
+                      Move
+                    </button>
+                    <button type="button" className="secondary" onClick={() => resolve(task.id)}>
+                      {task.deadline === summary.date ? 'Keep as overdue' : 'Keep as is'}
+                    </button>
+                    <button
+                      type="button"
+                      className="secondary"
+                      onClick={() => {
+                        archiveTask(task.id)
+                        resolve(task.id)
+                      }}
+                    >
+                      Archive
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
 
-        <div className="dialog-actions">
-          <button type="button" className="primary" onClick={close}>Finish review</button>
+          <div className="dialog-actions">
+            <button type="button" className="primary" onClick={close}>Finish review</button>
+          </div>
         </div>
       </article>
     </div>,

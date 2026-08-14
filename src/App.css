@@ -3451,6 +3451,18 @@ button {
   width: min(1320px, 94%);
 }
 
+.shutdown-dialog-content {
+  padding: 0 1.25rem 1.25rem;
+}
+
+.shutdown-dialog-content .shutdown-stat {
+  margin-top: 1rem;
+}
+
+.shutdown-dialog-content > .empty {
+  margin-inline: 0;
+}
+
 .home-dashboard {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
@@ -3712,6 +3724,15 @@ button {
   max-width: 48%;
 }
 
+.home-feature-kicker {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: color-mix(in srgb, var(--text) 60%, transparent);
+  font-size: 0.68rem;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+}
+
 .home-daybreak h2,
 .home-activity h2 {
   margin: 0;
@@ -3736,6 +3757,46 @@ button {
 .home-daybreak-art path,
 .home-daybreak-art circle {
   vector-effect: non-scaling-stroke;
+}
+
+.home-feature-controls {
+  position: absolute;
+  right: 1rem;
+  bottom: 0.85rem;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.home-feature-arrow {
+  display: grid;
+  width: 1.8rem;
+  height: 1.8rem;
+  place-items: center;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--text) 20%, transparent);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
+  color: var(--text);
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.home-feature-dots {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.home-feature-dots span {
+  width: 0.35rem;
+  height: 0.35rem;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--text) 30%, transparent);
+}
+
+.home-feature-dots span.active {
+  background: var(--accent);
 }
 
 .daybreak-sun,
@@ -3770,6 +3831,44 @@ button {
 .daybreak-dot.dot-two {
   fill: currentColor;
   opacity: 0.5;
+}
+
+.daybreak-grid {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 0.7;
+  stroke-dasharray: 1 5;
+  opacity: 0.35;
+}
+
+.daybreak-chart {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 4;
+}
+
+.daybreak-chart-point {
+  fill: var(--accent);
+}
+
+.daybreak-calendar {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+}
+
+.daybreak-calendar-line,
+.daybreak-calendar-mark {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.home-daybreak-art-1,
+.home-daybreak-art-2 {
+  color: color-mix(in srgb, var(--text) 72%, transparent);
 }
 
 .home-activity .activity-stat {
@@ -4987,7 +5086,8 @@ textarea,
 }
 
 .settings-shell > .entry-card {
-  height: 100%;
+  height: auto;
+  align-self: start;
 }
 
 .settings-shell > .entry-card:first-of-type {

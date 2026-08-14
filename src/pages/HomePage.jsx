@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'wouter'
 import {
   getActivityHeatmap,
@@ -22,6 +22,21 @@ import { isTaskPlannedForToday, isTaskUpcoming } from '../utils/taskFields'
 const UPCOMING_LIMIT = 6
 const HOME_HEATMAP_DAYS = 35
 
+const HOME_FEATURES = [
+  {
+    title: 'Plan by deadline',
+    copy: 'Tasks find their place automatically, so your next step stays visible.',
+  },
+  {
+    title: 'Make space for focus',
+    copy: 'Use time blocks, reminders, and estimates to shape a day that feels doable.',
+  },
+  {
+    title: 'Review and reset',
+    copy: 'Close the day with a clear view of what moved forward and what can wait.',
+  },
+]
+
 function getGreeting(date = new Date()) {
   const hour = date.getHours()
 
@@ -33,6 +48,7 @@ function getGreeting(date = new Date()) {
 
 export function HomePage({ tasks: allTasks, setDeadline = () => {}, archiveTask = () => {} }) {
   const [shutdownOpen, setShutdownOpen] = useState(false)
+  const [featureIndex, setFeatureIndex] = useState(0)
   const greeting = useMemo(() => getGreeting(), [])
   const tasks = useMemo(
     () => allTasks.filter((task) => !task.archived && task.deadline),
@@ -44,6 +60,14 @@ export function HomePage({ tasks: allTasks, setDeadline = () => {}, archiveTask 
   const completion = useMemo(() => getCompletionStat(tasks), [tasks])
   const completionHistory = useMemo(() => getCompletionHistory(tasks), [tasks])
   const todayStr = toDateStr(new Date())
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setFeatureIndex((current) => (current + 1) % HOME_FEATURES.length)
+    }, 5500)
+
+    return () => window.clearInterval(timer)
+  }, [])
 
   const upcoming = useMemo(
     () =>
@@ -190,14 +214,34 @@ export function HomePage({ tasks: allTasks, setDeadline = () => {}, archiveTask 
 
           <article className="home-panel home-daybreak">
             <div className="home-daybreak-copy">
-              <h2>{daily.dueToday === 0 ? 'Room to begin' : 'Start with one'}</h2>
-              <p>
-                {daily.dueToday === 0
-                  ? 'Your day has some breathing room.'
-                  : `${daily.dueToday} ${daily.dueToday === 1 ? 'task is' : 'tasks are'} ready when you are.`}
-              </p>
+              <span className="home-feature-kicker">TidyLine in practice</span>
+              <h2>{HOME_FEATURES[featureIndex].title}</h2>
+              <p>{HOME_FEATURES[featureIndex].copy}</p>
             </div>
-            <HomeDaybreak />
+            <HomeDaybreak variant={featureIndex} />
+            <div className="home-feature-controls" aria-label="Home feature slideshow">
+              <button
+                type="button"
+                className="home-feature-arrow"
+                aria-label="Previous feature"
+                onClick={() => setFeatureIndex((current) => (current - 1 + HOME_FEATURES.length) % HOME_FEATURES.length)}
+              >
+                ‹
+              </button>
+              <div className="home-feature-dots" aria-hidden="true">
+                {HOME_FEATURES.map((feature, index) => (
+                  <span key={feature.title} className={index === featureIndex ? 'active' : ''} />
+                ))}
+              </div>
+              <button
+                type="button"
+                className="home-feature-arrow"
+                aria-label="Next feature"
+                onClick={() => setFeatureIndex((current) => (current + 1) % HOME_FEATURES.length)}
+              >
+                ›
+              </button>
+            </div>
           </article>
 
           <article className="accent-card home-progress">

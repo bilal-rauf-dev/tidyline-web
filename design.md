@@ -605,11 +605,13 @@ These are behavioural contracts, not styling. Change them deliberately.
      Overall Progress, muted-blue Completion Rhythm, a wide white Coming Up
      list, and cards of deliberately different widths/heights build around it.
      Color blocks create depth; no card uses a shadow or translucent surface.
-  3. **Daybreak illustration** (`HomeDaybreak.jsx`, `.home-daybreak`) is the
-     one intentionally non-data card: an original inline SVG of an uneven path,
-     horizon and star on the soft-pink surface. Its short line of copy responds
-     only to the real due-today count. It must not acquire a fabricated metric,
-     stock image, avatar, team member, or mood state.
+  3. **Home feature slideshow** (`HomeDaybreak.jsx`, `.home-daybreak`) is the
+     intentionally non-metric editorial card. It rotates through three original
+     inline SVG illustrations for real TidyLine capabilities—deadline planning,
+     focus planning, and end-of-day review—with text-only feature copy. Slides
+     advance automatically and can be changed with previous/next controls. It
+     must not acquire fabricated metrics, stock imagery, avatars, team members,
+     or mood states.
   4. The mosaic responds to the content width beside the sidebar. It becomes a
      deliberate two-column composition at 1120px, gives the tall Today anchor a
      full row below 820px, and becomes one readable column below 680px. Source
