@@ -46,7 +46,12 @@ function getGreeting(date = new Date()) {
   return 'Good evening'
 }
 
-export function HomePage({ tasks: allTasks, setDeadline = () => {}, archiveTask = () => {} }) {
+export function HomePage({
+  tasks: allTasks,
+  workspaceName = '',
+  setDeadline = () => {},
+  archiveTask = () => {},
+}) {
   const [shutdownOpen, setShutdownOpen] = useState(false)
   const [featureIndex, setFeatureIndex] = useState(0)
   const greeting = useMemo(() => getGreeting(), [])
@@ -59,6 +64,30 @@ export function HomePage({ tasks: allTasks, setDeadline = () => {}, archiveTask 
   const timeline = useMemo(() => getTodayTimeline(tasks), [tasks])
   const completion = useMemo(() => getCompletionStat(tasks), [tasks])
   const completionHistory = useMemo(() => getCompletionHistory(tasks), [tasks])
+  const completionTrend = useMemo(() => {
+    const fiveWeekHistory = getCompletionHistory(tasks, HOME_HEATMAP_DAYS)
+    const weeklySeries = Array.from({ length: 5 }, (_, index) => {
+      const count = fiveWeekHistory.series
+        .slice(index * 7, index * 7 + 7)
+        .reduce((total, point) => total + point.count, 0)
+
+      return { count }
+    })
+    const current = weeklySeries.at(-1)?.count ?? 0
+    const average = weeklySeries.reduce((total, week) => total + week.count, 0) / weeklySeries.length
+    const peakIndex = weeklySeries.reduce(
+      (peak, week, index) => (week.count > weeklySeries[peak].count ? index : peak),
+      0,
+    )
+
+    return {
+      weeklySeries,
+      current,
+      average,
+      peakIndex,
+      difference: current - average,
+    }
+  }, [tasks])
   const todayStr = toDateStr(new Date())
 
   useEffect(() => {
@@ -111,7 +140,7 @@ export function HomePage({ tasks: allTasks, setDeadline = () => {}, archiveTask 
         <section className="home-dashboard" aria-label="Home dashboard">
           <header className="home-panel home-welcome">
             <div>
-              <h1>{greeting}</h1>
+              <h1>{workspaceName ? `${greeting}, ${workspaceName}` : greeting}</h1>
               <p>
                 See what needs your attention, make a little progress, and leave the rest
                 somewhere you can trust.
@@ -212,13 +241,36 @@ export function HomePage({ tasks: allTasks, setDeadline = () => {}, archiveTask 
             </p>
           </article>
 
+          <article className="home-panel home-completion-trend">
+            <div className="home-card-heading">
+              <h2>Weekly pace</h2>
+              <span>5 weeks</span>
+            </div>
+            <div className="home-trend-stat">
+              <strong>{completionTrend.current}</strong>
+              <span>completed this week</span>
+            </div>
+            <Sparkline
+              series={completionTrend.weeklySeries}
+              peakIndex={completionTrend.peakIndex}
+              height={52}
+            />
+            <p className="home-trend-note">
+              {completionTrend.average === 0
+                ? 'No completed tasks in this five-week view yet.'
+                : `${Math.abs(completionTrend.difference).toFixed(1).replace(/\.0$/, '')} ${
+                    completionTrend.difference >= 0 ? 'above' : 'below'
+                  } your ${completionTrend.average.toFixed(1).replace(/\.0$/, '')}-task weekly average`}
+            </p>
+          </article>
+
           <article className="home-panel home-daybreak">
-            <div className="home-daybreak-copy">
+            <div key={`feature-copy-${featureIndex}`} className="home-daybreak-copy home-feature-slide">
               <span className="home-feature-kicker">TidyLine in practice</span>
               <h2>{HOME_FEATURES[featureIndex].title}</h2>
               <p>{HOME_FEATURES[featureIndex].copy}</p>
             </div>
-            <HomeDaybreak variant={featureIndex} />
+            <HomeDaybreak key={`feature-art-${featureIndex}`} variant={featureIndex} />
             <div className="home-feature-controls" aria-label="Home feature slideshow">
               <button
                 type="button"

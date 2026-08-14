@@ -49,9 +49,11 @@ export function SettingsPage({
   onDeleteTemplate = () => {},
   overloadHours = 6,
   onOverloadHoursChange = () => {},
+  profile = null,
 }) {
   const fileInputRef = useRef(null)
   const [soundOn, setSoundOn] = useState(isSoundEnabled)
+  const [workspaceName, setWorkspaceName] = useState(profile?.name ?? '')
   const completedCount = tasks.filter((task) => task.done).length
 
   function handleExport() {
@@ -108,6 +110,31 @@ export function SettingsPage({
       <header className="hero">
         <h1>Settings</h1>
       </header>
+
+      {profile && (
+        <SettingsSection title="Local profile" description="This device only" initiallyOpen>
+          <div className="settings-row settings-profile-row">
+            <label className="settings-profile-field">
+              <span>
+                Workspace name
+                <small className="settings-note">
+                  Used to distinguish this local TidyLine workspace. No account is created.
+                </small>
+              </span>
+              <input
+                type="text"
+                maxLength="48"
+                value={workspaceName}
+                onChange={(event) => setWorkspaceName(event.target.value)}
+                aria-label="Workspace name"
+              />
+            </label>
+            <button type="button" className="secondary" onClick={() => profile.setName(workspaceName)}>
+              Save name
+            </button>
+          </div>
+        </SettingsSection>
+      )}
 
       <SettingsSection title="Appearance" description="Theme, accent, and density" initiallyOpen>
 

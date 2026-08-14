@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useSearch } from 'wouter'
+import { Link, useSearch } from 'wouter'
 import { BUCKET_LABELS, BUCKET_ORDER, groupTasksByBucket } from '../utils/buckets'
 import { toDateStr } from '../utils/calendar'
 import { DEFAULT_FILTERS, buildComparator, filterTasks } from '../utils/filters'
@@ -278,18 +278,32 @@ export function BoardPage({
         </p>
       </header>
 
-      <TaskForm
-        key={`${focusForm}:${prefilledTitle}:${prefilledDeadline}:${prefilledTags}`}
-        onAddTask={addTask}
-        allTasks={tasks}
-        focusOnMount={focusForm}
-        templates={templates}
-        initialTitle={prefilledTitle}
-        initialDeadline={prefilledDeadline}
-        initialTags={prefilledTags}
-        initialDetails={prefilledDetails}
-        initialReminders={prefilledReminders}
-      />
+      <div className="board-entry-layout">
+        <TaskForm
+          key={`${focusForm}:${prefilledTitle}:${prefilledDeadline}:${prefilledTags}`}
+          onAddTask={addTask}
+          allTasks={tasks}
+          focusOnMount={focusForm}
+          templates={templates}
+          initialTitle={prefilledTitle}
+          initialDeadline={prefilledDeadline}
+          initialTags={prefilledTags}
+          initialDetails={prefilledDetails}
+          initialReminders={prefilledReminders}
+        />
+
+        <aside className="board-someday-prompt" aria-labelledby="board-someday-prompt-title">
+          <span className="board-someday-prompt-kicker">No deadline yet?</span>
+          <h2 id="board-someday-prompt-title">Give the idea some room.</h2>
+          <p>
+            Not sure when to have it done? Keep it in Someday / Maybe until the right
+            date becomes clear.
+          </p>
+          <Link href="/someday" className="board-someday-link">
+            Add to Someday / Maybe <span aria-hidden="true">→</span>
+          </Link>
+        </aside>
+      </div>
 
       <div className="board-controls">
         <div className="segmented" role="group" aria-label="View">

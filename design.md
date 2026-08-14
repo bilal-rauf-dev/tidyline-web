@@ -163,6 +163,14 @@ draws attention to itself.
 - Dialogs use a shared maximum width, bordered surface, sticky heading and
   grouped field regions. Quick Add and Command Palette share the same compact
   command-surface proportions and selection language.
+- **Local profile setup** (`WelcomeDialog.jsx`, `useProfile.js`) is the first
+  screen on a fresh browser profile. It collects an optional workspace name,
+  lets the person pick the existing single accent token, and may import an
+  existing JSON task export before entering the app. “Start as guest” stores
+  the same local-only record with the name `Guest`. This is explicitly not
+  authentication: no network request, account, credential, or backend is
+  introduced. The stored name replaces the navigation wordmark and remains
+  editable from Settings.
 - Responsive order is semantic source order. At narrow widths, navigation
   becomes the existing drawer, mosaics stack, Planner returns unscheduled work
   before the timeline, Settings becomes one column, and dialogs become nearly
@@ -602,8 +610,9 @@ These are behavioural contracts, not styling. Change them deliberately.
      white Daily Activity timeline to sit alongside it. The timeline keeps its
      real reminder points and coral current-time marker.
   2. The tall dark Today card is the visual anchor. Lavender Activity, coral
-     Overall Progress, muted-blue Completion Rhythm, a wide white Coming Up
-     list, and cards of deliberately different widths/heights build around it.
+     Overall Progress, a compact dark Weekly Pace card, muted-blue Completion
+     Rhythm, a wide white Coming Up list, and cards of deliberately different
+     widths/heights build around it.
      Color blocks create depth; no card uses a shadow or translucent surface.
   3. **Home feature slideshow** (`HomeDaybreak.jsx`, `.home-daybreak`) is the
      intentionally non-metric editorial card. It rotates through three original
@@ -614,9 +623,12 @@ These are behavioural contracts, not styling. Change them deliberately.
      or mood states.
   4. The mosaic responds to the content width beside the sidebar. It becomes a
      deliberate two-column composition at 1120px, gives the tall Today anchor a
-     full row below 820px, and becomes one readable column below 680px. Source
-     order remains greeting, timeline, Today, Activity, illustration, progress,
-     upcoming, completion so mobile reading order is useful.
+     full row below 820px, and becomes one readable column below 680px. The dark
+     **Weekly Pace** card uses five real weekly `completedAt` totals and compares
+     the current week against their average; it never reconstructs missing
+     completion history. Source order remains greeting, timeline, Today,
+     Activity, Weekly Pace, illustration, progress, upcoming, completion so
+     mobile reading order is useful.
   - Existing ring, milestone, activity-grid and sparkline primitives remain
     valid, but Home is not required to force every new visual region into a
     chart primitive. Its tinted surface cards and illustration are finalized

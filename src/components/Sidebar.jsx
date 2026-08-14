@@ -32,6 +32,7 @@ export function Sidebar({
   onToggleCollapse,
   onNavigate,
   onOpenPalette,
+  workspaceName = 'TidyLine',
   tasks = [],
   onOpenTask,
 }) {
@@ -142,7 +143,7 @@ export function Sidebar({
     >
       <div className="sidebar-brand">
         <BrandMonogram />
-        <span>Tidyline</span>
+        <span>{workspaceName}</span>
 
         <button
           type="button"

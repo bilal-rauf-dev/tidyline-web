@@ -3678,7 +3678,7 @@ button {
 }
 
 .home-activity {
-  grid-column: 4 / 8;
+  grid-column: 4 / 6;
   grid-row: 2;
   display: flex;
   flex-direction: column;
@@ -3696,6 +3696,65 @@ button {
   grid-row: 3;
   justify-content: space-between;
   min-height: 13rem;
+}
+
+.home-completion-trend {
+  grid-column: 6 / 8;
+  grid-row: 2;
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  background: var(--surface-dark);
+  color: var(--text-on-dark);
+}
+
+.home-completion-trend .home-card-heading {
+  margin-bottom: 0.7rem;
+}
+
+.home-completion-trend .home-card-heading h2,
+.home-completion-trend .home-card-heading > span {
+  color: var(--text-on-dark);
+}
+
+.home-completion-trend .home-card-heading > span {
+  opacity: 0.68;
+}
+
+.home-trend-stat {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.home-trend-stat strong {
+  font-size: clamp(2rem, 3vw, 2.8rem);
+  line-height: 0.95;
+  font-weight: 800;
+}
+
+.home-trend-stat span,
+.home-trend-note {
+  color: var(--text-on-dark-soft);
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+.home-completion-trend .sparkline {
+  flex: 1;
+  min-height: 2.5rem;
+  margin-block: 0.75rem;
+}
+
+.home-completion-trend .sparkline-line {
+  stroke: var(--accent);
+}
+
+.home-completion-trend .sparkline-peak {
+  fill: var(--accent-soft);
+}
+
+.home-trend-note {
+  margin: 0;
 }
 
 .home-upcoming {
@@ -3761,7 +3820,7 @@ button {
 
 .home-feature-controls {
   position: absolute;
-  right: 1rem;
+  left: 1rem;
   bottom: 0.85rem;
   z-index: 2;
   display: flex;
@@ -3770,16 +3829,17 @@ button {
 }
 
 .home-feature-arrow {
-  display: grid;
-  width: 1.8rem;
-  height: 1.8rem;
-  place-items: center;
-  padding: 0;
-  border: 1px solid color-mix(in srgb, var(--text) 20%, transparent);
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--surface) 70%, transparent);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  height: 1.1rem;
+  padding: 0.05rem 0.18rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   color: var(--text);
-  font-size: 1.25rem;
+  font-size: 1.55rem;
   line-height: 1;
 }
 
@@ -3797,6 +3857,26 @@ button {
 
 .home-feature-dots span.active {
   background: var(--accent);
+}
+
+.home-feature-slide {
+  animation: home-feature-fade-in 260ms var(--ease) both;
+}
+
+.home-daybreak-art {
+  animation: home-feature-fade-in 320ms var(--ease) both;
+}
+
+@keyframes home-feature-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.25rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .daybreak-sun,
@@ -3991,6 +4071,7 @@ button {
       "welcome welcome"
       "timeline timeline"
       "focus activity"
+      "focus trend"
       "focus daybreak"
       "progress completion"
       "upcoming upcoming";
@@ -4005,6 +4086,7 @@ button {
   .home-timeline { grid-area: timeline; min-height: auto; }
   .home-focus { grid-area: focus; }
   .home-activity { grid-area: activity; }
+  .home-completion-trend { grid-area: trend; }
   .home-daybreak { grid-area: daybreak; }
   .home-progress { grid-area: progress; }
   .home-upcoming { grid-area: upcoming; }
@@ -4017,7 +4099,8 @@ button {
       "welcome welcome"
       "timeline timeline"
       "focus focus"
-      "activity daybreak"
+      "activity trend"
+      "daybreak daybreak"
       "progress completion"
       "upcoming upcoming";
   }
@@ -5304,6 +5387,85 @@ textarea,
   font-weight: 700;
 }
 
+/* Board entry composition: keep the primary form focused while giving
+   deadline-free ideas a nearby, intentional home. */
+.board-entry-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 0.34fr);
+  align-items: start;
+  gap: clamp(0.8rem, 1.4vw, 1.2rem);
+}
+
+.board-entry-layout > .task-entry {
+  min-width: 0;
+}
+
+.board-someday-prompt {
+  min-width: 0;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.7rem;
+  padding: clamp(1.1rem, 2vw, 1.5rem);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--surface-lavender);
+}
+
+.board-someday-prompt-kicker {
+  color: var(--text-soft);
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+}
+
+.board-someday-prompt h2 {
+  margin: 0;
+  max-width: 14ch;
+  font-size: clamp(1.1rem, 1.8vw, 1.45rem);
+  line-height: 1.12;
+}
+
+.board-someday-prompt p {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.board-someday-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  width: fit-content;
+  margin-top: 0.25rem;
+  color: var(--text);
+  font-size: 0.8rem;
+  font-weight: 750;
+  text-decoration: none;
+}
+
+.board-someday-link span {
+  color: var(--accent);
+  font-size: 1.05rem;
+  transition: transform var(--dur-fast) var(--ease);
+}
+
+.board-someday-link:active span {
+  transform: translateX(0.15rem);
+}
+
+@container app-content (max-width: 760px) {
+  .board-entry-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .board-someday-prompt {
+    min-height: 0;
+  }
+}
+
 .sidebar-collapse {
   border: 1px solid transparent;
   border-radius: 8px;
@@ -5598,6 +5760,164 @@ textarea,
 }
 
 .settings-section-content[hidden] { display: none; }
+
+.settings-profile-row {
+  align-items: end;
+}
+
+.settings-profile-field {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+  gap: 0.45rem;
+}
+
+.settings-profile-field > span {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.settings-profile-field input {
+  width: 100%;
+}
+
+/* First-run local profile: a setup step, not an online account or auth flow. */
+.welcome-screen {
+  display: grid;
+  min-height: 100dvh;
+  place-items: center;
+  padding: clamp(1rem, 4vw, 3rem);
+  background: var(--page);
+}
+
+.welcome-card {
+  width: min(100%, 38rem);
+  display: grid;
+  gap: clamp(1.2rem, 3vw, 2rem);
+  padding: clamp(1.25rem, 4vw, 2.5rem);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  animation: dialog-in var(--dur-move) var(--ease);
+}
+
+.welcome-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--text);
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+.welcome-copy {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.welcome-kicker {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+}
+
+.welcome-copy h1 {
+  margin: 0;
+  max-width: 12ch;
+  font-size: clamp(2.1rem, 6vw, 3.8rem);
+  line-height: 0.96;
+  letter-spacing: -0.055em;
+}
+
+.welcome-copy > p:last-child {
+  max-width: 52ch;
+  margin: 0;
+  color: var(--text-soft);
+  line-height: 1.55;
+}
+
+.welcome-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.welcome-name-field,
+.welcome-accent-field {
+  display: grid;
+  gap: 0.45rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  color: var(--text-soft);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.welcome-name-field input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.welcome-accent-field legend {
+  padding: 0;
+}
+
+.welcome-import {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-btn);
+  background: var(--surface-raised);
+}
+
+.welcome-import > div {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.welcome-import strong {
+  font-size: 0.82rem;
+}
+
+.welcome-import span,
+.welcome-import-message {
+  color: var(--text-soft);
+  font-size: 0.74rem;
+  line-height: 1.4;
+}
+
+.welcome-import-message {
+  margin: -0.4rem 0 0;
+}
+
+.welcome-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding-top: 0.25rem;
+}
+
+/* This override belongs after the base Home cards: grid-area must win over
+   later desktop placement declarations when the route container narrows. */
+@container app-content (max-width: 1120px) {
+  .home-completion-trend {
+    grid-area: trend;
+    grid-column: auto;
+    grid-row: auto;
+  }
+}
+
+@container app-content (max-width: 680px) {
+  .home-completion-trend {
+    grid-area: auto;
+  }
+}
 
 :root[data-theme='dark'] .someday-entry textarea,
 :root[data-theme='dark'] .someday-entry input:not(.input-underline),
