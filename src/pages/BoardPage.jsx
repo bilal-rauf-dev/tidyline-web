@@ -14,6 +14,7 @@ import { UndoToast } from '../components/UndoToast'
 import { UpcomingSection } from '../components/UpcomingSection'
 import { isTaskUpcoming } from '../utils/taskFields'
 import { SavedFilterBar } from '../components/SavedFilterBar'
+import { ArchiveIcon } from '../components/icons'
 
 export function BoardPage({
   tasks,
@@ -303,45 +304,39 @@ export function BoardPage({
         </Link>
       </div>
 
-      <div className="board-controls">
-        <div className="segmented" role="group" aria-label="View">
+      <div className="board-utility-row">
+        <div className="board-controls">
           <button
             type="button"
-            className={view === 'active' ? 'segment active' : 'segment'}
-            onClick={() => setView('active')}
+            className={view === 'archived' ? 'board-view-toggle archived' : 'board-view-toggle'}
+            onClick={() => setView((current) => (current === 'active' ? 'archived' : 'active'))}
+            aria-label={view === 'active' ? 'Show archived tasks' : 'Show active tasks'}
+            title={view === 'active' ? 'Show archived tasks' : 'Show active tasks'}
           >
-            Active
+            <ArchiveIcon />
+            <span>{view === 'active' ? 'Active' : 'Archived'}</span>
           </button>
           <button
             type="button"
-            className={view === 'archived' ? 'segment active' : 'segment'}
-            onClick={() => setView('archived')}
+            className={selectionMode ? 'board-select-toggle active' : 'board-select-toggle'}
+            onClick={() => (selectionMode ? exitSelection() : setSelectionMode(true))}
           >
-            Archived
+            {selectionMode ? 'Done' : 'Select'}
           </button>
+          <span className="match-count">
+            {visible.length} {visible.length === 1 ? 'task' : 'tasks'}
+          </span>
         </div>
 
-        <span className="match-count">
-          {visible.length} {visible.length === 1 ? 'task' : 'tasks'}
-        </span>
+        <SavedFilterBar
+          savedFilters={savedFilters}
+          onApply={setFilters}
+          onSave={(name) => onSaveFilter(name, filters)}
+          onDelete={onDeleteFilter}
+        />
 
-        <button
-          type="button"
-          className="secondary"
-          onClick={() => (selectionMode ? exitSelection() : setSelectionMode(true))}
-        >
-          {selectionMode ? 'Cancel selection' : 'Select'}
-        </button>
+        <BoardToolbar filters={filters} onChange={setFilters} tags={tags} />
       </div>
-
-      <SavedFilterBar
-        savedFilters={savedFilters}
-        onApply={setFilters}
-        onSave={(name) => onSaveFilter(name, filters)}
-        onDelete={onDeleteFilter}
-      />
-
-      <BoardToolbar filters={filters} onChange={setFilters} tags={tags} />
 
       {selectionMode && (
         <div className="bulk-bar" role="group" aria-label="Bulk actions">

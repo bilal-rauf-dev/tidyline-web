@@ -331,11 +331,14 @@ coloured pill, and never a green/red semantic pair.
   select-surface language. Options retain canonical chronological order;
   Today and Later are disabled/required anchors. The panel uses the standard
   short translate/fade transition and no shadow.
-- **Saved filter bar** (`SavedFilterBar.jsx`, `.saved-filter-*`) — a flat,
-  fully bordered surface above Board filters. A standard select menu applies named
-  filter snapshots; adjacent plain inputs save/delete them. Saved views compose
-  existing search, tag, status, energy, duration, pin, date and sort fields and
-  never create a second project/category taxonomy.
+- **Board utility row** (`BoardToolbar.jsx`, `SavedFilterBar.jsx`) — one compact
+  row keeps task search persistent while filters sit behind an arrow-triggered
+  popup and Saved Views sits behind a small Views trigger. Both panels use the
+  standard bordered menu surface and short fade/translate entrance; outside
+  press or Escape closes them. The tiny Active/Archived control beside Select
+  toggles the existing Board view directly. Saved views still compose existing
+  search, tag, status, energy, duration, pin, date and sort fields and never
+  create a second project/category taxonomy.
 - **Planner block** (`PlannerPage.jsx`, `.planner-block`) — a rectangular dark
   time block on an hourly ruled surface. Vertical position encodes
   `scheduledStart`; height encodes the existing duration. The coral resize edge
