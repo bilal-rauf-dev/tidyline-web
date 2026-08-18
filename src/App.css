@@ -74,6 +74,8 @@
 
 .sidebar-brand svg {
   flex-shrink: 0;
+  width: 1.2rem;
+  height: 1.2rem;
 }
 
 .sidebar-brand > svg {
@@ -5924,10 +5926,13 @@ textarea,
   border: 1px solid var(--accent);
   border-radius: 50%;
   color: var(--accent);
-  font-size: 1.3rem;
-  font-weight: 500;
   line-height: 1;
   transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+
+.home-add-mark svg {
+  width: 0.9rem;
+  height: 0.9rem;
 }
 
 .home-add-action:active .home-add-mark {

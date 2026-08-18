@@ -14,6 +14,7 @@ import { ActivityGrid } from '../components/ActivityGrid'
 import { Sparkline } from '../components/Sparkline'
 import { TagList } from '../components/TagList'
 import { HomeDaybreak } from '../components/HomeDaybreak'
+import { PlusIcon } from '../components/icons'
 import { isOverdue } from '../utils/overdue'
 import { toDateStr } from '../utils/calendar'
 import { isTaskPlannedForToday, isTaskUpcoming } from '../utils/taskFields'
@@ -144,7 +145,7 @@ export function HomePage({
             </div>
             <div className="home-actions">
               <Link href="/board?add=1" className="home-add-action">
-                <span className="home-add-mark" aria-hidden="true">+</span>
+                <span className="home-add-mark" aria-hidden="true"><PlusIcon /></span>
                 Add a task
               </Link>
             </div>
