@@ -76,6 +76,13 @@
   flex-shrink: 0;
 }
 
+.sidebar-brand > svg {
+  box-sizing: content-box;
+  padding: 0.4rem;
+  border: 1px solid var(--line-on-dark);
+  border-radius: 6px;
+}
+
 /* Wordmark takes the slack so trailing controls sit at the far edge. */
 .sidebar-brand > span {
   flex: 1;
@@ -5911,13 +5918,13 @@ textarea,
 
 .home-add-mark {
   display: inline-grid;
-  width: 1.35rem;
-  height: 1.35rem;
+  width: 1.5rem;
+  height: 1.5rem;
   place-items: center;
   border: 1px solid var(--accent);
   border-radius: 50%;
   color: var(--accent);
-  font-size: 1.1rem;
+  font-size: 1.3rem;
   font-weight: 500;
   line-height: 1;
   transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
