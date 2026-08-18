@@ -6238,6 +6238,25 @@ textarea,
   font-size: 0.74rem;
 }
 
+.calendar-toolbar {
+  gap: 0.65rem;
+}
+
+.calendar-toolbar .calendar-nav {
+  border-color: var(--line);
+  background: var(--surface-blue);
+}
+
+.calendar-toolbar .calendar-today {
+  background: var(--surface-lavender);
+}
+
+.calendar-toolbar .calendar-nav:last-child {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
 @container app-content (max-width: 760px) {
   .board-utility-row {
     flex-wrap: wrap;
