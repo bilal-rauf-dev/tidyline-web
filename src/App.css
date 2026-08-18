@@ -76,6 +76,13 @@
   flex-shrink: 0;
 }
 
+.sidebar-brand > svg {
+  box-sizing: content-box;
+  padding: 0.4rem;
+  border: 1px solid var(--line-on-dark);
+  border-radius: 6px;
+}
+
 /* Wordmark takes the slack so trailing controls sit at the far edge. */
 .sidebar-brand > span {
   flex: 1;
