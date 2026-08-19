@@ -3,8 +3,8 @@ import { daysUntil } from './dates'
 
 export const ENERGY_LEVEL_OPTIONS = [
   { value: '', label: 'Unset' },
-  { value: 'low', label: 'Low energy' },
-  { value: 'normal', label: 'Normal energy' },
+  { value: 'low', label: 'Low' },
+  { value: 'normal', label: 'Normal' },
   { value: 'deep-focus', label: 'Deep focus' },
 ]
 
