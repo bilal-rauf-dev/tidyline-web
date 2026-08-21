@@ -10,17 +10,29 @@ import {
 import { formatDate } from '../utils/dates'
 import { TaskForm } from '../components/TaskForm'
 import { ChevronLeftIcon, ChevronRightIcon } from '../components/icons'
+import { TimeRibbon } from '../components/TimeRibbon'
+import { deriveStartBy } from '../utils/timeAwareness'
 
 export function CalendarPage({ tasks, addTask, setDeadline }) {
   const [viewDate, setViewDate] = useState(() => new Date())
   const [selectedDate, setSelectedDate] = useState(null)
   const [dropTarget, setDropTarget] = useState(null)
+  const [referenceDate] = useState(() => new Date())
   const weeks = useMemo(() => getMonthWeeks(viewDate), [viewDate])
   const tasksByDate = useMemo(
     () => groupTasksByDate(tasks.filter((task) => !task.archived && task.deadline)),
     [tasks],
   )
   const today = todayDateStr()
+  const startsByDate = useMemo(() => {
+    const grouped = {}
+    tasks.filter((task) => !task.archived && !task.done).forEach((task) => {
+      const startBy = deriveStartBy(task, tasks, referenceDate)
+      if (!startBy) return
+      grouped[startBy] = [...(grouped[startBy] ?? []), task]
+    })
+    return grouped
+  }, [referenceDate, tasks])
 
   function handleDrop(event, dateStr) {
     event.preventDefault()
@@ -35,6 +47,8 @@ export function CalendarPage({ tasks, addTask, setDeadline }) {
         <h1>Calendar</h1>
         <p className="hero-copy">See where deadlines collect and how far apart they really are.</p>
       </header>
+
+      <TimeRibbon tasks={tasks} referenceDate={referenceDate} />
 
       <section className="entry-card calendar-card">
         <div className="calendar-toolbar">
@@ -55,6 +69,7 @@ export function CalendarPage({ tasks, addTask, setDeadline }) {
         <div className="calendar-grid">
           {weeks.flat().map(({ dateStr, day, inMonth }) => {
             const dayTasks = tasksByDate[dateStr] ?? []
+            const startTasks = startsByDate[dateStr] ?? []
             const classNames = ['calendar-day']
             if (!inMonth) classNames.push('outside')
             if (dateStr === today) classNames.push('today')
@@ -95,6 +110,9 @@ export function CalendarPage({ tasks, addTask, setDeadline }) {
                 )}
                 {dayTasks.length > 1 && (
                   <span className="calendar-day-count"><strong>{dayTasks.length}</strong><span>tasks</span></span>
+                )}
+                {startTasks.length > 0 && (
+                  <span className="calendar-start-count">Start {startTasks.length}</span>
                 )}
               </button>
             )

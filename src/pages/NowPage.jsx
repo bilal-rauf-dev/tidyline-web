@@ -1,26 +1,32 @@
+import { useMemo } from 'react'
 import { Link } from 'wouter'
-import { formatDate, getCountdownLabel } from '../utils/dates'
+import { formatDate } from '../utils/dates'
 import { TagList } from '../components/TagList'
 import { durationToMinutes, estimateTaskDuration, formatMinutes } from '../utils/calibration'
-
-function byAttention(a, b) {
-  if (!a.deadline && !b.deadline) return a.createdAt.localeCompare(b.createdAt)
-  if (!a.deadline) return 1
-  if (!b.deadline) return -1
-  return a.deadline.localeCompare(b.deadline)
-}
+import { getFitAssessment, getTaskAttentionDate, getTaskTimingLabel } from '../utils/timeAwareness'
+import { useTimeTick } from '../hooks/useFlipReparent'
 
 export function NowPage({ tasks, onComplete, onStart, onPause }) {
-  const next = tasks
+  const tick = useTimeTick()
+  const referenceDate = useMemo(() => new Date(tick), [tick])
+  const next = useMemo(() => tasks
     .filter((task) => !task.done && !task.archived)
-    .sort(byAttention)[0]
+    .sort((a, b) => {
+      const aAttention = getTaskAttentionDate(a, tasks, referenceDate)
+      const bAttention = getTaskAttentionDate(b, tasks, referenceDate)
+      if (aAttention && bAttention && aAttention !== bAttention) return aAttention.localeCompare(bAttention)
+      if (aAttention && !bAttention) return -1
+      if (!aAttention && bAttention) return 1
+      return a.createdAt.localeCompare(b.createdAt)
+    })[0], [referenceDate, tasks])
+  const fit = next ? getFitAssessment(next, tasks, referenceDate) : null
 
   return (
     <main className="app-shell home-shell">
       <header className="hero">
         <h1>One clear next step.</h1>
         <p className="hero-copy">
-          TidyLine is becoming more automatic. For now, the nearest open deadline leads.
+          TidyLine uses your usual pace to bring forward work that needs to begin.
         </p>
       </header>
 
@@ -30,9 +36,10 @@ export function NowPage({ tasks, onComplete, onStart, onPause }) {
           <h2 id="now-task-title">{next.title}</h2>
           <p>
             {next.deadline
-              ? `${getCountdownLabel(next.deadline)} · due ${formatDate(next.deadline)}`
+              ? `${getTaskTimingLabel(next, tasks, referenceDate)} · due ${formatDate(next.deadline)}`
               : 'No deadline yet · kept in Later'}
           </p>
+          {fit && <p className={`fit-label fit-${fit.level}`}>{fit.label}</p>}
           {next.duration && (
             <p className="card-note">
               Estimated {formatMinutes(durationToMinutes(next.duration))}

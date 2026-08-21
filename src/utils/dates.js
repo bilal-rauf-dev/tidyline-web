@@ -15,8 +15,8 @@ export function startOfDay(date = new Date()) {
 
 /**
  * The single date-diff implementation in the app. Whole days from the
- * reference day to a deadline; negative means overdue. Bucketing, countdown
- * labels and overdue grouping all derive from this one function.
+ * reference day to a deadline; negative means the date has passed. Bucketing
+ * and derived attention language both use this implementation.
  */
 export function daysUntil(deadline, referenceDate = new Date()) {
   const from = startOfDay(referenceDate)
@@ -56,18 +56,6 @@ export function formatDateTime(value) {
     hour: 'numeric',
     minute: '2-digit',
   }).format(date)
-}
-
-/** Human countdown, derived from daysUntil — not a second diff implementation. */
-export function getCountdownLabel(deadline, referenceDate = new Date()) {
-  const days = daysUntil(deadline, referenceDate)
-
-  if (days === 0) return 'today'
-  if (days === 1) return 'tomorrow'
-  if (days === -1) return '1 day overdue'
-  if (days < 0) return `${Math.abs(days)} days overdue`
-
-  return `${days} days left`
 }
 
 export function shiftDateStr(dateStr, days) {

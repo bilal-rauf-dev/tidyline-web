@@ -2,6 +2,7 @@ export const TASK_FIELDS = [
   'id',
   'title',
   'deadline',
+  'resurfaceDate',
   'reminders',
   'tags',
   'done',
@@ -22,7 +23,12 @@ export const TASK_FIELDS = [
 const DATE_VALUE = /^\d{4}-\d{2}-\d{2}$/
 
 export function normalizeDate(value) {
-  return DATE_VALUE.test(value ?? '') ? value : null
+  if (typeof value !== 'string' || !DATE_VALUE.test(value)) return null
+  const [year, month, day] = value.split('-').map(Number)
+  const date = new Date(year, month - 1, day)
+  return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day
+    ? value
+    : null
 }
 
 export function normalizeDuration(value) {

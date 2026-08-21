@@ -1,5 +1,6 @@
 import { daysUntil } from './dates'
 import { toDateStr } from './calendar'
+import { getTaskAttentionDate } from './timeAwareness'
 
 export const BUCKET_ORDER = ['today', 'week', 'month', 'later']
 
@@ -44,6 +45,11 @@ export function getTaskBucket(deadline, referenceDate = new Date()) {
   return 'later'
 }
 
+export function getTaskBucketForTask(task, tasks, referenceDate = new Date()) {
+  const attentionDate = getTaskAttentionDate(task, tasks, referenceDate)
+  return getTaskBucket(attentionDate ?? task.deadline, referenceDate)
+}
+
 const byDeadline = (a, b) => {
   if (!a.deadline && !b.deadline) return a.createdAt.localeCompare(b.createdAt)
   if (!a.deadline) return 1
@@ -51,11 +57,11 @@ const byDeadline = (a, b) => {
   return a.deadline.localeCompare(b.deadline)
 }
 
-export function groupTasksByBucket(tasks, referenceDate = new Date()) {
+export function groupTasksByBucket(tasks, referenceDate = new Date(), allTasks = tasks) {
   const grouped = Object.fromEntries(BUCKET_ORDER.map((bucket) => [bucket, []]))
 
   tasks.forEach((task) => {
-    grouped[getTaskBucket(task.deadline, referenceDate)].push(task)
+    grouped[getTaskBucketForTask(task, allTasks, referenceDate)].push(task)
   })
 
   BUCKET_ORDER.forEach((bucket) => {
@@ -64,6 +70,11 @@ export function groupTasksByBucket(tasks, referenceDate = new Date()) {
         return Number(Boolean(b.pinned)) - Number(Boolean(a.pinned))
       }
       if (a.done !== b.done) return Number(a.done) - Number(b.done)
+      const aAttention = getTaskAttentionDate(a, allTasks, referenceDate)
+      const bAttention = getTaskAttentionDate(b, allTasks, referenceDate)
+      if (aAttention && bAttention && aAttention !== bAttention) return aAttention.localeCompare(bAttention)
+      if (aAttention && !bAttention) return -1
+      if (!aAttention && bAttention) return 1
       return byDeadline(a, b)
     })
   })

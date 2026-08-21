@@ -6,7 +6,7 @@ import { TaskDetails } from './TaskDetails'
 
 const EXIT_MS = 160
 
-export function TaskDetailDialog({ task, allTasks, handlers, onClose }) {
+export function TaskDetailDialog({ task, allTasks, referenceDate, handlers, onClose }) {
   const titleId = useId()
   const closeRef = useRef(null)
   const timerRef = useRef(null)
@@ -80,7 +80,7 @@ export function TaskDetailDialog({ task, allTasks, handlers, onClose }) {
           </button>
         </header>
 
-        <TaskDetails task={task} allTasks={allTasks} handlers={handlers} />
+        <TaskDetails task={task} allTasks={allTasks} referenceDate={referenceDate} handlers={handlers} />
       </article>
     </div>,
     document.body,

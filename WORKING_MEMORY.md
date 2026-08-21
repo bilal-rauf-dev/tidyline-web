@@ -7,7 +7,7 @@ Baseline commit: `0407ea0`
 
 ## Current objective
 
-Refactor TidyLine into a small, local-first tool for ADHD-oriented time awareness. The north star is: what needs doing, when must it start, and what should happen now. Work one phase at a time; do not commit or open a PR. Phase 3 is complete pending user review. Phase 4 must not begin without approval.
+Refactor TidyLine into a small, local-first tool for ADHD-oriented time awareness. The north star is: what needs doing, when must it start, and what should happen now. Work one phase at a time; do not commit or open a PR. Phase 4 is complete pending user review. Phase 5 must not begin without approval.
 
 ## Current architecture
 
@@ -21,7 +21,7 @@ Refactor TidyLine into a small, local-first tool for ADHD-oriented time awarenes
 
 Active keys:
 
-- `tidyline:tasks` — schema envelope version 3
+- `tidyline:tasks` — schema envelope version 4
 - `tidyline:profile`
 - `tidyline:theme`, `tidyline:accent`, `tidyline:density`
 - `tidyline:notificationSound`
@@ -31,15 +31,15 @@ On load, removed configuration keys are cleaned up. Old top-level task arrays re
 
 Normalized task fields:
 
-`id`, `title`, `deadline`, `reminders`, `tags`, `done`, `completedAt`, `pinned`, `archived`, `recurrence`, `notes`, `location`, `duration`, `startedAt`, `actualMinutes`, `checklist`, `links`, `createdAt`.
+`id`, `title`, `deadline`, `resurfaceDate`, `reminders`, `tags`, `done`, `completedAt`, `pinned`, `archived`, `recurrence`, `notes`, `location`, `duration`, `startedAt`, `actualMinutes`, `checklist`, `links`, `createdAt`.
 
 Migration preserves meaningful legacy data before dropping deprecated keys: attachment URL records become links, and blocked-state owner/follow-up details become notes plus a `waiting` tag. Malformed nested records are filtered independently so one bad item does not hide all local tasks.
 
 ## Active behavior contracts
 
-- Board horizons are fixed: Today (through day 0), This Week (1–7), This Month (8–30), Later (31+ or no deadline).
+- Board horizons are fixed: Today (through day 0), This Week (1–7), This Month (8–30), Later (31+ or no attention date), classified from derived attention timing for open tasks.
 - Drag targets use offsets 0, 1, 8, and 31 days.
-- Pinned tasks sort first, then open before completed, then by deadline.
+- Pinned tasks sort first, then open before completed, then by attention date and deadline.
 - Relative reminders resolve against the current deadline.
 - Recurrence creates the next instance after completion.
 - Browser reminders are only promised while TidyLine is active.
@@ -70,6 +70,16 @@ Migration preserves meaningful legacy data before dropping deprecated keys: atta
 
 The pre-existing untracked `.logic-tests/` directory is user-owned and ignored by lint/build. Do not delete or overwrite it.
 
+## Phase 4 changes
+
+- Added `src/utils/timeAwareness.js` for derived start timing, attention dates, fit language, concrete future distance, deterministic capacity, and per-day canonical workload.
+- `startBy` is derived from planning deadline minus canonical expected duration and a fixed 30-minute buffer; it is never persisted or configured.
+- Today automatically includes due/missed starts, start-today, active, and resurfaced tasks.
+- `resurfaceDate` is the only new persisted Phase 4 field; schema version is 4, and dates after the deadline normalize to null.
+- Cards, details, provisional Now, and sidebar search use start-oriented language. Now ordering uses attention date but final rotation/actions remain Phase 5.
+- Calendar has a continuous 21-day calibrated-work ribbon plus start markers in the month grid. The manual Planner remains removed.
+- Fit outcomes use six hours of deterministic daily capacity and earlier committed calibrated work; no score or setting exists.
+
 ## Next phase boundary
 
-Phase 4 adds the derived time-blindness model: calibrated `startBy`, simple fit language, start-aware horizons/countdowns, useful future-time representations, and lightweight resurfacing. Do not begin the final Now selection experience, routines, PWA work, or ICS in Phase 4.
+Phase 5 turns Now into the final low-decision surface: one selected task with Done, 5 more minutes, and Not this, using an internal deterministic selection order. Do not add timer dashboards, expose scores, or begin routines/PWA/ICS.

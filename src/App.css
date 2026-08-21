@@ -935,6 +935,138 @@ button {
   bottom: 5.5rem;
 }
 
+.fit-label {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  border-radius: 999px;
+  padding: 0.18rem 0.48rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--text-soft);
+  background: var(--surface-raised);
+}
+
+.fit-tight {
+  color: #72541a;
+  background: #f4e8c9;
+}
+
+.fit-wont-fit {
+  color: #7a3d32;
+  background: #f2ded8;
+}
+
+:root[data-theme='dark'] .fit-label {
+  background: rgba(255, 255, 255, 0.09);
+  color: var(--text-on-dark-soft);
+}
+
+.time-ribbon {
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+
+.time-ribbon > header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.9rem;
+}
+
+.time-ribbon h2,
+.time-ribbon p {
+  margin: 0;
+}
+
+.time-ribbon p {
+  max-width: 28rem;
+  color: var(--text-soft);
+  font-size: 0.78rem;
+}
+
+.time-ribbon-scroll {
+  overflow-x: auto;
+  padding-bottom: 0.35rem;
+}
+
+.time-ribbon-days {
+  display: grid;
+  grid-template-columns: repeat(21, minmax(2.8rem, 1fr));
+  min-width: 62rem;
+  gap: 0.3rem;
+}
+
+.time-ribbon-day {
+  display: grid;
+  grid-template-rows: auto auto 4.5rem auto auto;
+  justify-items: center;
+  gap: 0.18rem;
+  min-width: 0;
+  color: var(--text-soft);
+  font-style: normal;
+}
+
+.time-ribbon-day > span,
+.time-ribbon-day > small {
+  font-size: 0.65rem;
+}
+
+.time-ribbon-day > strong {
+  color: var(--text);
+  font-size: 0.82rem;
+}
+
+.time-ribbon-track {
+  display: flex;
+  align-items: end;
+  width: 0.65rem;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--surface-raised);
+}
+
+.time-ribbon-track span {
+  width: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+}
+
+.deadline-dots {
+  display: grid;
+  place-items: center;
+  width: 1.15rem;
+  height: 1.15rem;
+  border-radius: 50%;
+  color: transparent;
+  font-size: 0.6rem;
+  font-style: normal;
+}
+
+.deadline-dots.active {
+  color: var(--text-on-dark);
+  background: var(--surface-dark);
+}
+
+.calendar-start-count {
+  display: block;
+  margin-top: 0.2rem;
+  color: var(--accent);
+  font-size: 0.64rem;
+  font-weight: 700;
+}
+
+@media (max-width: 600px) {
+  .time-ribbon > header {
+    align-items: start;
+    flex-direction: column;
+  }
+}
+
 .edit-reminders {
   display: grid;
   gap: 0.5rem;

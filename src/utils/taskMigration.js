@@ -82,10 +82,16 @@ export function normalizeTask(value) {
   const baseNotes = typeof task.notes === 'string' ? task.notes : ''
   const waiting = migrateWaiting(task, baseTags, baseNotes)
   const links = normalizeLinks([...list(task.links), ...list(task.attachments)])
+  const deadline = normalizeDate(task.deadline)
+  const candidateResurface = normalizeDate(task.resurfaceDate)
   const normalized = {
     id: typeof task.id === 'string' && task.id ? task.id : crypto.randomUUID(),
     title: typeof task.title === 'string' && task.title.trim() ? task.title.trim() : 'Untitled task',
-    deadline: normalizeDate(task.deadline),
+    deadline,
+    resurfaceDate:
+      candidateResurface && (!deadline || candidateResurface <= deadline)
+        ? candidateResurface
+        : null,
     reminders: list(task.reminders).map(normalizeReminder).filter(Boolean),
     tags: waiting.tags,
     done: Boolean(task.done),

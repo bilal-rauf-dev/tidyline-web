@@ -25,6 +25,7 @@ assert(normalized.links.length === 2, 'Attachments were not preserved as links')
 assert(normalized.checklist.length === 1, 'Malformed checklist entries survived')
 assert(normalized.reminders.length === 2, 'Malformed reminders survived')
 assert(normalized.startedAt === null && normalized.actualMinutes === null, 'Calibration fields did not initialize safely')
+assert(normalized.resurfaceDate === null, 'Resurfacing did not initialize safely')
 assert(Object.keys(normalized).every((key) => TASK_FIELDS.includes(key)), 'Removed task fields survived')
 assert(!('priority' in normalized) && !('status' in normalized), 'Deprecated fields survived')
 

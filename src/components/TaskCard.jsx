@@ -18,13 +18,15 @@ import { DayContext } from './DayContext'
 import { TagList } from './TagList'
 import { TaskDetailDialog } from './TaskDetailDialog'
 import { describeRecurrence } from '../utils/recurrence'
-import { getCountdownLabel, getDeadlineParts } from '../utils/dates'
+import { formatDate, getDeadlineParts } from '../utils/dates'
 import { parseTags } from '../utils/tags'
 import { durationToMinutes, estimateTaskDuration, formatMinutes } from '../utils/calibration'
+import { getFitAssessment, getTaskTimingLabel } from '../utils/timeAwareness'
 
 export function TaskCard({
   task,
   allTasks = [],
+  referenceDate = new Date(),
   selectionMode,
   selected,
   onSelect,
@@ -64,6 +66,7 @@ export function TaskCard({
   const deadlineParts = task.deadline ? getDeadlineParts(task.deadline) : null
   const estimateMinutes = durationToMinutes(task.duration)
   const expected = task.duration ? estimateTaskDuration(task, allTasks) : null
+  const fit = getFitAssessment(task, allTasks, referenceDate)
   const checklistDone = task.checklist.filter((item) => item.done).length
   const classNames = ['task']
   if (task.done) classNames.push('done')
@@ -139,8 +142,9 @@ export function TaskCard({
           <div className="task-details">
             <div className="task-meta">
               <span className="countdown">
-                {task.deadline ? getCountdownLabel(task.deadline) : 'Set a deadline when it becomes clear'}
+                {getTaskTimingLabel(task, allTasks, referenceDate)}
               </span>
+              {fit && <span className={`fit-label fit-${fit.level}`}>{fit.label}</span>}
               {contextLabel && <span className="task-context">{contextLabel}</span>}
               {task.recurrence && <span className="task-flag" title={describeRecurrence(task.recurrence)}><RepeatIcon /></span>}
               {task.notes && <span className="task-flag" title="Has notes"><NotesIcon /></span>}
@@ -153,6 +157,7 @@ export function TaskCard({
                 </span>
               )}
               {task.startedAt && <span className="task-flag text timing-active">In progress</span>}
+              {task.resurfaceDate && <span className="task-flag text">Back {formatDate(task.resurfaceDate)}</span>}
               {task.done && task.actualMinutes && <span className="task-flag text">Took {formatMinutes(task.actualMinutes)}</span>}
             </div>
 
@@ -171,7 +176,7 @@ export function TaskCard({
       )}
 
       {isExpanded && (
-        <TaskDetailDialog task={task} allTasks={allTasks} handlers={{ ...detailHandlers, onUpdate, onStart, onPause }} onClose={() => setIsExpanded(false)} />
+        <TaskDetailDialog task={task} allTasks={allTasks} referenceDate={referenceDate} handlers={{ ...detailHandlers, onUpdate, onStart, onPause }} onClose={() => setIsExpanded(false)} />
       )}
     </li>
   )

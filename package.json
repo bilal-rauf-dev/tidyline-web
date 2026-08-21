@@ -9,10 +9,11 @@
     "build": "vite build",
     "lint": "eslint .",
     "smoke": "vite build --ssr scripts/smoke.jsx --outDir .test-build/smoke --logLevel warn && node .test-build/smoke/smoke.js",
-    "check": "npm run lint && npm run build && npm run smoke && npm run phase1-smoke && npm run phase2-smoke && npm run phase3-smoke && npm run parser-tests",
+    "check": "npm run lint && npm run build && npm run smoke && npm run phase1-smoke && npm run phase2-smoke && npm run phase3-smoke && npm run phase4-smoke && npm run parser-tests",
     "phase1-smoke": "vite build --ssr scripts/phase1-smoke.js --outDir .test-build/phase1 --logLevel warn && node .test-build/phase1/phase1-smoke.js",
     "phase2-smoke": "vite build --ssr scripts/phase2-smoke.js --outDir .test-build/phase2 --logLevel warn && node .test-build/phase2/phase2-smoke.js",
     "phase3-smoke": "vite build --ssr scripts/phase3-smoke.js --outDir .test-build/phase3 --logLevel warn && node .test-build/phase3/phase3-smoke.js",
+    "phase4-smoke": "vite build --ssr scripts/phase4-smoke.js --outDir .test-build/phase4 --logLevel warn && node .test-build/phase4/phase4-smoke.js",
     "parser-tests": "vite build --ssr scripts/parser-tests.js --outDir .test-build/parser --logLevel warn && node .test-build/parser/parser-tests.js",
     "preview": "vite preview"
   },

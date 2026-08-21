@@ -67,7 +67,7 @@ const cases = [
   ['App shell', <App />, ['TidyLine', 'Now', 'Board', 'Calendar', 'nav-indicator']],
   ['NowPage', <NowPage tasks={tasks} onComplete={noop} onStart={noop} onPause={noop} />, ['One clear next step', 'Start here', 'Today item', 'Start']],
   ['BoardPage', <BoardPage tasks={tasks} addTask={noop} moveTaskToBucket={noop} bulkComplete={noop} bulkArchive={noop} bulkDelete={noop} undoState={{ message: 'Task changed' }} undo={noop} dismissUndo={noop} {...taskActions} />, ['Today', 'This Week', 'This Month', 'Later', 'distance-rail', 'data-task-id', 'undo-toast']],
-  ['CalendarPage', <CalendarPage tasks={tasks} addTask={noop} setDeadline={noop} />, ['Calendar', 'calendar-grid', 'calendar-day']],
+  ['CalendarPage', <CalendarPage tasks={tasks} addTask={noop} setDeadline={noop} />, ['Calendar', 'Time ahead', 'time-ribbon', 'calendar-grid', 'calendar-day']],
   ['SettingsPage', <SettingsPage tasks={tasks} appearance={appearance} importTasks={noop} clearCompleted={noop} askBeforeDelete onAskBeforeDeleteChange={noop} profile={{ name: 'TidyLine', setName: noop }} />, ['Accent colour', 'accent-swatch', 'Density', 'Reminder sound', 'Personal estimate multiplier']],
   ['Completion feedback', <CompletionFeedbackToast feedback={{ title: 'Timed task', estimateMinutes: 30, actualMinutes: 70 }} onDismiss={noop} />, ['completion-feedback-toast', 'Timed task', 'Estimated', 'took']],
 ]

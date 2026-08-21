@@ -69,7 +69,7 @@ export function BoardPage({
     return filterTasks(inView, filters)
   }, [filters, tasks, view])
 
-  const buckets = useMemo(() => groupTasksByBucket(visible, now), [now, visible])
+  const buckets = useMemo(() => groupTasksByBucket(visible, now, tasks), [now, tasks, visible])
 
   function toggleSelected(id) {
     setSelectedIds((current) =>
@@ -90,6 +90,7 @@ export function BoardPage({
 
   const taskHandlers = {
     allTasks: tasks,
+    referenceDate: now,
     selectionMode,
     onSelect: toggleSelected,
     onToggle: taskActions.toggleTask,

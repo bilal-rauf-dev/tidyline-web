@@ -2,6 +2,7 @@ import { useState } from 'react'
 import {
   ArrowDownIcon,
   ArrowUpIcon,
+  CalendarIcon,
   ClockIcon,
   CloseIcon,
   LinkIcon,
@@ -15,6 +16,8 @@ import { mapsSearchUrl } from '../utils/maps'
 import { Checkbox } from './Checkbox'
 import { SelectMenu } from './SelectMenu'
 import { durationToMinutes, estimateTaskDuration, formatMinutes } from '../utils/calibration'
+import { deriveStartBy, getFitAssessment } from '../utils/timeAwareness'
+import { formatDate } from '../utils/dates'
 
 function LinkRow({ onAdd }) {
   const [label, setLabel] = useState('')
@@ -38,10 +41,12 @@ function LinkRow({ onAdd }) {
   )
 }
 
-export function TaskDetails({ task, allTasks, handlers }) {
+export function TaskDetails({ task, allTasks, referenceDate, handlers }) {
   const [checklistDraft, setChecklistDraft] = useState('')
   const expected = estimateTaskDuration(task, allTasks)
   const estimateMinutes = durationToMinutes(task.duration)
+  const startBy = deriveStartBy(task, allTasks, referenceDate)
+  const fit = getFitAssessment(task, allTasks, referenceDate)
 
   return (
     <div className="task-details-panel">
@@ -52,6 +57,7 @@ export function TaskDetails({ task, allTasks, handlers }) {
           {estimateMinutes && expected.source === 'calibrated' ? ` · usually ~${formatMinutes(expected.minutes)}` : ''}
           {task.actualMinutes ? ` · ${task.done ? 'took' : 'logged'} ${formatMinutes(task.actualMinutes)}` : ''}
         </p>
+        {startBy && <p className="timing-summary">Start by {formatDate(startBy)}{fit ? ` · ${fit.label}` : ''}</p>}
         {!task.done && !task.archived && (
           <button
             type="button"
@@ -150,6 +156,16 @@ export function TaskDetails({ task, allTasks, handlers }) {
       </div>
 
       <div className="detail-grid">
+        <label className="field-icon">
+          <span className="field-icon-head"><CalendarIcon />Bring back on</span>
+          <input
+            type="date"
+            max={task.deadline || undefined}
+            value={task.resurfaceDate ?? ''}
+            onChange={(event) => handlers.onUpdate(task.id, { resurfaceDate: event.target.value || null })}
+          />
+        </label>
+
         <label className="field-icon">
           <span className="field-icon-head"><MapPinIcon />Location</span>
           <input value={task.location} placeholder="Room 4, or an address" onChange={(event) => handlers.onUpdate(task.id, { location: event.target.value })} />

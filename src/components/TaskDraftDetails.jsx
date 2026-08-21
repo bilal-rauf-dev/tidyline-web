@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import {
+  CalendarIcon,
   ClockIcon,
   CloseIcon,
   LinkIcon,
@@ -35,7 +36,7 @@ function LinkDraft({ draft, onChange }) {
   )
 }
 
-export function TaskDraftDetails({ draft, onChange }) {
+export function TaskDraftDetails({ draft, deadline, onChange }) {
   function addChecklistItem() {
     const text = draft.checklistDraft.trim()
     if (!text) return
@@ -102,6 +103,16 @@ export function TaskDraftDetails({ draft, onChange }) {
       </div>
 
       <div className="detail-grid">
+        <label className="field-icon">
+          <span className="field-icon-head"><CalendarIcon />Bring back on</span>
+          <input
+            type="date"
+            max={deadline || undefined}
+            value={draft.resurfaceDate}
+            onChange={(event) => onChange({ ...draft, resurfaceDate: event.target.value })}
+          />
+        </label>
+
         <label className="field-icon">
           <span className="field-icon-head"><MapPinIcon />Location</span>
           <input

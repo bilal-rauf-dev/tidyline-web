@@ -1,6 +1,6 @@
 # TidyLine design and behavior contract
 
-Updated for Phase 3 of the ADHD-first time-awareness refactor.
+Updated for Phase 4 of the ADHD-first time-awareness refactor.
 
 ## Product principle
 
@@ -27,7 +27,7 @@ Settings is a utility destination, not a fourth work view.
 
 ### Now
 
-Now currently chooses the earliest open, unarchived task. It displays the deadline distance, estimate, and tags, with Start/Pause, Done, and Open details actions. This is a transitional selection rule; Phase 5 will replace it only after derived start timing exists.
+Now currently chooses the open, unarchived task with the earliest derived attention date. It displays start timing, fit, estimate, and tags, with Start/Pause, Done, and Open details actions. This remains transitional; Phase 5 adds low-friction continuation and rotation actions.
 
 ### Board
 
@@ -40,19 +40,19 @@ The Board has exactly four automatic horizons:
 | `month` | This Month | 8–30 days |
 | `later` | Later | 31+ days or no deadline |
 
-Pinned tasks lead within a horizon, open tasks precede completed tasks, and deadline order breaks remaining ties. Dragging to a horizon assigns its deterministic first day: 0, 1, 8, or 31 days from today. The user does not configure these boundaries.
+Open tasks are classified by the earliest of derived `startBy` and `resurfaceDate`; an active task belongs in Today. Completed tasks stay deadline-based. Pinned tasks lead within a horizon, open tasks precede completed tasks, and attention/deadline order breaks remaining ties. Dragging to a horizon assigns its deterministic first day: 0, 1, 8, or 31 days from today. The user does not configure these boundaries.
 
 Board search matches title, notes, location, and tags. Active and archived records share the Board rather than becoming separate product areas.
 
 ### Calendar
 
-Calendar renders tasks that have deadlines and are not archived. Dragging a task to a date changes only its deadline. Selecting a date allows creation for that date. It does not infer workload or schedule focus blocks.
+Calendar renders tasks that have deadlines and are not archived. A continuous 21-day ribbon shows calibrated work at attention dates and deadline concentration, making empty and crowded periods visually distinct. Month cells mark start counts alongside deadlines. Dragging changes only the deadline; selecting a date allows creation. The Calendar does not restore manual focus-block scheduling.
 
 ## Task model
 
 The normalized Phase 3 record contains only:
 
-`id`, `title`, `deadline`, `reminders`, `tags`, `done`, `completedAt`, `pinned`, `archived`, `recurrence`, `notes`, `location`, `duration`, `startedAt`, `actualMinutes`, `checklist`, `links`, and `createdAt`.
+`id`, `title`, `deadline`, `resurfaceDate`, `reminders`, `tags`, `done`, `completedAt`, `pinned`, `archived`, `recurrence`, `notes`, `location`, `duration`, `startedAt`, `actualMinutes`, `checklist`, `links`, and `createdAt`.
 
 Contracts:
 
@@ -61,12 +61,13 @@ Contracts:
 - `startedAt` is the current active interval or `null`. Starting twice is idempotent.
 - Pause adds the rounded positive elapsed interval to `actualMinutes` and clears `startedAt`; Resume starts a new interval. Completion performs the same finalization before marking the task done.
 - A task completed without being started remains valid and has no invented actual duration.
+- `resurfaceDate` is nullable and cannot be later than a task deadline. It is an attention hint, not another deadline.
 - Relative reminders resolve from the current deadline when checked, so moving a deadline also moves its reminder.
 - Completing a recurring task creates its next occurrence while resetting instance progress.
 - Links are URL references; TidyLine does not upload files.
 - Import normalization filters malformed nested records rather than dropping the complete task collection.
 
-Storage uses a versioned envelope: `{ schemaVersion: 3, tasks: [...] }`. The loader also accepts the original top-level array and earlier envelopes. During migration, prior attachment references become links; prior blocked-state metadata is retained as a `waiting` tag and explanatory notes. Timing fields initialize to `null`. Deprecated preference records are removed.
+Storage uses a versioned envelope: `{ schemaVersion: 4, tasks: [...] }`. The loader also accepts the original top-level array and earlier envelopes. During migration, prior attachment references become links; prior blocked-state metadata is retained as a `waiting` tag and explanatory notes. Timing and resurfacing fields initialize safely. Deprecated preference records are removed.
 
 ## Time and calibration
 
@@ -82,6 +83,14 @@ The canonical duration estimator follows this order:
 4. a conservative 45-minute fallback.
 
 Expected durations round to five-minute increments. Calibrated values appear only where they support a decision. Completion feedback is neutral and temporary: `Estimated 30m · took 1h 10m.` Settings exposes the learned multiplier read-only; users never configure it.
+
+## Derived attention and fit
+
+`startBy` is derived rather than stored: planning deadline minus canonical expected duration minus a fixed 30-minute transition buffer. Active tasks use today as their attention date. Open-task horizons use the earlier of `startBy` and `resurfaceDate`, so missed starts and resurfaced work move into Today without manual planning.
+
+Fit language compares the task's remaining expected minutes plus buffer with deterministic available capacity after other open work due no later than that task. Capacity is six hours per day and is not user-configurable. The UI exposes only three calm outcomes: Fits comfortably, Getting tight, and Won't fit at your usual pace. There is no numerical risk score.
+
+Near future timing uses days. Medium distances use workdays, and longer distances use weekends. The primary label describes when to start; the deadline remains visible separately rather than competing as another countdown.
 
 ## Quick Add
 

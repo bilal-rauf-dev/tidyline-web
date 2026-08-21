@@ -11,7 +11,7 @@ import {
 } from './icons'
 import { BrandMonogram } from './BrandMonogram'
 import { DEFAULT_FILTERS, filterTasks } from '../utils/filters'
-import { getCountdownLabel } from '../utils/dates'
+import { getTaskTimingLabel } from '../utils/timeAwareness'
 
 const NAV_ITEMS = [
   { href: '/', label: 'Now', Icon: HomeIcon },
@@ -140,7 +140,7 @@ export function Sidebar({
                 onClick={() => openResult(task)}
               >
                 <strong>{task.title}</strong>
-                <span>{task.done ? 'Completed' : task.deadline ? getCountdownLabel(task.deadline) : 'Later'}</span>
+                <span>{getTaskTimingLabel(task, tasks)}</span>
               </button>
             )) : <p className="sidebar-search-empty">No matching tasks.</p>}
           </div>

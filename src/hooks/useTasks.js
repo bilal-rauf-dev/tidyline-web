@@ -38,6 +38,7 @@ function nextInstance(task, deadline) {
     ...task,
     id: crypto.randomUUID(),
     deadline,
+    resurfaceDate: null,
     done: false,
     completedAt: null,
     pinned: false,
@@ -93,6 +94,7 @@ export function useTasks() {
   function addTask({
     title,
     deadline,
+    resurfaceDate = null,
     reminders = [],
     tags = [],
     recurrence = null,
@@ -107,6 +109,7 @@ export function useTasks() {
       id: crypto.randomUUID(),
       title,
       deadline,
+      resurfaceDate,
       reminders,
       tags,
       recurrence,
@@ -216,6 +219,7 @@ export function useTasks() {
       archived: false,
       startedAt: null,
       actualMinutes: null,
+      resurfaceDate: null,
       createdAt: new Date().toISOString(),
     })
     const index = tasks.findIndex((task) => task.id === id)

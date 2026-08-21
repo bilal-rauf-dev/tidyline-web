@@ -26,6 +26,7 @@ function emptyDetails() {
     durationValue: '',
     durationUnit: 'min',
     recurrence: null,
+    resurfaceDate: '',
   }
 }
 
@@ -98,6 +99,7 @@ export function TaskForm({
       reminders,
       tags: parseTags(tagInput),
       recurrence: details.recurrence,
+      resurfaceDate: details.resurfaceDate || null,
       notes: details.notes,
       checklist: details.checklist,
       links: details.links,
@@ -187,7 +189,7 @@ export function TaskForm({
 
         <div id="task-entry-details" className={detailsOpen ? 'task-entry-details open' : 'task-entry-details'} inert={detailsOpen ? undefined : true} aria-hidden={!detailsOpen}>
           <div className="task-entry-details-inner">
-            <TaskDraftDetails draft={details} onChange={setDetails} />
+            <TaskDraftDetails draft={details} deadline={deadline} onChange={setDetails} />
           </div>
         </div>
 
