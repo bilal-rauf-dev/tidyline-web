@@ -12,37 +12,18 @@ export function BucketColumn({
   compact = false,
   onToggleCollapse,
   selectedIds = [],
-  bucketOrder,
   ...taskHandlers
 }) {
   const [isOver, setIsOver] = useState(false)
   const isToday = bucketKey === 'today'
-
-  const metricTasks = isToday ? tasks.filter((task) => task.status !== 'waiting') : tasks
-  const doneCount = metricTasks.filter((task) => task.done).length
-  const percent = metricTasks.length === 0 ? 0 : Math.round((doneCount / metricTasks.length) * 100)
-
-  function handleDragOver(event) {
-    event.preventDefault()
-    event.dataTransfer.dropEffect = 'move'
-    setIsOver(true)
-  }
-
-  function handleDragLeave(event) {
-    if (!event.currentTarget.contains(event.relatedTarget)) {
-      setIsOver(false)
-    }
-  }
+  const doneCount = tasks.filter((task) => task.done).length
+  const percent = tasks.length === 0 ? 0 : Math.round((doneCount / tasks.length) * 100)
 
   function handleDrop(event) {
     event.preventDefault()
     setIsOver(false)
-
     const id = event.dataTransfer.getData('text/plain')
-
-    if (id) {
-      onMoveTask(id, bucketKey)
-    }
+    if (id) onMoveTask(id, bucketKey)
   }
 
   const classNames = ['bucket-column', `bucket-${bucketKey}`]
@@ -54,22 +35,28 @@ export function BucketColumn({
   return (
     <article
       className={classNames.join(' ')}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
+      data-bucket-key={bucketKey}
+      onDragOver={(event) => {
+        event.preventDefault()
+        event.dataTransfer.dropEffect = 'move'
+        setIsOver(true)
+      }}
+      onDragLeave={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) setIsOver(false)
+      }}
       onDrop={handleDrop}
     >
-      <DistanceRail bucketKey={bucketKey} bucketOrder={bucketOrder} />
+      <DistanceRail bucketKey={bucketKey} />
 
       <div className="bucket-header">
         {isToday ? (
           <div className="bucket-stat">
-            <strong>{metricTasks.length}</strong>
-            <span>actionable today</span>
+            <strong>{tasks.filter((task) => !task.done).length}</strong>
+            <span>need attention</span>
           </div>
         ) : (
           <h3>{label}</h3>
         )}
-
         <div className="bucket-header-side">
           {!isToday && <span className="count">{tasks.length}</span>}
           <button
@@ -78,41 +65,24 @@ export function BucketColumn({
             onClick={() => onToggleCollapse(bucketKey)}
             aria-expanded={!collapsed}
             aria-label={`${collapsed ? 'Expand' : 'Collapse'} ${label}`}
-            title={collapsed ? 'Expand' : 'Collapse'}
           >
             <ChevronDownIcon />
           </button>
         </div>
       </div>
 
-      <div
-        className="bucket-progress"
-        role="progressbar"
-        aria-valuenow={percent}
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-label={`${label}: ${doneCount} of ${metricTasks.length} actionable tasks done`}
-      >
+      <div className="bucket-progress" role="progressbar" aria-valuenow={percent} aria-valuemin={0} aria-valuemax={100} aria-label={`${label}: ${doneCount} of ${tasks.length} tasks done`}>
         <div className="bucket-progress-fill" style={{ width: `${percent}%` }} />
       </div>
 
-      <div
-        className={collapsed ? 'bucket-content collapsed' : 'bucket-content'}
-        inert={collapsed ? true : undefined}
-        aria-hidden={collapsed}
-      >
+      <div className={collapsed ? 'bucket-content collapsed' : 'bucket-content'} inert={collapsed ? true : undefined} aria-hidden={collapsed}>
         <div className="bucket-content-inner">
           {tasks.length === 0 ? (
-            <p className="empty">No tasks yet.</p>
+            <p className="empty">Nothing here.</p>
           ) : (
             <ul className="task-list">
               {tasks.map((task) => (
-                <TaskCard
-                  key={task.id}
-                  task={task}
-                  selected={selectedIds.includes(task.id)}
-                  {...taskHandlers}
-                />
+                <TaskCard key={task.id} task={task} selected={selectedIds.includes(task.id)} {...taskHandlers} />
               ))}
             </ul>
           )}

@@ -1,9 +1,19 @@
 import { toDateStr } from './calendar'
+import { deadlineMoment } from './dates'
 
 const CLOSE_WINDOW_MINUTES = 120
 
 function eligible(task, excludeId) {
   return task.id !== excludeId && !task.archived
+}
+
+function reminderDate(task, reminder) {
+  if (typeof reminder === 'string') return new Date(reminder)
+  if (reminder?.kind === 'absolute') return new Date(reminder.at)
+  if (reminder?.kind === 'relative' && task.deadline) {
+    return new Date(deadlineMoment(task.deadline).getTime() - reminder.minutesBefore * 60000)
+  }
+  return new Date(Number.NaN)
 }
 
 function remindersOn(tasks, dateStr, excludeId) {
@@ -15,10 +25,10 @@ function remindersOn(tasks, dateStr, excludeId) {
     }
 
     task.reminders.forEach((reminder) => {
-      const at = new Date(reminder)
+      const at = reminderDate(task, reminder)
 
       if (!Number.isNaN(at.getTime()) && toDateStr(at) === dateStr) {
-        found.push({ key: `${task.id}:${reminder}`, title: task.title, reminder })
+        found.push({ key: `${task.id}:${reminder.id ?? at.toISOString()}`, title: task.title, at })
       }
     })
   })
@@ -64,7 +74,7 @@ export function getReminderContext(
     }
 
     task.reminders.forEach((reminder) => {
-      const at = new Date(reminder)
+      const at = reminderDate(task, reminder)
 
       if (Number.isNaN(at.getTime())) {
         return
@@ -73,7 +83,7 @@ export function getReminderContext(
       const minutesApart = Math.abs(at.getTime() - target.getTime()) / 60000
 
       if (minutesApart <= windowMinutes) {
-        nearby.push({ key: `${task.id}:${reminder}`, title: task.title, reminder, minutesApart })
+        nearby.push({ key: `${task.id}:${reminder.id ?? at.toISOString()}`, title: task.title, at, minutesApart })
       }
     })
   })

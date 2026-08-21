@@ -66,8 +66,7 @@ export function TaskDetailDialog({ task, handlers, onClose }) {
         <header className="task-detail-heading">
           <div>
             <h2 id={titleId}>{task.title}</h2>
-            <span>Due {formatDate(task.deadline)}</span>
-            {task.startDate && <span>Starts {formatDate(task.startDate)}</span>}
+            <span>{task.deadline ? `Due ${formatDate(task.deadline)}` : 'No deadline yet'}</span>
           </div>
           <button
             ref={closeRef}

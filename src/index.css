@@ -43,9 +43,7 @@
  * gaps) and leaves type sizes alone so nothing becomes hard to read.
  */
 :root[data-density="compact"] .entry-card,
-:root[data-density="compact"] .bucket-column,
-:root[data-density="compact"] .overdue-group,
-:root[data-density="compact"] .home-panel {
+:root[data-density="compact"] .bucket-column {
   padding: 0.7rem;
 }
 
@@ -53,9 +51,7 @@
   gap: 0.9rem;
 }
 
-:root[data-density="compact"] .buckets,
-:root[data-density="compact"] .home-dashboard,
-:root[data-density="compact"] .analytics-grid {
+:root[data-density="compact"] .buckets {
   gap: 0.6rem;
 }
 

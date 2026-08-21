@@ -1,108 +1,38 @@
-import { groupTasksByBucket } from '../src/utils/buckets'
-import { filterTasks, DEFAULT_FILTERS } from '../src/utils/filters'
-import { isOverdue } from '../src/utils/overdue'
-import {
-  applyTaskUpdates,
-  getPostponeSummary,
-  shiftStartDateForDeadline,
-  validateStartDate,
-} from '../src/utils/taskFields'
+import { deadlineForBucket, getTaskBucket, groupTasksByBucket } from '../src/utils/buckets'
+import { DEFAULT_FILTERS, filterTasks } from '../src/utils/filters'
 
 function assert(condition, message) {
-  if (!condition) {
-    throw new Error(message)
-  }
+  if (!condition) throw new Error(message)
 }
 
 const now = new Date(2026, 7, 4)
-const base = {
-  done: false,
-  archived: false,
-  pinned: false,
-  energyLevel: null,
-  postponeHistory: [],
-}
-const tasks = [
-  { ...base, id: 'future', deadline: '2026-08-20', startDate: '2026-08-10', plannedDate: null },
-  { ...base, id: 'available', deadline: '2026-08-06', startDate: '2026-08-04', plannedDate: null },
-  { ...base, id: 'planned', deadline: '2026-09-01', startDate: null, plannedDate: '2026-08-04' },
-  { ...base, id: 'stale', deadline: '2026-08-06', startDate: null, plannedDate: '2026-08-03' },
-]
-
-const grouped = groupTasksByBucket(tasks, now)
-const groupedIds = Object.fromEntries(
-  Object.entries(grouped).map(([bucket, list]) => [bucket, list.map((task) => task.id)]),
-)
-const allBucketIds = Object.values(groupedIds).flat()
-
-assert(!allBucketIds.includes('future'), 'Future-start task leaked into deadline buckets')
-assert(groupedIds.week.includes('available'), 'Task did not activate on its start date')
-assert(groupedIds.today.includes('planned'), 'Planned task did not enter Today')
-assert(groupedIds.week.includes('stale'), 'Stale plan did not revert to deadline bucketing')
-
-const archivedGrouping = groupTasksByBucket(tasks, now, undefined, undefined, {
-  includeUpcoming: true,
+const task = (id, deadline, extra = {}) => ({
+  id, title: id, deadline, createdAt: '2026-08-01T00:00:00.000Z', done: false, pinned: false, ...extra,
 })
-assert(
-  Object.values(archivedGrouping).flat().some((task) => task.id === 'future'),
-  'Archive grouping hid a future-start task',
-)
 
-assert(
-  !isOverdue({ ...base, deadline: '2026-08-01', plannedDate: '2026-08-04' }, now),
-  'A task planned for today was also marked overdue',
-)
-assert(
-  Boolean(validateStartDate('2026-08-05', '2026-08-04')),
-  'Start-after-deadline validation did not block the invalid range',
-)
+assert(getTaskBucket('2026-08-04', now) === 'today', 'Today boundary failed')
+assert(getTaskBucket('2026-08-11', now) === 'week', 'Seven-day boundary failed')
+assert(getTaskBucket('2026-08-12', now) === 'month', 'Month lower boundary failed')
+assert(getTaskBucket('2026-09-03', now) === 'month', 'Thirty-day boundary failed')
+assert(getTaskBucket('2026-09-04', now) === 'later', 'Later boundary failed')
+assert(getTaskBucket(null, now) === 'later', 'Deadline-free tasks must remain accessible in Later')
+assert(deadlineForBucket('today', now) === '2026-08-04', 'Today drag target changed')
+assert(deadlineForBucket('week', now) === '2026-08-05', 'This Week drag target changed')
+assert(deadlineForBucket('month', now) === '2026-08-12', 'This Month drag target changed')
+assert(deadlineForBucket('later', now) === '2026-09-04', 'Later drag target changed')
 
-const energyTasks = [
-  { ...tasks[1], id: 'low', energyLevel: 'low', title: 'Low' },
-  { ...tasks[1], id: 'unset', energyLevel: null, title: 'Unset' },
+const grouped = groupTasksByBucket([
+  task('later', null), task('done', '2026-08-04', { done: true }),
+  task('open', '2026-08-04'), task('pinned', '2026-08-04', { pinned: true }),
+], now)
+assert(grouped.today.map(({ id }) => id).join(',') === 'pinned,open,done', 'Bucket sorting changed')
+assert(grouped.later[0].id === 'later', 'Later task was lost')
+
+const searchable = [
+  { title: 'Write report', notes: '', location: '', tags: ['work'] },
+  { title: 'Buy milk', notes: 'oat', location: 'Market', tags: [] },
 ]
-assert(
-  filterTasks(energyTasks, { ...DEFAULT_FILTERS, energyLevel: 'low' })[0]?.id === 'low',
-  'Low-energy filter did not perform an exact match',
-)
-assert(
-  filterTasks(energyTasks, { ...DEFAULT_FILTERS, energyLevel: 'unset' })[0]?.id === 'unset',
-  'Unset-energy filter did not isolate tasks without a value',
-)
+assert(filterTasks(searchable, { ...DEFAULT_FILTERS, query: 'market' }).length === 1, 'Search omitted location')
+assert(filterTasks(searchable, { query: 'WORK' })[0]?.title === 'Write report', 'Search omitted tags')
 
-const historyBase = {
-  ...base,
-  id: 'history',
-  deadline: '2026-08-05',
-  originalDeadline: '2026-08-10',
-  startDate: null,
-}
-const postponed = applyTaskUpdates(
-  historyBase,
-  { deadline: '2026-08-08' },
-  'drag',
-  '2026-08-04T12:00:00.000Z',
-)
-assert(postponed.postponeHistory.length === 1, 'Later deadline did not append history')
-assert(postponed.postponeHistory[0].source === 'drag', 'Postponement source was not preserved')
-assert(
-  getPostponeSummary(postponed).originalDeadline === '2026-08-10',
-  'Earlier edits erased the task instance original deadline',
-)
-assert(
-  applyTaskUpdates(historyBase, { deadline: '2026-08-04' }).postponeHistory.length === 0,
-  'Earlier deadline incorrectly counted as a postponement',
-)
-assert(
-  applyTaskUpdates(
-    { ...historyBase, startDate: '2026-08-05' },
-    { deadline: '2026-08-04' },
-  ).deadline === '2026-08-05',
-  'Invalid deadline update bypassed start-date validation',
-)
-assert(
-  shiftStartDateForDeadline('2026-08-02', '2026-08-05', '2026-08-12') === '2026-08-09',
-  'Recurring instance did not preserve its start-to-deadline lead time',
-)
-
-console.log('ok    Phase 1 task date, energy, planning, and postponement rules')
+console.log('ok    fixed horizon buckets and simple search')

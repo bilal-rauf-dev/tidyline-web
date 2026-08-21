@@ -1,98 +1,44 @@
+import { useState } from 'react'
 import {
   ClockIcon,
-  CalendarIcon,
   CloseIcon,
   LinkIcon,
   MapPinIcon,
   NotesIcon,
-  PaperclipIcon,
   PlusIcon,
 } from './icons'
-import { RecurrencePicker } from './RecurrencePicker'
 import { SelectMenu } from './SelectMenu'
-import { EnergyLevelControl } from './EnergyLevelControl'
-import { toDateStr } from '../utils/calendar'
+import { RecurrencePicker } from './RecurrencePicker'
 
-function addNamedUrl(draft, onChange, type) {
-  const labelKey = type === 'links' ? 'linkLabel' : 'attachmentLabel'
-  const urlKey = type === 'links' ? 'linkUrl' : 'attachmentUrl'
-  const label = draft[labelKey].trim()
-  const url = draft[urlKey].trim()
+function LinkDraft({ draft, onChange }) {
+  const [label, setLabel] = useState('')
+  const [url, setUrl] = useState('')
 
-  if (!label || !url) {
-    return
+  function add() {
+    if (!label.trim() || !url.trim()) return
+    onChange({
+      ...draft,
+      links: [...draft.links, { id: crypto.randomUUID(), label: label.trim(), url: url.trim() }],
+    })
+    setLabel('')
+    setUrl('')
   }
 
-  onChange({
-    ...draft,
-    [type]: [...draft[type], { id: crypto.randomUUID(), label, url }],
-    [labelKey]: '',
-    [urlKey]: '',
-  })
-}
-
-function UrlDraft({ draft, onChange, type, label, urlLabel }) {
-  const labelKey = type === 'links' ? 'linkLabel' : 'attachmentLabel'
-  const urlKey = type === 'links' ? 'linkUrl' : 'attachmentUrl'
-
   return (
-    <>
-      {draft[type].length > 0 && (
-        <ul className="detail-list">
-          {draft[type].map((entry) => (
-            <li key={entry.id}>
-              <span>{entry.label}</span>
-              <button
-                type="button"
-                className="icon-mini"
-                onClick={() =>
-                  onChange({ ...draft, [type]: draft[type].filter((item) => item.id !== entry.id) })
-                }
-                aria-label={`Remove ${entry.label}`}
-              >
-                <CloseIcon />
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      <div className="detail-add-row">
-        <input
-          type="text"
-          value={draft[labelKey]}
-          placeholder={label}
-          aria-label={label}
-          onChange={(event) => onChange({ ...draft, [labelKey]: event.target.value })}
-        />
-        <input
-          type="url"
-          value={draft[urlKey]}
-          placeholder="https://…"
-          aria-label={urlLabel}
-          onChange={(event) => onChange({ ...draft, [urlKey]: event.target.value })}
-        />
-        <button
-          type="button"
-          className="icon-action"
-          onClick={() => addNamedUrl(draft, onChange, type)}
-          aria-label={`Add ${label.toLowerCase()}`}
-        >
-          <PlusIcon />
-        </button>
-      </div>
-    </>
+    <div className="detail-add-row">
+      <input value={label} placeholder="Link label" aria-label="Link label" onChange={(event) => setLabel(event.target.value)} />
+      <input type="url" value={url} placeholder="https://…" aria-label="Link URL" onChange={(event) => setUrl(event.target.value)} />
+      <button type="button" className="icon-action" onClick={add} aria-label="Add link">
+        <PlusIcon />
+      </button>
+    </div>
   )
 }
 
-export function TaskDraftDetails({ draft, deadline, onChange }) {
+export function TaskDraftDetails({ draft, onChange }) {
   function addChecklistItem() {
     const text = draft.checklistDraft.trim()
-
-    if (!text) {
-      return
-    }
-
+    if (!text) return
     onChange({
       ...draft,
       checklist: [...draft.checklist, { id: crypto.randomUUID(), text, done: false }],
@@ -102,73 +48,8 @@ export function TaskDraftDetails({ draft, deadline, onChange }) {
 
   return (
     <div className="task-draft-details">
-      <div className="detail-grid detail-foundations">
-        <label className="field-icon">
-          <span className="field-icon-head">
-            <CalendarIcon />
-            Start date
-          </span>
-          <input
-            type="date"
-            value={draft.startDate}
-            max={deadline || undefined}
-            onChange={(event) => onChange({ ...draft, startDate: event.target.value })}
-          />
-        </label>
-
-        <EnergyLevelControl
-          value={draft.energyLevel}
-          onChange={(energyLevel) => onChange({ ...draft, energyLevel })}
-        />
-      </div>
-
-      <div className="waiting-control">
-        <div className="segmented" role="group" aria-label="Task status">
-          <button
-            type="button"
-            className={draft.status === 'active' ? 'segment active' : 'segment'}
-            onClick={() => onChange({ ...draft, status: 'active', waitingFor: '', followUpDate: '' })}
-          >
-            Actionable
-          </button>
-          <button
-            type="button"
-            className={draft.status === 'waiting' ? 'segment active' : 'segment'}
-            onClick={() => onChange({ ...draft, status: 'waiting' })}
-          >
-            Waiting
-          </button>
-        </div>
-
-        {draft.status === 'waiting' && (
-          <div className="detail-grid waiting-fields">
-            <label className="field-icon">
-              <span className="field-icon-head">Waiting for</span>
-              <input
-                type="text"
-                value={draft.waitingFor}
-                placeholder="Name or response"
-                onChange={(event) => onChange({ ...draft, waitingFor: event.target.value })}
-              />
-            </label>
-            <label className="field-icon">
-              <span className="field-icon-head">Follow up</span>
-              <input
-                type="date"
-                min={toDateStr(new Date())}
-                value={draft.followUpDate}
-                onChange={(event) => onChange({ ...draft, followUpDate: event.target.value })}
-              />
-            </label>
-          </div>
-        )}
-      </div>
-
       <label className="field-icon">
-        <span className="field-icon-head">
-          <NotesIcon />
-          Notes
-        </span>
+        <span className="field-icon-head"><NotesIcon />Notes</span>
         <textarea
           rows="3"
           value={draft.notes}
@@ -187,12 +68,7 @@ export function TaskDraftDetails({ draft, deadline, onChange }) {
                 <button
                   type="button"
                   className="icon-mini"
-                  onClick={() =>
-                    onChange({
-                      ...draft,
-                      checklist: draft.checklist.filter((entry) => entry.id !== item.id),
-                    })
-                  }
+                  onClick={() => onChange({ ...draft, checklist: draft.checklist.filter((entry) => entry.id !== item.id) })}
                   aria-label={`Remove ${item.text}`}
                 >
                   <CloseIcon />
@@ -203,7 +79,6 @@ export function TaskDraftDetails({ draft, deadline, onChange }) {
         )}
         <div className="detail-add-row draft-single-row">
           <input
-            type="text"
             value={draft.checklistDraft}
             placeholder="Add a sub-item"
             aria-label="New checklist item"
@@ -223,19 +98,13 @@ export function TaskDraftDetails({ draft, deadline, onChange }) {
 
       <div className="detail-block">
         <span className="field-icon-head"><LinkIcon />Links</span>
-        <UrlDraft draft={draft} onChange={onChange} type="links" label="Link label" urlLabel="Link URL" />
-      </div>
-
-      <div className="detail-block">
-        <span className="field-icon-head"><PaperclipIcon />Attachments</span>
-        <UrlDraft draft={draft} onChange={onChange} type="attachments" label="File name" urlLabel="Attachment URL" />
+        <LinkDraft draft={draft} onChange={onChange} />
       </div>
 
       <div className="detail-grid">
         <label className="field-icon">
           <span className="field-icon-head"><MapPinIcon />Location</span>
           <input
-            type="text"
             value={draft.location}
             placeholder="Room 4, or an address"
             onChange={(event) => onChange({ ...draft, location: event.target.value })}
@@ -247,29 +116,23 @@ export function TaskDraftDetails({ draft, deadline, onChange }) {
           <div className="duration-row">
             <input
               type="number"
-              min="0"
+              min="1"
               value={draft.durationValue}
-              placeholder="0"
+              placeholder="Minutes"
               aria-label="Estimated duration"
               onChange={(event) => onChange({ ...draft, durationValue: event.target.value })}
             />
             <SelectMenu
               value={draft.durationUnit}
               ariaLabel="Duration unit"
-              options={[
-                { value: 'min', label: 'minutes' },
-                { value: 'hr', label: 'hours' },
-              ]}
+              options={[{ value: 'min', label: 'minutes' }, { value: 'hr', label: 'hours' }]}
               onChange={(value) => onChange({ ...draft, durationUnit: value })}
             />
           </div>
         </label>
       </div>
 
-      <RecurrencePicker
-        recurrence={draft.recurrence}
-        onChange={(recurrence) => onChange({ ...draft, recurrence })}
-      />
+      <RecurrencePicker recurrence={draft.recurrence} onChange={(recurrence) => onChange({ ...draft, recurrence })} />
     </div>
   )
 }

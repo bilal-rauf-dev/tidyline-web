@@ -29,7 +29,7 @@ export function DayContext({ mode, tasks, value, excludeId }) {
             {nearby.map((entry) => (
               <li key={entry.key}>
                 <span className="reminder-dot" aria-hidden="true" />
-                <strong>{entry.title}</strong> reminder at {formatDateTime(entry.reminder)}
+                <strong>{entry.title}</strong> reminder at {formatDateTime(entry.at)}
               </li>
             ))}
           </ul>
@@ -75,7 +75,7 @@ export function DayContext({ mode, tasks, value, excludeId }) {
           {reminders.map((entry) => (
             <li key={entry.key}>
               <span className="reminder-dot" aria-hidden="true" />
-              <strong>{entry.title}</strong> reminder at {formatDateTime(entry.reminder)}
+              <strong>{entry.title}</strong> reminder at {formatDateTime(entry.at)}
             </li>
           ))}
         </ul>

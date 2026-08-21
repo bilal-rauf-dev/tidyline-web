@@ -65,14 +65,6 @@ export function RepeatIcon() {
   );
 }
 
-export function PaperclipIcon() {
-  return (
-    <svg {...base} aria-hidden="true">
-      <path d="M15.5 9.2 9.9 14.8a3.3 3.3 0 0 1-4.7-4.7l6-6a2.2 2.2 0 0 1 3.1 3.1l-5.9 6a1.1 1.1 0 0 1-1.6-1.6l5.3-5.3" />
-    </svg>
-  );
-}
-
 export function ChevronDownIcon() {
   return (
     <svg {...base} aria-hidden="true">
@@ -269,16 +261,6 @@ export function CalendarIcon() {
       <path d="M2.5 8h15" />
       <path d="M6 2.5v3" />
       <path d="M14 2.5v3" />
-    </svg>
-  );
-}
-
-export function AnalyticsIcon() {
-  return (
-    <svg {...base} aria-hidden="true">
-      <rect x="3" y="10" width="3.5" height="7" rx="0.8" />
-      <rect x="8.25" y="6" width="3.5" height="11" rx="0.8" />
-      <rect x="13.5" y="2.5" width="3.5" height="14.5" rx="0.8" />
     </svg>
   );
 }

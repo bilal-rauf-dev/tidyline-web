@@ -1,72 +1,57 @@
-import { normalizeTask } from '../src/hooks/useTasks'
-import { DEFAULT_FILTERS, filterTasks } from '../src/utils/filters'
-import { taskToTemplate } from '../src/hooks/useTemplates'
+import { normalizeTask } from '../src/utils/taskMigration'
+import { TASK_FIELDS } from '../src/utils/taskFields'
+import { cleanupLegacyPreferences, migrateTaskData, parseImportedTasks, serializeTasks, TASK_SCHEMA_VERSION } from '../src/utils/tasksIO'
 
 function assert(condition, message) {
   if (!condition) throw new Error(message)
 }
 
-const today = new Date().toISOString().slice(0, 10)
-const someday = normalizeTask({ id: 'idea', title: 'Idea', deadline: null })
-assert(someday.deadline === null, 'Someday task was given a synthetic deadline')
+const legacy = {
+  id: 'legacy', title: '  Await contract  ', deadline: '2026-09-01', status: 'waiting',
+  waitingFor: 'legal', followUpDate: '2026-08-25', priority: 'high', energyLevel: 'deep-focus',
+  plannedDate: '2026-08-21', scheduledStart: '2026-08-21T09:00',
+  attachments: [{ id: 'a', label: 'Draft', url: 'https://example.com/draft' }, null],
+  links: [{ id: 'l', label: 'Brief', url: 'https://example.com/brief' }],
+  checklist: [{ text: 'Review', done: false }, null, { nope: true }],
+  reminders: ['2026-08-25T09:00', null, { kind: 'relative', minutesBefore: 30 }],
+}
 
-const scheduled = normalizeTask({
-  id: 'scheduled',
-  title: 'Scheduled',
-  deadline: '2099-01-02',
-  scheduledStart: '2099-01-01T10:30',
-})
-assert(scheduled.scheduledStart === '2099-01-01T10:30', 'Scheduled start was not preserved')
+const normalized = normalizeTask(legacy)
+assert(normalized.title === 'Await contract', 'Title was not normalized')
+assert(normalized.tags.includes('waiting'), 'Waiting state was not preserved as a tag')
+assert(normalized.notes.includes('Waiting for legal.'), 'Waiting owner was lost')
+assert(normalized.notes.includes('Follow up 2026-08-25.'), 'Follow-up date was lost')
+assert(normalized.links.length === 2, 'Attachments were not preserved as links')
+assert(normalized.checklist.length === 1, 'Malformed checklist entries survived')
+assert(normalized.reminders.length === 2, 'Malformed reminders survived')
+assert(Object.keys(normalized).every((key) => TASK_FIELDS.includes(key)), 'Removed task fields survived')
+assert(!('priority' in normalized) && !('status' in normalized), 'Deprecated fields survived')
 
-const released = normalizeTask({
-  id: 'waiting',
-  title: 'Waiting',
-  deadline: '2099-01-02',
-  status: 'waiting',
-  waitingFor: 'Reply',
-  followUpDate: today,
-})
-assert(released.status === 'active', 'Due follow-up did not release the waiting task')
-assert(!released.followUpDate && !released.waitingFor, 'Released waiting metadata was not cleared')
+const oldArray = migrateTaskData([legacy])
+assert(oldArray.schemaVersion === TASK_SCHEMA_VERSION && oldArray.migratedFrom === 1, 'Legacy array migration failed')
+const oldEnvelope = migrateTaskData({ schemaVersion: 1, tasks: [legacy] })
+assert(oldEnvelope.migratedFrom === 1 && oldEnvelope.tasks.length === 1, 'Envelope migration failed')
+const exported = JSON.parse(serializeTasks([normalized]))
+assert(exported.schemaVersion === TASK_SCHEMA_VERSION, 'Export schema version missing')
+assert(parseImportedTasks(JSON.stringify([legacy])).length === 1, 'Legacy import stopped working')
+assert(parseImportedTasks(JSON.stringify({ tasks: [legacy, null, { title: 3 }] })).length === 1, 'Import validation failed')
+let rejectedInvalidEnvelope = false
+try {
+  migrateTaskData({ records: [legacy] })
+} catch {
+  rejectedInvalidEnvelope = true
+}
+assert(rejectedInvalidEnvelope, 'Unknown storage shape would be silently replaced')
+let rejectedFutureSchema = false
+try {
+  migrateTaskData({ schemaVersion: TASK_SCHEMA_VERSION + 1, tasks: [legacy] })
+} catch {
+  rejectedFutureSchema = true
+}
+assert(rejectedFutureSchema, 'Future schema would be destructively downgraded')
 
-const candidates = [
-  normalizeTask({
-    id: 'match',
-    title: 'Match',
-    deadline: '2099-01-10',
-    pinned: true,
-    duration: { value: 45, unit: 'min' },
-  }),
-  normalizeTask({
-    id: 'miss',
-    title: 'Miss',
-    deadline: '2099-02-10',
-    duration: { value: 10, unit: 'min' },
-  }),
-]
-const filtered = filterTasks(candidates, {
-  ...DEFAULT_FILTERS,
-  pinnedOnly: true,
-  durationMin: '30',
-  durationMax: '60',
-  dateFrom: '2099-01-01',
-  dateTo: '2099-01-31',
-})
-assert(filtered.length === 1 && filtered[0].id === 'match', 'Advanced filters did not compose')
+const removed = []
+cleanupLegacyPreferences({ removeItem: (key) => removed.push(key) })
+assert(removed.length === 4, 'Legacy preferences were not cleaned up')
 
-const template = taskToTemplate(
-  normalizeTask({
-    id: 'source',
-    title: 'Do not copy title',
-    deadline: '2099-01-10',
-    notes: 'Reusable notes',
-    tags: ['study'],
-    checklist: [{ id: 'one', text: 'Read', done: true }],
-    duration: { value: 1, unit: 'hr' },
-  }),
-  'Study setup',
-)
-assert(!('title' in template) && !('deadline' in template), 'Template copied task-specific fields')
-assert(template.notes === 'Reusable notes' && template.checklist.length === 1, 'Template lost details')
-
-console.log('ok    Phase 2 scheduling, waiting, someday, template, and filter rules')
+console.log('ok    loss-aware Phase 2 migration and schema cleanup')

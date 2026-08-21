@@ -3,7 +3,6 @@ import { formatDateTime } from '../utils/dates'
 import { ensureNotificationPermission } from '../utils/notifications'
 import { parseTags } from '../utils/tags'
 import {
-  ArchiveIcon,
   BellIcon,
   CalendarIcon,
   ChevronDownIcon,
@@ -15,30 +14,18 @@ import {
 import { TagList } from './TagList'
 import { DayContext } from './DayContext'
 import { TaskDraftDetails } from './TaskDraftDetails'
-import { validateStartDate } from '../utils/taskFields'
-import { SelectMenu } from './SelectMenu'
 import { describeReminder } from '../utils/reminders'
 
-function createEmptyDetails() {
+function emptyDetails() {
   return {
     notes: '',
     checklist: [],
     checklistDraft: '',
     links: [],
-    linkLabel: '',
-    linkUrl: '',
-    attachments: [],
-    attachmentLabel: '',
-    attachmentUrl: '',
     location: '',
     durationValue: '',
     durationUnit: 'min',
     recurrence: null,
-    startDate: '',
-    energyLevel: '',
-    status: 'active',
-    waitingFor: '',
-    followUpDate: '',
   }
 }
 
@@ -48,7 +35,6 @@ export function TaskForm({
   initialDeadline = '',
   heading = 'Add task',
   focusOnMount = false,
-  templates = [],
   initialTitle = '',
   initialTags = '',
   initialDetails = null,
@@ -58,163 +44,85 @@ export function TaskForm({
   const [title, setTitle] = useState(initialTitle)
   const [deadline, setDeadline] = useState(initialDeadline)
   const [reminderInput, setReminderInput] = useState('')
-  const [remindersDraft, setRemindersDraft] = useState(initialReminders || [])
+  const [reminders, setReminders] = useState(initialReminders || [])
   const [tagInput, setTagInput] = useState(initialTags)
   const [detailsOpen, setDetailsOpen] = useState(Boolean(initialDetails))
-  const [details, setDetails] = useState(() => ({
-    ...createEmptyDetails(),
-    ...(initialDetails || {}),
-  }))
-  const [selectedTemplateId, setSelectedTemplateId] = useState('')
+  const [details, setDetails] = useState(() => ({ ...emptyDetails(), ...(initialDetails || {}) }))
 
   useEffect(() => {
-    if (focusOnMount) {
-      titleInputRef.current?.focus()
-    }
+    if (focusOnMount) titleInputRef.current?.focus()
   }, [focusOnMount])
 
   useEffect(() => {
-    // Clear prefilled values from the URL on mount so they are only consumed once
     const params = new URLSearchParams(window.location.search)
+    const keys = ['title', 'deadline', 'tags', 'reminderMinutes', 'durationMinutes', 'recurrence']
     let changed = false
-    const keysToDelete = [
-      'title',
-      'deadline',
-      'tags',
-      'startDate',
-      'reminderMinutes',
-      'durationMinutes',
-      'recurrence',
-      'priority',
-      'energy',
-      'planForToday',
-    ]
-    keysToDelete.forEach((key) => {
+    keys.forEach((key) => {
       if (params.has(key)) {
         params.delete(key)
         changed = true
       }
     })
     if (changed) {
-      const newSearch = params.toString()
-      const newUrl = window.location.pathname + (newSearch ? `?${newSearch}` : '')
-      window.history.replaceState(null, '', newUrl)
+      const search = params.toString()
+      window.history.replaceState(null, '', window.location.pathname + (search ? `?${search}` : ''))
     }
   }, [])
 
   function addReminder() {
-    if (!reminderInput) {
-      return
+    if (!reminderInput) return
+    if (!reminders.includes(reminderInput)) {
+      ensureNotificationPermission()
+      setReminders((current) => [...current, reminderInput].sort())
     }
-
-    if (remindersDraft.includes(reminderInput)) {
-      setReminderInput('')
-      return
-    }
-
-    ensureNotificationPermission()
-    setRemindersDraft((current) => [...current, reminderInput].sort())
     setReminderInput('')
   }
 
-  function reminderIdentity(reminder) {
+  function reminderId(reminder) {
     return typeof reminder === 'string' ? reminder : reminder.id
   }
 
-  function reminderDescription(reminder) {
+  function reminderLabel(reminder) {
     return typeof reminder === 'string'
       ? formatDateTime(reminder)
       : describeReminder(reminder, { deadline })
   }
 
-  function removeReminder(reminder) {
-    const identity = reminderIdentity(reminder)
-    setRemindersDraft((current) =>
-      current.filter((entry) => reminderIdentity(entry) !== identity),
-    )
-  }
-
-  function applyTemplate(id) {
-    setSelectedTemplateId(id)
-    const template = templates.find((entry) => entry.id === id)
-    if (!template) return
-
-    setTagInput(template.tags.join(', '))
-    setRemindersDraft(
-      template.reminders.map((reminder) =>
-        typeof reminder === 'string' ? reminder : { ...reminder },
-      ),
-    )
-    setDetails((current) => ({
-      ...current,
-      notes: template.notes,
-      checklist: template.checklist.map((item) => ({
-        id: crypto.randomUUID(),
-        text: item.text,
-        done: false,
-      })),
-      durationValue: template.duration?.value ?? '',
-      durationUnit: template.duration?.unit ?? 'min',
-      recurrence: template.recurrence,
-    }))
-    setDetailsOpen(true)
-  }
-
   function handleSubmit(event) {
     event.preventDefault()
-    const destination = event.nativeEvent.submitter?.value ?? 'active'
-
-    if (
-      !title.trim() ||
-      !deadline ||
-      validateStartDate(details.startDate, deadline) ||
-      (details.status === 'waiting' && (!details.waitingFor.trim() || !details.followUpDate))
-    ) {
-      return
-    }
+    if (!title.trim() || !deadline) return
 
     onAddTask({
       title: title.trim(),
       deadline,
-      reminders: remindersDraft,
+      reminders,
       tags: parseTags(tagInput),
       recurrence: details.recurrence,
       notes: details.notes,
       checklist: details.checklist,
       links: details.links,
-      attachments: details.attachments,
       location: details.location,
       duration:
         details.durationValue === ''
           ? null
           : { value: Number(details.durationValue), unit: details.durationUnit },
-      startDate: details.startDate || null,
-      energyLevel: details.energyLevel || null,
-      status: details.status,
-      archived: destination === 'archive',
-      waitingFor: details.status === 'waiting' ? details.waitingFor.trim() : '',
-      followUpDate: details.status === 'waiting' ? details.followUpDate : null,
     })
 
     setTitle('')
     setDeadline('')
-    setRemindersDraft([])
+    setReminders([])
     setReminderInput('')
     setTagInput('')
     setDetailsOpen(false)
-    setDetails(createEmptyDetails())
-    setSelectedTemplateId('')
+    setDetails(emptyDetails())
   }
 
-  const draftTags = parseTags(tagInput)
+  const tags = parseTags(tagInput)
 
   return (
     <section className="entry-card task-entry" aria-label="Add task">
       <div className="task-entry-heading">
-        <h2 className="card-heading">
-          <PlusIcon />
-          {heading}
-        </h2>
+        <h2 className="card-heading"><PlusIcon />{heading}</h2>
         <button
           type="button"
           className={detailsOpen ? 'icon-mini task-entry-toggle open' : 'icon-mini task-entry-toggle'}
@@ -222,31 +130,15 @@ export function TaskForm({
           aria-expanded={detailsOpen}
           aria-controls="task-entry-details"
           aria-label={detailsOpen ? 'Hide additional task details' : 'Add notes and details'}
-          title={detailsOpen ? 'Hide details' : 'Add notes and details'}
         >
           <ChevronDownIcon />
         </button>
       </div>
 
       <form onSubmit={handleSubmit} className="task-form">
-        {templates.length > 0 && (
-          <label className="template-picker">
-            <span className="field-icon-head">Start from template</span>
-            <SelectMenu
-              value={selectedTemplateId}
-              ariaLabel="Start task from template"
-              options={[
-                { value: '', label: 'Blank task' },
-                ...templates.map((template) => ({ value: template.id, label: template.name })),
-              ]}
-              onChange={applyTemplate}
-            />
-          </label>
-        )}
         <div className="field-underline">
           <input
             ref={titleInputRef}
-            type="text"
             className="input-underline"
             placeholder="What needs doing?"
             aria-label="Task name"
@@ -258,57 +150,28 @@ export function TaskForm({
 
         <div className="field-group">
           <label className="field-icon">
-            <span className="field-icon-head">
-              <CalendarIcon />
-              Due
-            </span>
-            <input
-              type="date"
-              value={deadline}
-              onChange={(event) => setDeadline(event.target.value)}
-              required
-            />
+            <span className="field-icon-head"><CalendarIcon />Due</span>
+            <input type="date" value={deadline} onChange={(event) => setDeadline(event.target.value)} required />
           </label>
-
           <div className="field-reminder">
             <label className="field-icon">
-              <span className="field-icon-head">
-                <BellIcon />
-                Remind
-              </span>
-              <input
-                type="datetime-local"
-                value={reminderInput}
-                onChange={(event) => setReminderInput(event.target.value)}
-              />
+              <span className="field-icon-head"><BellIcon />Remind</span>
+              <input type="datetime-local" value={reminderInput} onChange={(event) => setReminderInput(event.target.value)} />
             </label>
-            <button
-              type="button"
-              className="icon-action"
-              onClick={addReminder}
-              aria-label="Add reminder"
-              title="Add reminder"
-            >
-              <PlusIcon />
-            </button>
+            <button type="button" className="icon-action" onClick={addReminder} aria-label="Add reminder"><PlusIcon /></button>
           </div>
         </div>
 
         <DayContext mode="deadline" tasks={allTasks} value={deadline} />
         <DayContext mode="reminder" tasks={allTasks} value={reminderInput} />
 
-        {remindersDraft.length > 0 && (
+        {reminders.length > 0 && (
           <ul className="reminder-strip" aria-label="Pending reminders">
-            {remindersDraft.map((reminder) => (
-              <li key={reminderIdentity(reminder)}>
+            {reminders.map((reminder) => (
+              <li key={reminderId(reminder)}>
                 <span className="reminder-dot" aria-hidden="true" />
-                <span>{reminderDescription(reminder)}</span>
-                <button
-                  type="button"
-                  className="icon-mini"
-                  onClick={() => removeReminder(reminder)}
-                  aria-label={`Remove reminder ${reminderDescription(reminder)}`}
-                >
+                <span>{reminderLabel(reminder)}</span>
+                <button type="button" className="icon-mini" onClick={() => setReminders((current) => current.filter((entry) => reminderId(entry) !== reminderId(reminder)))} aria-label={`Remove reminder ${reminderLabel(reminder)}`}>
                   <CloseIcon />
                 </button>
               </li>
@@ -317,53 +180,19 @@ export function TaskForm({
         )}
 
         <label className="field-icon">
-          <span className="field-icon-head">
-            <TagIcon />
-            Tags
-          </span>
-          <input
-            type="text"
-            placeholder="design, urgent"
-            value={tagInput}
-            onChange={(event) => setTagInput(event.target.value)}
-          />
+          <span className="field-icon-head"><TagIcon />Tags</span>
+          <input placeholder="design, university" value={tagInput} onChange={(event) => setTagInput(event.target.value)} />
         </label>
+        <TagList tags={tags} />
 
-        <TagList tags={draftTags} />
-
-        <div
-          id="task-entry-details"
-          className={detailsOpen ? 'task-entry-details open' : 'task-entry-details'}
-          inert={detailsOpen ? undefined : true}
-          aria-hidden={!detailsOpen}
-        >
+        <div id="task-entry-details" className={detailsOpen ? 'task-entry-details open' : 'task-entry-details'} inert={detailsOpen ? undefined : true} aria-hidden={!detailsOpen}>
           <div className="task-entry-details-inner">
-            <TaskDraftDetails draft={details} deadline={deadline} onChange={setDetails} />
-            {validateStartDate(details.startDate, deadline) && (
-              <p className="field-error" role="alert">
-                {validateStartDate(details.startDate, deadline)}
-              </p>
-            )}
-            {details.status === 'waiting' && (!details.waitingFor.trim() || !details.followUpDate) && (
-              <p className="field-error" role="alert">
-                Add who or what you are waiting for and a follow-up date.
-              </p>
-            )}
+            <TaskDraftDetails draft={details} onChange={setDetails} />
           </div>
         </div>
 
         <div className="form-footer">
-          <button type="submit" value="archive" className="task-archive-action">
-            <ArchiveIcon />
-            Add to archive
-          </button>
-          <button
-            type="submit"
-            value="active"
-            className="task-save-action"
-            aria-label="Save task"
-            title="Save task"
-          >
+          <button type="submit" className="task-save-action" aria-label="Save task" title="Save task">
             <SaveIcon />
           </button>
         </div>
