@@ -1,6 +1,6 @@
 # TidyLine design and behavior contract
 
-Updated for Phase 4 of the ADHD-first time-awareness refactor.
+Updated for Phase 5 of the ADHD-first time-awareness refactor.
 
 ## Product principle
 
@@ -27,7 +27,9 @@ Settings is a utility destination, not a fourth work view.
 
 ### Now
 
-Now currently chooses the open, unarchived task with the earliest derived attention date. It displays start timing, fit, estimate, and tags, with Start/Pause, Done, and Open details actions. This remains transitional; Phase 5 adds low-friction continuation and rotation actions.
+Now presents one open, unarchived task at a time. Its internal deterministic order favors active work, missed and current start attention, deadline proximity, calibrated fit, and reasonable remaining size; no rank or score is shown. The primary choices are `5 more minutes`, `Done`, and `Not this`, with details and the complete Board kept visually quiet. Rotation exclusions live only for the current page session.
+
+`5 more minutes` starts or continues ordinary task timing and gives calm status feedback without creating a countdown dashboard, notification promise, or new persisted timer field. `Not this` pauses active work before rotating. Focus follows the selected task, actions remain at least 48px high, and the action group stacks on narrow screens.
 
 ### Board
 
@@ -50,7 +52,7 @@ Calendar renders tasks that have deadlines and are not archived. A continuous 21
 
 ## Task model
 
-The normalized Phase 3 record contains only:
+The normalized task record contains only:
 
 `id`, `title`, `deadline`, `resurfaceDate`, `reminders`, `tags`, `done`, `completedAt`, `pinned`, `archived`, `recurrence`, `notes`, `location`, `duration`, `startedAt`, `actualMinutes`, `checklist`, `links`, and `createdAt`.
 

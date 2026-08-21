@@ -10,7 +10,7 @@ A local-first task manager that makes deadlines easier to see and act on.
 
 TidyLine has three primary views:
 
-- **Now** shows the open task with the earliest start/resurface attention date. Final low-decision task rotation arrives in the next refactor phase.
+- **Now** chooses one open task internally from start urgency, deadline proximity, calibrated fit, and reasonable size. It offers only `5 more minutes`, `Done`, and `Not this` as primary choices.
 - **Board** automatically groups tasks into Today, This Week, This Month, and Later based on when work needs to begin—not only when it is due.
 - **Calendar** combines a month view with a continuous three-week workload ribbon and supports drag-to-reschedule.
 
@@ -55,7 +55,7 @@ npm run check
 
 ## Refactor status
 
-Phase 4 of the ADHD-first time-awareness refactor is complete. Surface reduction, actual-time calibration, derived start timing, fit language, and resurfacing are in place; the final Now interaction remains Phase 5. See `docs/refactor/PLAN.md` for the sequence.
+Phase 5 of the ADHD-first time-awareness refactor is complete. Surface reduction, actual-time calibration, derived start timing, fit language, resurfacing, and the low-decision Now flow are in place. See `docs/refactor/PLAN.md` for the remaining sequence.
 
 ## Contributors
 

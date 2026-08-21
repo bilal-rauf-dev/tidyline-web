@@ -7,7 +7,7 @@ Baseline commit: `0407ea0`
 
 ## Current objective
 
-Refactor TidyLine into a small, local-first tool for ADHD-oriented time awareness. The north star is: what needs doing, when must it start, and what should happen now. Work one phase at a time; do not commit or open a PR. Phase 4 is complete pending user review. Phase 5 must not begin without approval.
+Refactor TidyLine into a small, local-first tool for ADHD-oriented time awareness. The north star is: what needs doing, when must it start, and what should happen now. Work one phase at a time; do not commit or open a PR. Phase 5 is complete pending user review. Phase 6 must not begin without approval.
 
 ## Current architecture
 
@@ -15,7 +15,7 @@ Refactor TidyLine into a small, local-first tool for ADHD-oriented time awarenes
 - Entry: `src/main.jsx`; shell/routes: `src/App.jsx`.
 - Primary routes: `/` (Now), `/board`, `/calendar`. Utility route: `/settings`. Unknown routes redirect to Now.
 - Central state: `src/hooks/useTasks.js`; normalization/migration: `src/utils/taskMigration.js`; storage envelope/import/export: `src/utils/tasksIO.js`.
-- Primary work views are Now, Board, and Calendar. Now is intentionally provisional until Phases 3–5 establish calibrated timing.
+- Primary work views are Now, Board, and Calendar. Now is the final low-decision one-task entry surface built on calibrated timing.
 
 ## Persisted state
 
@@ -80,6 +80,15 @@ The pre-existing untracked `.logic-tests/` directory is user-owned and ignored b
 - Calendar has a continuous 21-day calibrated-work ribbon plus start markers in the month grid. The manual Planner remains removed.
 - Fit outcomes use six hours of deterministic daily capacity and earlier committed calibrated work; no score or setting exists.
 
+## Phase 5 changes
+
+- Now presents one internally selected open task rather than a ranked list. Active work leads, followed by missed/current attention, deadline proximity, calibrated fit, and reasonable remaining size.
+- The ranking is deterministic and private: no score, priority field, preference, or schema change was added.
+- `5 more minutes` starts or continues the existing reload-safe task timing and shows temporary encouragement without a countdown dashboard or notification. `Done` uses normal completion behavior.
+- `Not this` pauses an active task and rotates through session-only exclusions; it wraps safely and does not persist a negative task state.
+- New-task focus, grouped native actions, explicit link/button focus styles, 48px hit areas, narrow-screen stacking, and the existing global reduced-motion rule cover the Phase 5 interaction contract.
+- `phase5-smoke` verifies urgency/size ordering, exclusions, wraparound, and empty selection as part of `npm run check`.
+
 ## Next phase boundary
 
-Phase 5 turns Now into the final low-decision surface: one selected task with Done, 5 more minutes, and Not this, using an internal deterministic selection order. Do not add timer dashboards, expose scores, or begin routines/PWA/ICS.
+Phase 6 covers truthful reminders, PWA installation, and valid ICS export. Do not start it without user approval, and do not imply background reminder guarantees before service-worker behavior is verified.
