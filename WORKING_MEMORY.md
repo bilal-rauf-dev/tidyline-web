@@ -2,7 +2,7 @@
 
 Updated: 2026-08-21
 Repository: `C:\Users\Bilal\Desktop\Developer Files\tidyline-web`
-Branch: `main`
+Branch: `refactor/adhd-first-time-awareness`
 Audited commit: `0407ea0` (`Merge pull request #10 from bilal-rauf-dev/feat/editorial-dashboard-redesign`)
 
 ## Product purpose
@@ -10,6 +10,10 @@ Audited commit: `0407ea0` (`Merge pull request #10 from bilal-rauf-dev/feat/edit
 TidyLine is a local-first, deadline-driven task manager. A task is organized by how soon its deadline is, with Today through Later buckets, plus separate Upcoming, Overdue, Someday / Maybe, Calendar, Day Planner, Analytics, Settings, reminders, recurrence, templates, saved filters, workload awareness, and an end-of-day review.
 
 There is no backend or account system. Task and preference data live in browser `localStorage`; attachments are URL references rather than uploaded files.
+
+## Active refactor direction
+
+The current work is a staged product and architecture refactor, not a visual-only redesign. The target is a smaller local-first tool for time blindness: TidyLine should learn how long tasks actually take, derive when they need to start, and present one useful next action with minimal decision-making. The requested sequence is Phase 1 audit, Phase 2 surface reduction, Phase 3 calibration foundation, Phase 4 time-blindness model, Phase 5 Now view, Phase 6 reminders/PWA/ICS, Phase 7 routines, and Phase 8 polish. Phase 1 is complete; Phase 2 awaits user approval. Only one phase should be active at a time; no commits or PRs are made by the agent.
 
 ## Runtime and structure
 
