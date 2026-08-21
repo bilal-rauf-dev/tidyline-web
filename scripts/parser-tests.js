@@ -51,7 +51,6 @@ test('Gym every weekday at 7am — title clean, no deadline', () => {
   const r = parseNaturalTask('Gym every weekday at 7am', REF)
   assert(typeof r.title === 'string' && r.title.length > 0, 'title non-empty')
   assert(r.priority === null, 'no priority')
-  assert(r.energy === null, 'no energy')
 })
 
 test('Call Talha Friday remind 2h before', () => {
@@ -63,12 +62,11 @@ test('Call Talha Friday remind 2h before', () => {
   assert(r.reminderMinutes === 120, `reminderMinutes: ${r.reminderMinutes}`)
 })
 
-test('Study OS for 90m #university @deep', () => {
-  const r = parseNaturalTask('Study OS for 90m #university @deep', REF)
+test('Study OS for 90m #university', () => {
+  const r = parseNaturalTask('Study OS for 90m #university', REF)
   assert(r.title.includes('Study OS'), `title: ${JSON.stringify(r.title)}`)
   assert(r.durationMinutes === 90, `durationMinutes: ${r.durationMinutes}`)
   assert(r.tags.includes('university'), `tags: ${JSON.stringify(r.tags)}`)
-  assert(r.energy === 'deep-focus', `energy: ${r.energy}`)
 })
 
 test('Pay bill every month on the 5th — recurrence parsed monthly', () => {
@@ -109,15 +107,6 @@ test('Priority !medium and !low', () => {
   assert(parseNaturalTask('Task p3', REF).priority === 'low', 'p3')
 })
 
-// ─── Energy parsing ───────────────────────────────────────────────────────────
-
-test('Energy @deep maps to deep-focus', () => {
-  assert(parseNaturalTask('Task @deep', REF).energy === 'deep-focus', '@deep → deep-focus')
-  assert(parseNaturalTask('Task @deep-focus', REF).energy === 'deep-focus', '@deep-focus')
-  assert(parseNaturalTask('Task @normal', REF).energy === 'normal', '@normal')
-  assert(parseNaturalTask('Task @low', REF).energy === 'low', '@low')
-})
-
 // ─── No cross-contamination between adjacent tokens ───────────────────────────
 
 test('tomorrow !high — deadline boundary not confused by priority', () => {
@@ -136,9 +125,9 @@ test('for 2h remind 30m before — no cross-match', () => {
   assert(r.reminderMinutes !== 120, 'reminder should be 30 not 120')
 })
 
-test('Full complex: Finish DB assignment tomorrow 8pm for 2h remind 30m before !high @deep #university', () => {
+test('Full complex: Finish DB assignment tomorrow 8pm for 2h remind 30m before !high #university', () => {
   const r = parseNaturalTask(
-    'Finish DB assignment tomorrow 8pm for 2h remind 30m before !high @deep #university',
+    'Finish DB assignment tomorrow 8pm for 2h remind 30m before !high #university',
     REF,
   )
   assert(r.title === 'Finish DB assignment', `title: ${JSON.stringify(r.title)}`)
@@ -146,7 +135,6 @@ test('Full complex: Finish DB assignment tomorrow 8pm for 2h remind 30m before !
   assert(r.durationMinutes === 120, `duration: ${r.durationMinutes}`)
   assert(r.reminderMinutes === 30, `reminder: ${r.reminderMinutes}`)
   assert(r.priority === 'high', `priority: ${r.priority}`)
-  assert(r.energy === 'deep-focus', `energy: ${r.energy}`)
   assert(r.tags.includes('university'), `tags: ${JSON.stringify(r.tags)}`)
 })
 
@@ -175,7 +163,6 @@ test('Empty input — no crash, empty title, all fields null/empty', () => {
   assert(r.deadline === null, 'no deadline')
   assert(r.tags.length === 0, 'no tags')
   assert(r.priority === null, 'no priority')
-  assert(r.energy === null, 'no energy')
   assert(r.durationMinutes === null, 'no duration')
   assert(r.reminderMinutes === null, 'no reminder')
 })

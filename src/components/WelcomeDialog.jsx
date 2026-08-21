@@ -3,7 +3,7 @@ import { parseImportedTasks } from '../utils/tasksIO'
 import { ACCENT_OPTIONS } from '../hooks/useTheme'
 import { BrandMonogram } from './BrandMonogram'
 
-export function WelcomeDialog({ accent, onAccentChange, onImportTasks, onComplete }) {
+export function WelcomeDialog({ accent, onAccentChange, onImportTasks, onComplete, dataError = '' }) {
   const nameInputRef = useRef(null)
   const fileInputRef = useRef(null)
   const [name, setName] = useState('')
@@ -30,11 +30,11 @@ export function WelcomeDialog({ accent, onAccentChange, onImportTasks, onComplet
     const reader = new FileReader()
     reader.onload = () => {
       try {
-        const tasks = parseImportedTasks(String(reader.result))
-        onImportTasks(tasks)
-        setImportMessage(`${tasks.length} ${tasks.length === 1 ? 'task' : 'tasks'} imported.`)
-      } catch {
-        setImportMessage('That file is not a valid TidyLine export.')
+        const result = parseImportedTasks(String(reader.result))
+        onImportTasks(result)
+        setImportMessage(`${result.tasks.length} imported, ${result.repaired} repaired, ${result.skipped} skipped.`)
+      } catch (error) {
+        setImportMessage(error.message)
       }
     }
     reader.readAsText(file)
@@ -56,6 +56,7 @@ export function WelcomeDialog({ accent, onAccentChange, onImportTasks, onComplet
             online signup is needed.
           </p>
         </div>
+        {dataError && <p className="data-version-banner" role="alert">{dataError}</p>}
 
         <form className="welcome-form" onSubmit={handleSubmit}>
           <label className="welcome-name-field">

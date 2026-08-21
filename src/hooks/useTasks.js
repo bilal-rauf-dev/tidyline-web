@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { deadlineForBucket } from '../utils/buckets'
 import { toDateStr } from '../utils/calendar'
 import { nextOccurrence } from '../utils/recurrence'
@@ -6,12 +6,14 @@ import { reminderKey } from '../utils/reminders'
 import {
   applyTaskUpdates,
   isTaskUpcoming,
-  normalizeEnergyLevel,
+  normalizePriority,
   normalizePlannedDate,
   normalizePostponeHistory,
   normalizeStartDate,
   shiftStartDateForDeadline,
+  TASK_FIELDS,
 } from '../utils/taskFields'
+import { cleanupLegacyPreferences, migrateTaskData, taskEnvelope } from '../utils/migrations'
 
 const STORAGE_KEY = 'tidyline:tasks'
 const UNDO_MS = 6000
@@ -40,15 +42,13 @@ export function normalizeTask(task) {
   const postponeHistory = normalizePostponeHistory(task.postponeHistory)
   const originalDeadline =
     normalizePlannedDate(task.originalDeadline) ?? postponeHistory[0]?.from ?? deadline
-  const followUpDate = normalizePlannedDate(task.followUpDate)
-  const waitingExpired = followUpDate && followUpDate <= toDateStr(new Date())
-
-  return {
+  const normalized = {
     id: task.id,
     title: task.title,
     deadline,
     reminders: normalizeList(task.reminders).map(normalizeReminder),
     tags: normalizeList(task.tags),
+    priority: normalizePriority(task.priority),
     done: Boolean(task.done),
     completedAt: typeof task.completedAt === 'string' ? task.completedAt : null,
     pinned: Boolean(task.pinned),
@@ -61,29 +61,47 @@ export function normalizeTask(task) {
     links: normalizeList(task.links),
     attachments: normalizeList(task.attachments),
     startDate: normalizeStartDate(task.startDate, deadline),
-    energyLevel: normalizeEnergyLevel(task.energyLevel),
-    plannedDate:
-      deadline && plannedDate && plannedDate >= toDateStr(new Date()) ? plannedDate : null,
+    plannedDate: deadline ? plannedDate : null,
     originalDeadline,
     postponeHistory,
     scheduledStart: typeof task.scheduledStart === 'string' ? task.scheduledStart : null,
-    status: task.status === 'waiting' && !waitingExpired ? 'waiting' : 'active',
-    waitingFor:
-      task.status === 'waiting' && !waitingExpired && typeof task.waitingFor === 'string'
-        ? task.waitingFor
-        : '',
-    followUpDate: task.status === 'waiting' && !waitingExpired ? followUpDate : null,
+    status: task.status === 'waiting' ? 'waiting' : 'active',
+    waitingFor: task.status === 'waiting' && typeof task.waitingFor === 'string' ? task.waitingFor : '',
+    followUpDate: task.status === 'waiting' ? normalizePlannedDate(task.followUpDate) : null,
     createdAt: typeof task.createdAt === 'string' ? task.createdAt : BOOT_TIME,
   }
+  return Object.fromEntries(TASK_FIELDS.map((field) => [field, normalized[field]]))
 }
 
-function loadTasks() {
+export function applyDailyMaintenance(tasks, todayStr) {
+  let changed = false
+  const next = tasks.map((task) => {
+    const clearPlanned = Boolean(task.plannedDate && task.plannedDate < todayStr)
+    const releaseWaiting = Boolean(task.status === 'waiting' && task.followUpDate && task.followUpDate <= todayStr)
+    if (!clearPlanned && !releaseWaiting) return task
+    changed = true
+    return {
+      ...task,
+      plannedDate: clearPlanned ? null : task.plannedDate,
+      status: releaseWaiting ? 'active' : task.status,
+      waitingFor: releaseWaiting ? '' : task.waitingFor,
+      followUpDate: releaseWaiting ? null : task.followUpDate,
+    }
+  })
+  return changed ? next : tasks
+}
+
+function loadTaskState() {
   try {
+    cleanupLegacyPreferences(localStorage)
     const raw = localStorage.getItem(STORAGE_KEY)
-    const parsed = raw ? JSON.parse(raw) : []
-    return Array.isArray(parsed) ? parsed.map(normalizeTask) : []
+    const migrated = migrateTaskData(raw ? JSON.parse(raw) : [])
+    if (migrated.status === 'future') {
+      return { tasks: [], dataError: `Your task data was written by schema version ${migrated.schemaVersion}. Update TidyLine to open it safely.` }
+    }
+    return { tasks: migrated.status === 'ok' ? migrated.tasks.map(normalizeTask) : [], dataError: '' }
   } catch {
-    return []
+    return { tasks: [], dataError: '' }
   }
 }
 
@@ -113,40 +131,42 @@ function nextInstance(task, deadline) {
 }
 
 export function useTasks() {
-  const [tasks, setTasks] = useState(loadTasks)
+  const [{ tasks: initialTasks, dataError }] = useState(loadTaskState)
+  const [tasks, setTasks] = useState(initialTasks)
   const [undoState, setUndoState] = useState(null)
+  const tasksRef = useRef(tasks)
+  const writeTimerRef = useRef(null)
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks))
-  }, [tasks])
+    tasksRef.current = tasks
+    if (dataError) return undefined
+    window.clearTimeout(writeTimerRef.current)
+    writeTimerRef.current = window.setTimeout(() => {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(taskEnvelope(tasksRef.current)))
+    }, 250)
+    return () => window.clearTimeout(writeTimerRef.current)
+  }, [tasks, dataError])
 
   useEffect(() => {
-    const interval = window.setInterval(() => {
-      const today = toDateStr(new Date())
-      setTasks((current) => {
-        const needsMaintenance = current.some(
-          (task) =>
-            (task.plannedDate && task.plannedDate < today) ||
-            (task.status === 'waiting' && task.followUpDate && task.followUpDate <= today),
-        )
+    if (dataError) return undefined
+    const flush = () => {
+      window.clearTimeout(writeTimerRef.current)
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(taskEnvelope(tasksRef.current)))
+    }
+    const onVisibility = () => { if (document.visibilityState === 'hidden') flush() }
+    document.addEventListener('visibilitychange', onVisibility)
+    window.addEventListener('pagehide', flush)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility)
+      window.removeEventListener('pagehide', flush)
+      flush()
+    }
+  }, [dataError])
 
-        return needsMaintenance
-          ? current.map((task) => {
-              const releaseWaiting =
-                task.status === 'waiting' && task.followUpDate && task.followUpDate <= today
-
-              return {
-                ...task,
-                plannedDate:
-                  task.plannedDate && task.plannedDate < today ? null : task.plannedDate,
-                status: releaseWaiting ? 'active' : task.status,
-                waitingFor: releaseWaiting ? '' : task.waitingFor,
-                followUpDate: releaseWaiting ? null : task.followUpDate,
-              }
-            })
-          : current
-      })
-    }, 60_000)
+  useEffect(() => {
+    const maintain = () => setTasks((current) => applyDailyMaintenance(current, toDateStr(new Date())))
+    maintain()
+    const interval = window.setInterval(maintain, 60_000)
 
     return () => window.clearInterval(interval)
   }, [])
@@ -188,7 +208,7 @@ export function useTasks() {
     location = '',
     duration = null,
     startDate = null,
-    energyLevel = null,
+    priority = null,
     scheduledStart = null,
     archived = false,
     status = 'active',
@@ -210,7 +230,7 @@ export function useTasks() {
       location,
       duration,
       startDate,
-      energyLevel,
+      priority,
       scheduledStart,
       archived,
       status,
@@ -350,8 +370,8 @@ export function useTasks() {
     )
   }
 
-  function moveTaskToBucket(id, bucketKey, bucketOrder) {
-    setDeadline(id, deadlineForBucket(bucketKey, new Date(), bucketOrder), 'drag', {
+  function moveTaskToBucket(id, bucketKey) {
+    setDeadline(id, deadlineForBucket(bucketKey, new Date()), 'drag', {
       plannedDate: null,
     })
   }
@@ -507,7 +527,8 @@ export function useTasks() {
   }
 
   function importTasks(newTasks) {
-    setTasks(newTasks.map(normalizeTask))
+    const entries = Array.isArray(newTasks) ? newTasks : newTasks.tasks
+    setTasks(entries.map(normalizeTask))
   }
 
   function clearCompleted() {
@@ -525,6 +546,7 @@ export function useTasks() {
 
   return {
     tasks,
+    dataError,
     addTask,
     addSomedayTask,
     updateTask,

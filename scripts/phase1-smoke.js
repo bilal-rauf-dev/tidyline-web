@@ -19,7 +19,7 @@ const base = {
   done: false,
   archived: false,
   pinned: false,
-  energyLevel: null,
+  priority: null,
   postponeHistory: [],
 }
 const tasks = [
@@ -40,7 +40,7 @@ assert(groupedIds.week.includes('available'), 'Task did not activate on its star
 assert(groupedIds.today.includes('planned'), 'Planned task did not enter Today')
 assert(groupedIds.week.includes('stale'), 'Stale plan did not revert to deadline bucketing')
 
-const archivedGrouping = groupTasksByBucket(tasks, now, undefined, undefined, {
+const archivedGrouping = groupTasksByBucket(tasks, now, undefined, {
   includeUpcoming: true,
 })
 assert(
@@ -57,17 +57,17 @@ assert(
   'Start-after-deadline validation did not block the invalid range',
 )
 
-const energyTasks = [
-  { ...tasks[1], id: 'low', energyLevel: 'low', title: 'Low' },
-  { ...tasks[1], id: 'unset', energyLevel: null, title: 'Unset' },
+const priorityTasks = [
+  { ...tasks[1], id: 'high', priority: 'high', title: 'High' },
+  { ...tasks[1], id: 'unset', priority: null, title: 'Unset' },
 ]
 assert(
-  filterTasks(energyTasks, { ...DEFAULT_FILTERS, energyLevel: 'low' })[0]?.id === 'low',
-  'Low-energy filter did not perform an exact match',
+  filterTasks(priorityTasks, { ...DEFAULT_FILTERS, priority: 'high' })[0]?.id === 'high',
+  'Priority filter did not perform an exact match',
 )
 assert(
-  filterTasks(energyTasks, { ...DEFAULT_FILTERS, energyLevel: 'unset' })[0]?.id === 'unset',
-  'Unset-energy filter did not isolate tasks without a value',
+  filterTasks(priorityTasks, { ...DEFAULT_FILTERS, priority: 'unset' })[0]?.id === 'unset',
+  'Unset-priority filter did not isolate tasks without a value',
 )
 
 const historyBase = {
@@ -105,4 +105,4 @@ assert(
   'Recurring instance did not preserve its start-to-deadline lead time',
 )
 
-console.log('ok    Phase 1 task date, energy, planning, and postponement rules')
+console.log('ok    Phase 1 task date, priority, planning, and postponement rules')

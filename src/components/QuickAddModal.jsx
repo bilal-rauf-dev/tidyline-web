@@ -5,12 +5,7 @@ import { formatDate, deadlineMoment } from '../utils/dates'
 import { tagTone, collectTags } from '../utils/tags'
 import { describeRecurrence } from '../utils/recurrence'
 import { PlusIcon } from './icons'
-
-const ENERGY_LABELS = {
-  low: 'Low energy',
-  normal: 'Normal energy',
-  'deep-focus': 'Deep focus',
-}
+import { buildQuickAddTask, toLocalYMD } from '../utils/quickAddTask'
 
 const PRIORITY_LABELS = {
   high: 'High priority',
@@ -24,7 +19,6 @@ const EXAMPLE_HINTS = [
   'for 2h',
   'every weekday',
   '!high',
-  '@deep',
   '#tag',
   'plan today',
   'start Monday',
@@ -34,14 +28,6 @@ function formatMinutes(mins) {
   if (mins >= 60 && mins % 60 === 0) return `${mins / 60}h`
   if (mins >= 60) return `${Math.floor(mins / 60)}h ${mins % 60}m`
   return `${mins}m`
-}
-
-function toLocalYMD(date) {
-  if (!date) return null
-  const y = date.getFullYear()
-  const m = String(date.getMonth() + 1).padStart(2, '0')
-  const d = String(date.getDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
 }
 
 function getValidationWarnings(parsed) {
@@ -166,14 +152,9 @@ export function QuickAddModal({ isOpen, onClose, onAddTask, onOpenFullForm, task
         return
       }
 
-      if (!parsed.deadline) {
-        setSubmitError('Please specify a valid deadline (e.g. "tomorrow", "next Friday").')
-        return
-      }
-
       const todayStr = toDateStr(new Date())
-      const deadlineStr = toLocalYMD(parsed.deadline)
-      if (deadlineStr < todayStr) {
+      const deadlineStr = parsed.deadline ? toLocalYMD(parsed.deadline) : null
+      if (deadlineStr && deadlineStr < todayStr) {
         setSubmitError('Deadline cannot be in the past.')
         return
       }
@@ -183,35 +164,7 @@ export function QuickAddModal({ isOpen, onClose, onAddTask, onOpenFullForm, task
         return
       }
 
-      const reminderRecord =
-        parsed.reminderMinutes !== null
-          ? [{ id: `rel:${parsed.reminderMinutes}`, kind: 'relative', minutesBefore: parsed.reminderMinutes }]
-          : []
-
-      const duration =
-        parsed.durationMinutes !== null
-          ? { value: parsed.durationMinutes, unit: 'min' }
-          : null
-
-      onAddTask({
-        title: parsed.title,
-        deadline: deadlineStr,
-        tags: parsed.tags,
-        reminders: reminderRecord,
-        recurrence: parsed.recurrence,
-        notes: '',
-        checklist: [],
-        links: [],
-        attachments: [],
-        location: '',
-        duration,
-        startDate: parsed.startDate ? toLocalYMD(parsed.startDate) : null,
-        energyLevel: parsed.energy ?? null,
-        status: 'active',
-        waitingFor: '',
-        followUpDate: null,
-        plannedDate: parsed.planForToday ? todayStr : null,
-      })
+      onAddTask(buildQuickAddTask(parsed, new Date()))
 
       onClose()
     }
@@ -222,7 +175,6 @@ export function QuickAddModal({ isOpen, onClose, onAddTask, onOpenFullForm, task
   const recurrenceToken = parsed.matchedTokens.find((t) => t.type === 'recurrence')
   const tagTokens = parsed.matchedTokens.filter((t) => t.type === 'tag')
   const priorityToken = parsed.matchedTokens.find((t) => t.type === 'priority')
-  const energyToken = parsed.matchedTokens.find((t) => t.type === 'energy')
   const durationToken = parsed.matchedTokens.find((t) => t.type === 'duration')
   const reminderToken = parsed.matchedTokens.find((t) => t.type === 'reminder')
   const planTodayToken = parsed.matchedTokens.find((t) => t.type === 'planForToday')
@@ -233,7 +185,6 @@ export function QuickAddModal({ isOpen, onClose, onAddTask, onOpenFullForm, task
     recurrenceToken ||
     tagTokens.length > 0 ||
     priorityToken ||
-    energyToken ||
     durationToken ||
     reminderToken ||
     planTodayToken
@@ -251,7 +202,7 @@ export function QuickAddModal({ isOpen, onClose, onAddTask, onOpenFullForm, task
             id="quick-add-input"
             type="text"
             value={rawInput}
-            placeholder="Finish DB assignment tomorrow 8pm for 2h !high @deep #university"
+            placeholder="Finish DB assignment tomorrow 8pm for 2h !high #university"
             aria-label="Quick add task"
             aria-autocomplete="list"
             aria-controls={suggestions.length > 0 ? 'quick-add-suggestions' : undefined}
@@ -358,17 +309,6 @@ export function QuickAddModal({ isOpen, onClose, onAddTask, onOpenFullForm, task
                   >
                     <span>{PRIORITY_LABELS[parsed.priority] ?? parsed.priority}</span>
                     <button type="button" onClick={(e) => handleRemoveToken(priorityToken, e)} aria-label="Remove priority">&times;</button>
-                  </li>
-                )}
-
-                {energyToken && (
-                  <li
-                    className="tag tag-lavender quick-add-chip"
-                    onClick={() => handleEditToken(energyToken)}
-                    title="Click to edit energy level"
-                  >
-                    <span>{ENERGY_LABELS[parsed.energy] ?? parsed.energy}</span>
-                    <button type="button" onClick={(e) => handleRemoveToken(energyToken, e)} aria-label="Remove energy level">&times;</button>
                   </li>
                 )}
 

@@ -16,7 +16,7 @@ import { RecurrencePicker } from './RecurrencePicker'
 import { mapsSearchUrl } from '../utils/maps'
 import { Checkbox } from './Checkbox'
 import { SelectMenu } from './SelectMenu'
-import { EnergyLevelControl } from './EnergyLevelControl'
+import { PriorityControl } from './PriorityControl'
 import { formatDate } from '../utils/dates'
 import { getPostponeSummary, validateStartDate } from '../utils/taskFields'
 import { toDateStr } from '../utils/calendar'
@@ -90,10 +90,10 @@ export function TaskDetails({ task, handlers }) {
           {startDateError && <span className="field-error">{startDateError}</span>}
         </label>
 
-        <EnergyLevelControl
-          value={task.energyLevel ?? ''}
-          onChange={(energyLevel) =>
-            handlers.onUpdate(task.id, { energyLevel: energyLevel || null })
+        <PriorityControl
+          value={task.priority ?? ''}
+          onChange={(priority) =>
+            handlers.onUpdate(task.id, { priority: priority || null })
           }
         />
       </div>

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useSearch } from 'wouter'
-import { BUCKET_LABELS, BUCKET_ORDER, groupTasksByBucket } from '../utils/buckets'
+import { useSearch } from 'wouter'
+import { BUCKET_LABELS, BUCKET_ORDER, deadlineForBucket, groupTasksByBucket } from '../utils/buckets'
 import { toDateStr } from '../utils/calendar'
 import { DEFAULT_FILTERS, buildComparator, filterTasks } from '../utils/filters'
 import { collectTags } from '../utils/tags'
@@ -15,6 +15,9 @@ import { UpcomingSection } from '../components/UpcomingSection'
 import { isTaskUpcoming } from '../utils/taskFields'
 import { SavedFilterBar } from '../components/SavedFilterBar'
 import { ArchiveIcon } from '../components/icons'
+import { TaskCard } from '../components/TaskCard'
+import { shiftDateStr } from '../utils/dates'
+import { SelectMenu } from '../components/SelectMenu'
 
 export function BoardPage({
   tasks,
@@ -23,15 +26,19 @@ export function BoardPage({
   bulkComplete,
   bulkArchive,
   bulkDelete,
+  rescheduleTasks,
   undoState,
   undo,
   dismissUndo,
-  bucketOrder = BUCKET_ORDER,
   templates = [],
   onSaveTemplate = () => null,
   savedFilters = [],
   onSaveFilter = () => null,
   onDeleteFilter = () => {},
+  selectedIds = [],
+  onSelectedIdsChange = () => {},
+  focusedTaskId = null,
+  onFocusedTaskChange = () => {},
   ...taskActions
 }) {
   const search = useSearch()
@@ -64,10 +71,8 @@ export function BoardPage({
       }
     }
 
-    const energy = localParams.get('energy')
-    if (energy) {
-      details.energyLevel = energy === 'deep' ? 'deep-focus' : energy
-    }
+    const priority = localParams.get('priority')
+    if (priority) details.priority = priority
 
     const planForToday = localParams.get('planForToday')
     if (planForToday === 'true') {
@@ -98,9 +103,11 @@ export function BoardPage({
   const [view, setView] = useState(params.get('view') === 'archived' ? 'archived' : 'active')
   const [filters, setFilters] = useState(DEFAULT_FILTERS)
   const [selectionMode, setSelectionMode] = useState(false)
-  const [selectedIds, setSelectedIds] = useState([])
   const [collapsedBuckets, setCollapsedBuckets] = useState([])
   const [isTodayCompact, setIsTodayCompact] = useState(false)
+  const [isNoDateOpen, setIsNoDateOpen] = useState(false)
+  const [noDateTitle, setNoDateTitle] = useState('')
+  const [bulkDate, setBulkDate] = useState('')
 
   useEffect(() => {
     function updateCompact(nextCompact) {
@@ -171,6 +178,10 @@ export function BoardPage({
     return filterTasks(inView, filters)
   }, [tasks, view, filters])
 
+  useEffect(() => {
+    if (visible[0] && !visible.some((task) => task.id === focusedTaskId)) onFocusedTaskChange(visible[0].id)
+  }, [focusedTaskId, onFocusedTaskChange, visible])
+
   // Overdue work is lifted out of the buckets entirely (section D).
   const overdueGroups = useMemo(
     () => (view === 'archived' ? [] : groupOverdue(visible, now)),
@@ -200,23 +211,23 @@ export function BoardPage({
 
   const buckets = useMemo(
     () =>
-      groupTasksByBucket(bucketed, now, buildComparator(filters), bucketOrder, {
+      groupTasksByBucket(bucketed, now, buildComparator(filters), {
         includeUpcoming: view === 'archived',
       }),
-    [bucketed, filters, now, bucketOrder, view],
+    [bucketed, filters, now, view],
   )
 
   useFlipReparent(boardRef, tick)
 
   function toggleSelected(id) {
-    setSelectedIds((current) =>
-      current.includes(id) ? current.filter((entry) => entry !== id) : [...current, id],
+    onSelectedIdsChange(
+      selectedIds.includes(id) ? selectedIds.filter((entry) => entry !== id) : [...selectedIds, id],
     )
   }
 
   function exitSelection() {
     setSelectionMode(false)
-    setSelectedIds([])
+    onSelectedIdsChange([])
   }
 
   function runBulk(action) {
@@ -263,10 +274,25 @@ export function BoardPage({
     onRemoveAttachment: taskActions.removeAttachment,
     onSaveTemplate,
     expandTaskId,
+    focusedTaskId,
+    onTaskFocus: onFocusedTaskChange,
+  }
+
+  function bulkShift(days) {
+    const selected = tasks.filter((task) => selectedIds.includes(task.id) && task.deadline)
+    if (!selected.length) return
+    rescheduleTasks(selected.map((task) => ({ id: task.id, deadline: shiftDateStr(task.deadline, days) })), 'board-bulk')
+    exitSelection()
+  }
+
+  function bulkMoveTo(value) {
+    if (!value) return
+    rescheduleTasks(selectedIds.map((id) => ({ id, deadline: deadlineForBucket(value) })), 'board-bulk')
+    exitSelection()
   }
 
   function moveToVisibleBucket(taskId, bucketKey) {
-    moveTaskToBucket(taskId, bucketKey, bucketOrder)
+    moveTaskToBucket(taskId, bucketKey)
   }
 
   return (
@@ -293,7 +319,7 @@ export function BoardPage({
           initialReminders={prefilledReminders}
         />
 
-        <Link href="/someday" className="board-someday-prompt" aria-labelledby="board-someday-prompt-title">
+        <button type="button" className="board-someday-prompt" aria-labelledby="board-someday-prompt-title" onClick={() => document.querySelector('.board-nodate-add input')?.focus()}>
           <span className="board-someday-prompt-kicker">No deadline yet?</span>
           <h2 id="board-someday-prompt-title">Give the idea some room.</h2>
           <p>
@@ -301,7 +327,7 @@ export function BoardPage({
             date becomes clear.
           </p>
           <span className="board-someday-arrow" aria-hidden="true">→</span>
-        </Link>
+        </button>
       </div>
 
       <div className="board-utility-row">
@@ -350,6 +376,13 @@ export function BoardPage({
           <button type="button" className="secondary danger" onClick={() => runBulk(bulkDelete)}>
             Delete
           </button>
+          <button type="button" className="secondary" onClick={() => bulkShift(-1)}>−1 day</button>
+          <button type="button" className="secondary" onClick={() => bulkShift(1)}>+1 day</button>
+          <button type="button" className="secondary" onClick={() => bulkShift(-7)}>−1 week</button>
+          <button type="button" className="secondary" onClick={() => bulkShift(7)}>+1 week</button>
+          <label className="bulk-date"><span>Set date</span><input type="date" value={bulkDate} onChange={(event) => setBulkDate(event.target.value)} /></label>
+          <button type="button" className="secondary" disabled={!bulkDate} onClick={() => { rescheduleTasks(selectedIds.map((id) => ({ id, deadline: bulkDate })), 'board-bulk'); exitSelection() }}>Apply date</button>
+          <SelectMenu value="" ariaLabel="Move selected tasks to bucket" options={[{ value: '', label: 'Move to bucket' }, ...BUCKET_ORDER.map((key) => ({ value: key, label: BUCKET_LABELS[key] }))]} onChange={bulkMoveTo} />
         </div>
       )}
 
@@ -370,16 +403,15 @@ export function BoardPage({
         <section
           className="buckets"
           aria-label="Task buckets"
-          data-bucket-count={bucketOrder.length}
+          data-bucket-count={BUCKET_ORDER.length}
         >
-          {bucketOrder.map((bucket) => (
+          {BUCKET_ORDER.map((bucket) => (
             <BucketColumn
               key={bucket}
               bucketKey={bucket}
               label={BUCKET_LABELS[bucket]}
               tasks={buckets[bucket]}
               onMoveTask={moveToVisibleBucket}
-              bucketOrder={bucketOrder}
               collapsed={collapsedBuckets.includes(bucket)}
               onToggleCollapse={toggleBucketCollapse}
               compact={bucket === 'today' && isTodayCompact}
@@ -387,6 +419,26 @@ export function BoardPage({
               {...taskHandlers}
             />
           ))}
+        </section>
+
+        <section className="board-nodate" aria-labelledby="board-nodate-title">
+          <button type="button" className="board-nodate-toggle" onClick={() => setIsNoDateOpen((open) => !open)} aria-expanded={isNoDateOpen}>
+            <span><strong id="board-nodate-title">No date</strong><small>{buckets.nodate.length} undated</small></span>
+            <span aria-hidden="true">{isNoDateOpen ? '−' : '+'}</span>
+          </button>
+          {isNoDateOpen && (
+            <div className="board-nodate-content">
+              <form className="board-nodate-add" onSubmit={(event) => { event.preventDefault(); if (!noDateTitle.trim()) return; taskActions.addSomedayTask({ title: noDateTitle.trim() }); setNoDateTitle('') }}>
+                <input value={noDateTitle} onChange={(event) => setNoDateTitle(event.target.value)} placeholder="Capture an undated task" aria-label="Undated task title" />
+                <button type="submit" className="secondary">Add without date</button>
+              </form>
+              {buckets.nodate.length === 0 ? <p className="empty">No undated tasks.</p> : (
+                <ul className="board-nodate-list">
+                  {buckets.nodate.map((task) => <TaskCard key={task.id} task={task} selected={selectedIds.includes(task.id)} focused={task.id === focusedTaskId} onPromote={taskActions.promoteSomeday} {...taskHandlers} />)}
+                </ul>
+              )}
+            </div>
+          )}
         </section>
       </div>
 

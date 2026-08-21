@@ -35,7 +35,7 @@ function createEmptyDetails() {
     durationUnit: 'min',
     recurrence: null,
     startDate: '',
-    energyLevel: '',
+    priority: '',
     status: 'active',
     waitingFor: '',
     followUpDate: '',
@@ -86,7 +86,6 @@ export function TaskForm({
       'durationMinutes',
       'recurrence',
       'priority',
-      'energy',
       'planForToday',
     ]
     keysToDelete.forEach((key) => {
@@ -189,7 +188,7 @@ export function TaskForm({
           ? null
           : { value: Number(details.durationValue), unit: details.durationUnit },
       startDate: details.startDate || null,
-      energyLevel: details.energyLevel || null,
+      priority: details.priority || null,
       status: details.status,
       archived: destination === 'archive',
       waitingFor: details.status === 'waiting' ? details.waitingFor.trim() : '',

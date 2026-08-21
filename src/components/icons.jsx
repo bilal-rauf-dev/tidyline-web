@@ -273,16 +273,6 @@ export function CalendarIcon() {
   );
 }
 
-export function AnalyticsIcon() {
-  return (
-    <svg {...base} aria-hidden="true">
-      <rect x="3" y="10" width="3.5" height="7" rx="0.8" />
-      <rect x="8.25" y="6" width="3.5" height="11" rx="0.8" />
-      <rect x="13.5" y="2.5" width="3.5" height="14.5" rx="0.8" />
-    </svg>
-  );
-}
-
 export function SettingsIcon() {
   return (
     <svg {...base} aria-hidden="true">

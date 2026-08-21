@@ -7,16 +7,16 @@ import { BUCKET_ORDER } from '../utils/buckets'
  * node is enlarged and accented, and later nodes stay outlined.
  * Reusable primitive — see design.md "Chart primitives".
  */
-export function DistanceRail({ bucketKey, bucketOrder = BUCKET_ORDER }) {
-  const index = bucketOrder.indexOf(bucketKey)
+export function DistanceRail({ bucketKey }) {
+  const index = BUCKET_ORDER.indexOf(bucketKey)
 
   return (
     <div
       className="distance-rail"
-      style={{ '--rail-stages': bucketOrder.length }}
+      style={{ '--rail-stages': BUCKET_ORDER.length }}
       aria-hidden="true"
     >
-      {bucketOrder.map((key, position) => {
+      {BUCKET_ORDER.map((key, position) => {
         let state = 'rail-node'
 
         if (position === index) {

@@ -40,15 +40,10 @@ accent-coloured reads from `--accent`, so nothing needs per-hue special
 casing. `--accent-soft` (lavender) is unchanged by this and remains the
 secondary chart-geometry colour.
 
-**Override (data-dense pages):** Analytics may mix white (`--surface`), dark
-(`--surface-dark`), coral (`--accent`) and lavender chart geometry. Home has a
-broader, intentional editorial palette: white and dark anchors, coral for the
-progress card, lavender as a full activity-card surface, plus muted blue and
-soft pink surfaces. These extra surfaces are Home-only layout tools, not new
-semantic status colors and not available to task badges, forms, or Board cards.
-In dark mode they become opaque deep blue `#24353F` and plum `#382D3D`; they
-never use transparency or glass effects. Task-surface pages (Board, Calendar,
-Settings) keep the original one-dark-card discipline.
+**Override (actionable overview):** Home may use white, one dark anchor, and one
+quiet tinted surface to separate its forward-looking sections. These surfaces
+are layout tools, never semantic status colors. Task-surface pages keep the
+original one-dark-card discipline.
 Lavender remains a light surface in both themes and therefore always uses the
 light-theme dark ink `#14141A` for accessible contrast.
 
@@ -149,7 +144,7 @@ draws attention to itself.
   command and navigation interface.
 - The editorial blue, pink and lavender surfaces are hierarchy tools, not
   categories. A page may use at most two of them alongside white and one dark
-  anchor. They never replace semantic overdue, risk, completion, or waiting
+  anchor. They never replace semantic overdue, capacity, completion, or waiting
   treatments.
 - Board columns may use tinted surfaces to make deadline distance scannable,
   but task data and drag destinations continue to come from the configured
@@ -198,30 +193,8 @@ controls, indicators, charts, or complete visual treatments.
 
 ## Chart primitives
 
-These exist as components in `src/components/`. Reuse them; do not invent a
-new chart type for a new page without adding it here first.
-
-- **Milestone bar** (`MilestoneBar.jsx`) — horizontal completion bar with
-  1px tick marks at 25/50/75 and a 0–100 scale beneath. Flat fill in
-  `--accent-soft` on a `--line` track. Square ends, never a rounded capsule.
-  Use for a single "share of total" metric.
-- **Ring stat** (`RingStat.jsx`) — circular progress tile: ring, plain-text
-  label, and a fraction whose numerator is the bold hero number
-  (`16/30` sets the `16` large). Butt stroke caps, not round, so the ring
-  never reads as a pill. Use for per-segment progress; pairs two-up under a
-  milestone bar.
-- **Trend column** (`TrendBars.jsx`) — one column per series entry: signed
-  delta on top, label, height-by-count flat bar, count beneath. Exactly one
-  column carries `--accent`; the rest are neutral. Bars are square-topped
-  rectangles. Use for comparing counts across a fixed set of categories.
-- **Sparkline** (`Sparkline.jsx`) — 2px flat polyline with a single
-  highlighted peak point. No fill under the curve, no gradient, no axis.
-  Use for a short time series where only the shape and its peak matter.
-- **Activity grid** (`ActivityGrid.jsx`) — day-of-week dot grid, seven rows,
-  one column per week. Three states: **solid** = completed activity,
-  **hatched** = overdue (a deadline that passed while still undone),
-  **outlined** = nothing. Hatching is a 45° repeating hard-stop stripe, not a
-  blended gradient. This is the standard renderer for any date-shaped data.
+The product no longer contains retrospective chart widgets. A new chart type
+must be justified against the forward-planning goal and documented here first.
 
 - **Distance rail** (`DistanceRail.jsx`) — the one intentional pill-shaped
   chart container in the system. A muted rounded track holds one evenly spaced
@@ -274,7 +247,7 @@ coloured pill, and never a green/red semantic pair.
   tokens. Board filters, reminder presets, recurrence and duration all use it.
 - **Creation detail panel** (`TaskDraftDetails.jsx`, `.task-draft-details`) —
   the optional inline extension of Add Task. It reuses the same Notes,
-  Checklist, Links, Attachments, Location, Estimate, Energy, Waiting and Repeat
+  Checklist, Links, Attachments, Location, Estimate, Priority, Waiting and Repeat
   controls as an expanded task, starts collapsed, and stays inside the utility
   form rather than becoming a modal or separate workflow. Its template picker
   prefills reusable details only; title and deadline always stay task-specific.
@@ -282,10 +255,10 @@ coloured pill, and never a green/red semantic pair.
   restrained tinted surface, **never a rounded pill**. Tone is assigned deterministically by
   hashing the tag name across three palette values only (neutral, lavender,
   coral), so a given tag is always the same colour and no new hues enter.
-- **Energy selector/mark** (`EnergyLevelControl.jsx`, `.energy-*`) — a compact
-  segmented control for the optional `low`, `normal`, and `deep-focus` values,
-  including an explicit Unset state. Task cards render the value as a small
-  dot plus plain label, never as a filled pill badge.
+- **Priority selector/mark** (`PriorityControl.jsx`, `.priority-mark`) — the
+  optional High, Medium, or Low value uses the shared select surface. Cards use
+  weight plus a small glyph; High may use the view's single accent. Priority is
+  never a red/amber/green scale because urgency already comes from the deadline.
 - **Day-context panel** (`DayContext.jsx`) — fully bordered lavender panel that
   appears under a date or time field once a value is picked, listing what is
   already scheduled that day (or within 2h, for reminders). Renders nothing
@@ -308,12 +281,10 @@ coloured pill, and never a green/red semantic pair.
 - **Countdown label** (`.countdown`) — plain bold micro-text on the card
   ("3 days left", "today", "2 days overdue"), turning accent-coloured once
   negative. Text only; never a coloured pill.
-- **Deadline risk mark** (`risk.js`, `.risk-mark`) — a derived plain-text mark
-  whose text and nearby dot provide its tone. Neutral = low risk, lavender = getting tight, accent =
-  at risk. It is never stored or backfilled and never becomes a filled badge;
-  the score recomputes from time, estimate, open checklist work, postponements,
-  same-day load and optional energy on each Board time tick. The exact weights
-  and thresholds live beside the heuristic in `risk.js`.
+- **Capacity statement** (`.capacity-statement`) — factual body-sized text names
+  the task count, estimated time, unestimated count, configured capacity, and
+  any arithmetic overage. Only a positive overage receives `--accent` weight;
+  there is no predictive score or traffic-light scale.
 - **Task flag row** (`.task-meta`) — the collapsed card's summary line: the
   countdown plus small glyphs for repeat/notes/links and text counts for
   checklist progress (`1/3`) and duration. Glyphs only appear when the field
@@ -326,30 +297,19 @@ coloured pill, and never a green/red semantic pair.
   token-derived scrim, border, radius and restrained fade/scale/translate
   motion as confirmation dialogs, closes on outside click or Escape, and
   never expands the bucket column inline.
-- **Bucket configuration menu** (`BucketConfigMenu.jsx`, `.bucket-config-*`) —
-  a multi-select Settings dropdown built from the shared custom checkbox and
-  select-surface language. Options retain canonical chronological order;
-  Today and Later are disabled/required anchors. The panel uses the standard
-  short translate/fade transition and no shadow.
 - **Board utility row** (`BoardToolbar.jsx`, `SavedFilterBar.jsx`) — one compact
   row keeps task search persistent while filters sit behind an arrow-triggered
   popup and Saved Views sits behind a small Views trigger. Both panels use the
   standard bordered menu surface and short fade/translate entrance; outside
   press or Escape closes them. The tiny Active/Archived control beside Select
   toggles the existing Board view directly. Saved views still compose existing
-  search, tag, status, energy, duration, pin, date and sort fields and never
+  search, tag, status, priority, duration, pin, date and sort fields and never
   create a second project/category taxonomy.
 - **Planner block** (`PlannerPage.jsx`, `.planner-block`) — a rectangular dark
   time block on an hourly ruled surface. Vertical position encodes
   `scheduledStart`; height encodes the existing duration. The coral resize edge
   is functional chart geometry, not decoration. No shadows, rounded pills or
   calendar-event gradients.
-- **Workload redistribution dialog** (`WorkloadRedistributeDialog.jsx`) — the
-  standard confirmation-dialog surface showing a proposed list of deadline
-  moves before any mutation. Flexible means active, unpinned, non-waiting,
-  non-recurring and not already time-blocked. Candidate dates are the next
-  three days and respect start dates; confirmation uses normal Calendar
-  rescheduling so later moves enter postpone history.
 - **Daily shutdown dialog** (`ShutdownDialog.jsx`) — a manually opened standard
   dialog from Home. It summarizes actionable due/planned work for the local
   day and gives each unfinished task Tomorrow, another date, keep, and archive
@@ -386,8 +346,7 @@ coloured pill, and never a green/red semantic pair.
   | Token | Example | Field |
   |-------|---------|-------|
   | `#tag` | `#university` | `tags[]` |
-  | `!high` / `p1` | `!high`, `p2` | `priority` (preview chip only) |
-  | `@deep` / `@low` | `@deep-focus`, `@normal` | `energyLevel` |
+  | `!high` / `p1` | `!high`, `p2` | `priority` |
   | `for Nh` / `for Nm` | `for 2h`, `for 45m` | `duration` |
   | `remind Nh before` | `remind 30m before` | `reminders[]` relative |
   | `every …` | `every weekday`, `every Monday`, `every 2 weeks` | `recurrence` |
@@ -462,7 +421,7 @@ The following are the default outputs of AI-generated UI and are banned outright
   tooltip both name the shortcut. Trailing controls are hidden on the
   collapsed 76px rail — there is no room beside the monogram — and restored
   in the mobile drawer, which is always full width.
-- Sections: Home, Board, Calendar, Analytics, Settings — all built out now.
+- Sections: Home, Board, All tasks, Calendar, Day planner, and Settings.
   Home is the default route (`/`); Board lives at `/board`. Any future new
   section should default to a plain "coming soon" card treatment until built
   — not a placeholder illustration or empty-state graphic.
@@ -486,7 +445,7 @@ The following are the default outputs of AI-generated UI and are banned outright
 - The desktop collapse preference is explicitly ignored below 720px — the
   drawer always shows full labels regardless of collapse state.
 - Route grids also respond to the **available content width**: at 680px or
-  less beside the sidebar, Board buckets and Home/Analytics cards become one
+  less beside the sidebar, Board buckets and Home sections become one
   full-width column. This covers small tablets where the outer viewport is
   wide but the permanent sidebar leaves phone-sized route space.
 - Backdrop is the dark surface token at 45% alpha (`color-mix`), not a new
@@ -518,7 +477,7 @@ These are behavioural contracts, not styling. Change them deliberately.
   deadline tool that is the correct bias — the board shows what is actually
   owed, not a projection.
   Carried to the next instance: title, tags, notes, links, attachments,
-  location, duration, energy, reminders, recurrence rule, and the number of
+  location, duration, priority, reminders, recurrence rule, and the number of
   lead days between start and deadline (shifted onto the new occurrence, not
   copied as an old absolute date). Reset: `done`, `completedAt`, `pinned`,
   `plannedDate`, `scheduledStart`, waiting state, `postponeHistory`, and every
@@ -550,9 +509,9 @@ These are behavioural contracts, not styling. Change them deliberately.
   deadline buckets and overdue calculations. At or after the start date it
   enters normal bucketing automatically. Creation and editing block
   `startDate > deadline`; imported invalid start dates normalize to null.
-- **Energy is opt-in.** `energyLevel` is nullable and accepts only `low`,
-  `normal`, or `deep-focus`. Existing tasks stay unset; no default is
-  backfilled. Board filtering is exact-match, including an Unset option.
+- **Priority is optional and honest.** `priority` is nullable and accepts only
+  `high`, `medium`, or `low`. It round-trips through Quick Add, forms, storage,
+  sorting, filtering, and display; unset values always sort after set values.
 - **Planning does not rewrite the deadline.** `plannedDate` stores a local
   `YYYY-MM-DD`, not a boolean. A task planned for the current date appears in
   Today while continuing to display its real deadline. Stale dates are ignored
@@ -574,7 +533,7 @@ These are behavioural contracts, not styling. Change them deliberately.
 - **Templates contain reusable configuration only.** Stored separately in
   `localStorage` as `tidyline:task-templates`. A template may contain notes,
   tags, checklist text, duration, reminder settings and recurrence. It never
-  stores title, deadline, start date, energy, planning, waiting, completion or
+  stores title, deadline, start date, priority, planning, waiting, completion or
   scheduling state. Applied checklist items receive fresh IDs.
 - **Saved views are filter snapshots.** Stored in `localStorage` as
   `tidyline:saved-filters`; applying one replaces the complete Board filter and
@@ -587,99 +546,43 @@ These are behavioural contracts, not styling. Change them deliberately.
   restores `status: 'active'` and clears both waiting fields. No implicit
   browser notification is fired: notification permission remains tied to an
   explicit reminder choice, while release back to the Board is automatic.
-- **Someday/Maybe has a genuinely null deadline.** `deadline: null` records live
-  only on the Someday page and are excluded from Board buckets, Calendar, Home
-  and Analytics deadline metrics. Promotion assigns the first real deadline
-  and captures it as `originalDeadline`; it does not recreate or duplicate the
-  task.
+- **No date is part of the Board.** `deadline: null` records live in a collapsed
+  No date section below the four time buckets. They are never implicit drag
+  targets. Promotion assigns the first real deadline and captures it as
+  `originalDeadline`; it does not recreate or duplicate the task.
 - **Calendar overload is estimate-only and user-configurable.** The persisted
   `tidyline:overload-hours` threshold defaults to 6 hours. Calendar cells sum
   real task estimates and separately disclose unestimated tasks; missing
   estimates add zero rather than fabricated time. Overloaded days use a flat
-  accent outline. Redistribution is always previewed and confirmed, never
-  automatic.
-- **Postpone Analytics reads append-only history.** Average postponements uses
-  every deadline-bearing task, including zero-history tasks. The top-task list
-  sorts by history length; tag columns add each task's full postpone count to
-  every existing tag on that task. Untagged tasks affect the average but do not
-  invent an “untagged” category.
-- **Visible bucket configuration is a persisted ordered subset.** Stored in
-  `localStorage` as `tidyline:bucket-order`, normalized against the canonical
-  Today → Later order on every load. Today and Later are always restored if a
-  stored value omits them. When an intermediate bucket is hidden, its deadline
-  range rolls forward into the next visible stage; Analytics and every distance
-  rail use that same active subset rather than the fixed seven-stage list.
+  accent outline. Missing estimates remain explicit and add zero minutes.
+- **Four buckets are a fixed mental model.** Today covers overdue through day
+  zero, Week covers days 1–7, Month covers days 8–30, and Later covers day 31
+  onward. These ranges are disjoint and tile the integer line. No preference
+  changes their meaning or count.
 
 ## Component-specific direction (TidyLine)
 
-- Home page (default route): a landing/summary view, not a data source of its
-  own. It uses a single 12-column **editorial mosaic**, not a hero followed by
-  a separate uniform card grid. Every number and task title is derived from the
-  shared task list and existing utilities.
-  1. The oversized time-aware greeting is an unframed editorial introduction
-     with Add Task and Review the Day actions—no colored card behind it. A
-     bordered white Daily Activity planner canvas sits alongside it. The canvas
-     renders only tasks actually placed in Day Planner (`scheduledStart` plus
-     duration), with compact colored schedule blocks, collision-aware lanes,
-     and a coral current-time marker. Reminder times do not appear there.
-  2. The dark Today card is the visual anchor, but it occupies one content row
-     only—it never spans later dashboard rows and must not inherit their total
-     height. Lavender Activity and dark Weekly Pace are an explicit equal-width
-     pair, coral Overall Progress, muted-blue Completion Rhythm, a wide white
-     Coming Up list, and cards of deliberately different widths/heights build
-     around it.
-     Color blocks create depth; no card uses a shadow or translucent surface.
-  3. **Home feature slideshow** (`HomeDaybreak.jsx`, `.home-daybreak`) is the
-     intentionally non-metric editorial card. It rotates through three original
-     inline SVG illustrations for real TidyLine capabilities—deadline planning,
-     focus planning, and end-of-day review—with text-only feature copy. Slides
-     advance automatically and can be changed with previous/next controls. It
-     must not acquire fabricated metrics, stock imagery, avatars, team members,
-     or mood states.
-  4. The mosaic responds to the content width beside the sidebar. It becomes a
-     deliberate two-column composition at 1120px, gives Today a full row below
-     820px, and becomes one readable column below 680px. Activity and Weekly
-     Pace stay in their 50/50 pair until that one-column threshold. The dark
-     **Weekly Pace** card uses five real weekly `completedAt` totals and compares
-     the current week against their average; it never reconstructs missing
-     completion history. Source order remains greeting, timeline, Today,
-     Activity, Weekly Pace, illustration, progress, upcoming, completion so
-     mobile reading order is useful.
-  - Existing ring, milestone, activity-grid and sparkline primitives remain
-    valid, but Home is not required to force every new visual region into a
-    chart primitive. Its tinted surface cards and illustration are finalized
-    Home-specific primitives.
-- Analytics page: five cards of varied shapes, never a uniform grid.
-  1. **Progress** (white, wide) — milestone bar for overall done/total, with
-     two ring-stat tiles beneath for the two buckets holding the most tasks.
-  2. **Bucket trend** (dark, tall) — one trend column per bucket showing count
-     and week-over-week delta. "Last week" is *reconstructed*, not recorded:
-     tasks that already existed a week ago (by `createdAt`) are re-bucketed
-     against a reference date of today−7d. The tallest column takes the accent.
-  3. **Busiest day** (dark, small) — sparkline of deadline load over the next
-     14 days with the peak marked, and a bold `peak/total` fraction beneath.
-  4. **Activity** (accent surface, small) — big count of days with completed
-     tasks, the shared activity grid including the hatched overdue state, and
-     an overdue-day count as a footnote.
-  5. **Completion rhythm** (white, small) — a 14-day sparkline and total based
-     only on recorded `completedAt` values. Missing historical timestamps are
-     left missing rather than reconstructed or fabricated.
-  - Deliberately *not* built: mood tracking, a projects list, and a team
-    section from the reference. This app has no data for any of them, and
-    inventing placeholder data for a dashboard would make it lie.
-- Bucket columns (Today/Week/2 Weeks/etc.): render the currently enabled subset
+- Home is an actionable overview in three vertical sections: hidden-when-empty
+  Overdue, Today with a factual capacity statement, and the next seven days
+  grouped by date. Every row can be completed, pushed to tomorrow, or opened
+  without leaving Home. It contains no retrospective charts or marketing card.
+- **Dense list view** (`/list`, `.task-table`) places every non-archived task on
+  one surface. Comfortable rows use the normal spacing scale; compact density
+  reduces vertical padding only and never type size. Status and title lead,
+  tags and priority occupy the middle rhythm, and deadline plus duration close
+  the row. Column headers carry sort state; horizontal scrolling is permitted
+  only below the table's useful minimum width.
+- Bucket columns (Today/Week/Month/Later): render the fixed canonical set
   as the bento grid above, not identical white boxes. Give "Today" the dark card
   treatment since it's the highest-priority bucket, and give every visible
   bucket a distance rail so the set reads as an ordered sequence.
 - Dropping a task into another bucket rewrites its **actual deadline** to the
-  earliest date represented by that bucket in the current visible subset. The
-  start is one day after the previous visible bucket's canonical upper bound;
-  for example, if Week is hidden, 2 Weeks begins at day 1 instead of day 8.
+  earliest date represented by that bucket's explicit non-overlapping range.
   Earliest-in-range preserves urgency and remains deterministic/reversible.
   Drag-and-drop is mouse-only; the edit form is the keyboard-accessible
   equivalent.
-- Archiving sets an `archived` flag and hides the task from the board, Home and
-  Analytics; it never deletes. Hard delete stays available as a separate,
+- Archiving sets an `archived` flag and hides the task from Board, List, and
+  Home; it never deletes. Hard delete stays available as a separate,
   clearly destructive action. Both are undoable.
 - Pinning is orthogonal to done/undone: a pinned task sorts to the top of its
   bucket *even when completed*, and is marked with a lavender complete border —

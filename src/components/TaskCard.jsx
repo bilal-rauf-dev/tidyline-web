@@ -27,13 +27,7 @@ import {
   isTaskUpcoming,
   validateStartDate,
 } from '../utils/taskFields'
-import { getDeadlineRisk } from '../utils/risk'
-
-const ENERGY_LABELS = {
-  low: 'Low energy',
-  normal: 'Normal energy',
-  'deep-focus': 'Deep focus',
-}
+import { formatCapacitySummary, getCapacitySummary } from '../utils/workload'
 
 export function TaskCard({
   task,
@@ -49,8 +43,11 @@ export function TaskCard({
   onUnarchive,
   onDuplicate,
   onTogglePlan,
+  onPromote,
   contextLabel,
   expandTaskId,
+  focused = false,
+  onTaskFocus,
   ...detailHandlers
 }) {
   const taskRef = useRef(null)
@@ -84,7 +81,7 @@ export function TaskCard({
   function saveEdit(event) {
     event.preventDefault()
 
-    if (!editTitle.trim() || !editDeadline || validateStartDate(task.startDate, editDeadline)) {
+    if (!editTitle.trim() || validateStartDate(task.startDate, editDeadline)) {
       return
     }
 
@@ -101,13 +98,13 @@ export function TaskCard({
     event.dataTransfer.effectAllowed = 'move'
   }
 
-  const { day, month } = getDeadlineParts(task.deadline)
+  const { day, month } = task.deadline ? getDeadlineParts(task.deadline) : { day: '—', month: 'No date' }
   const severity = overdueSeverity(task)
   const checklistDone = task.checklist.filter((item) => item.done).length
   const plannedForToday = isTaskPlannedForToday(task)
   const upcoming = isTaskUpcoming(task)
   const postpone = getPostponeSummary(task)
-  const risk = getDeadlineRisk(task, allTasks)
+  const capacity = task.deadline ? getCapacitySummary(allTasks, task.deadline) : null
 
   const classNames = ['task']
   if (task.done) classNames.push('done')
@@ -121,6 +118,8 @@ export function TaskCard({
       ref={taskRef}
       className={classNames.join(' ')}
       data-task-id={task.id}
+      tabIndex={focused ? 0 : -1}
+      onFocus={() => onTaskFocus?.(task.id)}
       draggable={!selectionMode && !isEditing}
       onDragStart={handleDragStart}
     >
@@ -156,7 +155,6 @@ export function TaskCard({
               value={editTitle}
               aria-label="Task name"
               onChange={(event) => setEditTitle(event.target.value)}
-              required
             />
           </div>
 
@@ -212,9 +210,12 @@ export function TaskCard({
           </div>
 
           <div className="task-details">
+            {!task.deadline && onPromote && (
+              <label className="nodate-deadline"><span>Set a deadline</span><input type="date" onChange={(event) => { if (event.target.value) onPromote(task.id, event.target.value) }} /></label>
+            )}
             <div className="task-meta">
               <span className={severity > 0 ? 'countdown overdue' : 'countdown'}>
-                {getCountdownLabel(task.deadline)}
+                {task.deadline ? getCountdownLabel(task.deadline) : 'No deadline'}
               </span>
 
               {contextLabel && <span className="task-context">{contextLabel}</span>}
@@ -234,10 +235,9 @@ export function TaskCard({
                   Planned today · due {formatDate(task.deadline)}
                 </span>
               )}
-              {task.energyLevel && (
-                <span className={`energy-mark energy-${task.energyLevel}`}>
-                  <span className={`energy-dot energy-${task.energyLevel}`} aria-hidden="true" />
-                  {ENERGY_LABELS[task.energyLevel]}
+              {task.priority && (
+                <span className={task.priority === 'high' ? 'priority-mark high' : 'priority-mark'}>
+                  {task.priority === 'high' ? '!' : '·'} {task.priority} priority
                 </span>
               )}
               {postpone.count > 0 && (
@@ -245,12 +245,9 @@ export function TaskCard({
                   Postponed {postpone.count}×
                 </span>
               )}
-              {risk && (
-                <span
-                  className={`risk-mark risk-${risk.level}`}
-                  title={`Computed deadline risk score ${risk.score} of 100`}
-                >
-                  {risk.label}
+              {capacity && (
+                <span className={capacity.overBy > 0 ? 'capacity-statement over' : 'capacity-statement'}>
+                  {formatCapacitySummary(capacity)}
                 </span>
               )}
 

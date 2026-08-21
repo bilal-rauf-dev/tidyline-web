@@ -12,7 +12,6 @@ export function BucketColumn({
   compact = false,
   onToggleCollapse,
   selectedIds = [],
-  bucketOrder,
   ...taskHandlers
 }) {
   const [isOver, setIsOver] = useState(false)
@@ -54,11 +53,12 @@ export function BucketColumn({
   return (
     <article
       className={classNames.join(' ')}
+      data-bucket-key={bucketKey}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      <DistanceRail bucketKey={bucketKey} bucketOrder={bucketOrder} />
+      <DistanceRail bucketKey={bucketKey} />
 
       <div className="bucket-header">
         {isToday ? (
@@ -111,6 +111,7 @@ export function BucketColumn({
                   key={task.id}
                   task={task}
                   selected={selectedIds.includes(task.id)}
+                  focused={task.id === taskHandlers.focusedTaskId}
                   {...taskHandlers}
                 />
               ))}

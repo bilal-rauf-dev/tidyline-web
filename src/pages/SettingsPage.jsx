@@ -3,8 +3,6 @@ import { parseImportedTasks, serializeTasks } from '../utils/tasksIO'
 import { isSoundEnabled, playChime, setSoundEnabled } from '../utils/notifications'
 import { ACCENT_OPTIONS, DENSITY_OPTIONS } from '../hooks/useTheme'
 import { Checkbox } from '../components/Checkbox'
-import { BucketConfigMenu } from '../components/BucketConfigMenu'
-import { BUCKET_ORDER } from '../utils/buckets'
 import { TemplateSettings } from '../components/TemplateSettings'
 import { ChevronDownIcon } from '../components/icons'
 
@@ -41,9 +39,6 @@ export function SettingsPage({
   clearCompleted,
   askBeforeDelete,
   onAskBeforeDeleteChange,
-  bucketOrder = BUCKET_ORDER,
-  onToggleBucket = () => {},
-  onResetBuckets = () => {},
   templates = [],
   onRenameTemplate = () => {},
   onDeleteTemplate = () => {},
@@ -54,6 +49,7 @@ export function SettingsPage({
   const fileInputRef = useRef(null)
   const [soundOn, setSoundOn] = useState(isSoundEnabled)
   const [workspaceName, setWorkspaceName] = useState(profile?.name ?? '')
+  const [importMessage, setImportMessage] = useState('')
   const completedCount = tasks.filter((task) => task.done).length
 
   function handleExport() {
@@ -76,9 +72,11 @@ export function SettingsPage({
     const reader = new FileReader()
     reader.onload = () => {
       try {
-        importTasks(parseImportedTasks(String(reader.result)))
-      } catch {
-        window.alert('That file is not a valid TidyLine export.')
+        const result = parseImportedTasks(String(reader.result))
+        importTasks(result)
+        setImportMessage(`${result.tasks.length} imported, ${result.repaired} repaired, ${result.skipped} skipped.`)
+      } catch (error) {
+        setImportMessage(error.message)
       }
     }
     reader.readAsText(file)
@@ -202,23 +200,6 @@ export function SettingsPage({
         </div>
       </SettingsSection>
 
-      <SettingsSection title="Board timeline" description="Visible deadline buckets" initiallyOpen>
-
-        <div className="settings-row">
-          <span>
-            Visible buckets
-            <small className="settings-note">
-              Today and Later stay visible; Overdue remains automatic and separate.
-            </small>
-          </span>
-          <BucketConfigMenu
-            bucketOrder={bucketOrder}
-            onToggleBucket={onToggleBucket}
-            onReset={onResetBuckets}
-          />
-        </div>
-      </SettingsSection>
-
       <SettingsSection title="Calendar workload" description="Overload threshold" initiallyOpen>
         <div className="settings-row">
           <span>
@@ -299,6 +280,7 @@ export function SettingsPage({
             onChange={handleImportChange}
             hidden
           />
+          {importMessage && <span className="settings-note" role="status">{importMessage}</span>}
         </div>
 
         <div className="settings-row">

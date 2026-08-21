@@ -1,71 +1,62 @@
-<div align="center">
-  <img src="public/logo.svg" alt="TidyLine logo" width="96" height="96" />
-
 # TidyLine
 
-A deadline-focused task manager that organizes your work by how soon it's due — not by folder, project, or priority you have to set yourself.
+TidyLine is a local-first, deadline-focused task manager for power users.
 
-</div>
+> Help power users quickly plan tasks with deadlines and get an actionable bird's-eye view of them.
 
-<br />
+Tasks live in the browser under `tidyline:tasks`; there is no account, backend, or network sync. The Board automatically places dated work into four disjoint horizons—Today, Week, Month, and Later—while undated work remains visible in the Board’s collapsed No date section.
 
-<img src="public/future_banner.png" alt="TidyLine brand banner" width="100%" />
+## What it includes
 
-<br /><br />
+- An actionable Home overview for overdue work, Today, and the next seven days
+- A four-horizon planning Board with drag-to-reschedule and an undated holding area
+- A dense sortable All tasks list, including undated tasks
+- Calendar and Day planner views for date and time planning
+- Quick Add with controlled natural-language task parsing
+- Priority, tags, saved filters, templates, recurrence, reminders, estimates, waiting state, and rich task details
+- Shared multi-select actions, bulk rescheduling, undo, and delete confirmation
+- A task-aware command palette and keyboard-first task navigation
+- Versioned local persistence, validated JSON import/export, light/dark themes, accent choice, and density choice
 
-## What it does
+## Quick Add syntax
 
-Add a task with a deadline and TidyLine automatically places it into the right time bucket — Today, This Week, This Month, and beyond — and moves it forward as the deadline approaches. No manual sorting, no projects to set up first. Type a task in plain English ("renew passport next Friday !high #admin remind 1 day before") and TidyLine's quick-add parser pulls out the deadline, priority, tags, and reminder for you.
+Quick Add uses `chrono-node` only for dates and times. The remaining syntax is deliberately controlled and predictable.
 
-<img src="public/preview.png" alt="TidyLine Home screen" width="100%" />
+| Intent | Syntax | Example |
+|---|---|---|
+| Deadline | Natural date/time | `Submit report next Friday at 5pm` |
+| Start date | `start <date>` | `Start project start Monday due next Friday` |
+| Reminder | `remind <duration> before` | `Call Talha Friday remind 2h before` |
+| Duration | `for <duration>` | `Study OS for 90m` |
+| Recurrence | `every day`, `every weekday`, `every Monday`, `every 2 weeks`, `every month` | `Pay bill every month on the 5th` |
+| Tag | `#tag` (repeatable) | `Draft outline #university #writing` |
+| Priority | `!high`, `!medium`, `!low`; aliases `p1`, `p2`, `p3` | `Fix login bug !high` |
+| Plan today | `plan today` | `Read article plan today` |
+| Undated task | Omit a parseable date | `Research standing desks #home` |
 
-## Features
+## Keyboard shortcuts
 
-**Task management**
+The in-app `?` overlay is generated from the same `SHORTCUTS` definition used by the key handler.
 
-- Rich task details — notes, checklists, links, location, and estimated duration
-- Quick-add with natural-language parsing (dates, priority, energy level, duration, reminders, recurrence, and tags typed inline)
-- Edit, pin, duplicate, archive, and undo destructive actions
-- Drag and drop tasks between buckets, calendar dates, or the day planner timeline
-- Bulk select and act on multiple tasks at once
-- Tags, instant fuzzy search, filtering, sorting, and saved filters
-- Task templates that reuse recurring details while leaving the title and deadline blank
-
-**Reminders & recurrence**
-
-- Smart reminder presets (5 min / 30 min / 1 hour before, tomorrow morning, every weekday, custom)
-- Recurring tasks — daily, weekly, monthly, yearly, or every N days
-- Browser notifications with sound, snooze, and mark-complete-from-notification
-
-**Views**
-
-- Home — a daily-at-a-glance dashboard with today's progress and activity
-- Board — the core bucketed task list, grouped Today through Later, with configurable buckets
-- Calendar — month view with drag-to-reschedule
-- Day planner — drag actionable tasks onto an hour-by-hour timeline and resize blocks to set duration
-- Someday / Maybe — a holding area for undated ideas you can promote to the board once they're ready
-- Analytics — completion trends, streaks, workload, and bucket breakdowns
-
-**Living timeline & workload awareness**
-
-- Tasks visibly flow toward "Today" as their deadline approaches, with countdown labels and animated bucket transitions
-- A deadline-risk score weighs time pressure, estimated effort, checklist progress, and postponements to flag tasks worth attention
-- Same-day workload tracking warns when a day is overloaded and offers a redistribution helper
-- An end-of-day shutdown review summarizes what got done and rolls unfinished tasks into tomorrow
-
-**Everything else**
-
-- Command palette (`Ctrl+K`) and keyboard shortcuts for common actions
-- Light/dark mode, selectable accent color, and compact/comfortable density
-- Export and import your tasks as JSON
-- All data stored locally in your browser — no account, no backend
-
-## Tech stack
-
-- [React 19](https://react.dev/) + [Vite](https://vite.dev/) for the app and build tooling
-- [wouter](https://github.com/molefrog/wouter) for routing
-- [chrono-node](https://github.com/wanasit/chrono) for natural-language date parsing in quick-add
-- ESLint for linting, plus a set of custom smoke-test and parser-test scripts (no traditional test framework)
+| Keys | Action |
+|---|---|
+| `Ctrl/⌘ K` | Open command palette |
+| `N` / `Q` | Open Quick Add |
+| `/` | Focus task search |
+| `J` / `↓`, `K` / `↑` | Move focus within a task column or list |
+| `H` / `←`, `L` / `→` | Move focus between Board buckets |
+| `Home`, `End` | Focus first or last visible task |
+| `E` | Open focused task details |
+| `X` | Toggle focused task selection |
+| `Space` / `C` | Complete or reopen focused task |
+| `T` | Plan focused task for today |
+| `P` | Pin or unpin focused task |
+| `A` | Archive focused task |
+| `1`–`4` | Move focused task to Today, Week, Month, or Later |
+| `Delete` | Delete focused task through confirmation settings |
+| `U` | Undo last action |
+| `?` | Show shortcut overlay |
+| `Esc` | Close the active surface |
 
 ## Local development
 
@@ -74,19 +65,37 @@ npm install
 npm run dev
 ```
 
-Other useful scripts:
+Production and quality checks:
 
 ```bash
-npm run lint    # ESLint
-npm run build   # Production build
-npm run check   # Lint + build + all smoke/parser tests
+npm run build
+npm run lint
+npm run check
 ```
 
-## Live preview
+`npm run check` runs ESLint, the production build, route smoke mounts, phase smoke checks, parser tests, and pure-logic tests.
 
-[tidyline-web.vercel.app](https://tidyline-web.vercel.app/)
+## Data portability
 
-## Contributors
+Exports use a versioned envelope:
 
-- **[bilal-rauf-dev](https://github.com/bilal-rauf-dev)** — Lead
-- **[talha-rauf-dev](https://github.com/talha-rauf-dev)**
+```json
+{ "schemaVersion": 2, "tasks": [] }
+```
+
+Older bare-array exports migrate on load. Imports validate titles and deadlines, repair missing or duplicate IDs, and report imported, repaired, and skipped counts. A build that encounters data from a newer schema refuses to overwrite it.
+
+## Deliberately not included
+
+- **Retrospective analytics** — TidyLine prioritizes forward planning and direct action over productivity scoring.
+- **Energy levels** — tags already express personal contexts without adding a parallel field, parser token, and filter dimension.
+- **Risk scoring** — an uncalibrated heuristic should not be presented as an authoritative prediction; TidyLine states verifiable daily capacity instead.
+- **Workload redistribution** — automatic greedy rescheduling obscures user intent; bulk date and bucket actions keep the user in control.
+
+## Stack
+
+- React 19 and Vite 8
+- Wouter routing
+- `chrono-node` date/time extraction
+- Plain JavaScript and CSS
+- Browser `localStorage`

@@ -4,12 +4,10 @@ import {
   HomeIcon,
   BoardIcon,
   CalendarIcon,
-  AnalyticsIcon,
   SettingsIcon,
   ChevronLeftIcon,
   CommandIcon,
   ClockIcon,
-  NotesIcon,
   SearchIcon,
 } from './icons'
 import { BrandMonogram } from './BrandMonogram'
@@ -19,10 +17,9 @@ import { getCountdownLabel } from '../utils/dates'
 const NAV_ITEMS = [
   { href: '/', label: 'Home', Icon: HomeIcon },
   { href: '/board', label: 'Board', Icon: BoardIcon },
+  { href: '/list', label: 'All tasks', Icon: BoardIcon },
   { href: '/calendar', label: 'Calendar', Icon: CalendarIcon },
   { href: '/planner', label: 'Day planner', Icon: ClockIcon },
-  { href: '/someday', label: 'Someday / Maybe', Icon: NotesIcon },
-  { href: '/analytics', label: 'Analytics', Icon: AnalyticsIcon },
   { href: '/settings', label: 'Settings', Icon: SettingsIcon },
 ]
 

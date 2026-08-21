@@ -8,7 +8,6 @@ import * as chrono from 'chrono-node'
  *
  *  Tags            #tagname
  *  Priority        !high / !medium / !low  or  p1 / p2 / p3
- *  Energy          @low / @normal / @deep / @deep-focus
  *  Duration        for 2h / for 45 minutes / for 45m
  *  Reminder        remind me 2h before / remind 30m before
  *  Recurrence      every day / every weekday / every Monday / every 2 weeks / every week
@@ -58,15 +57,6 @@ export function parseNaturalTask(input, referenceDate = new Date()) {
       const startIdx = match.index + (match[0].length - match[0].trimStart().length)
       registerMatch('priority', pMap[match[1].toLowerCase()], startIdx, text.length, text)
     }
-  }
-
-  // ── 3. Energy ─────────────────────────────────────────────────────────────
-  const energyRegex = /(?:^|\s)@(low|normal|deep-focus|deep)\b/gi
-  while ((match = energyRegex.exec(workingText)) !== null) {
-    const text = match[0].trim()
-    const startIdx = match.index + (match[0].length - match[0].trimStart().length)
-    const value = match[1].toLowerCase() === 'deep' ? 'deep-focus' : match[1].toLowerCase()
-    registerMatch('energy', value, startIdx, text.length, text)
   }
 
   // ── 4. Duration ────────────────────────────────────────────────────────────
@@ -235,7 +225,6 @@ export function parseNaturalTask(input, referenceDate = new Date()) {
     durationMinutes: matchedTokens.find((t) => t.type === 'duration')?.value ?? null,
     recurrence: matchedTokens.find((t) => t.type === 'recurrence')?.value ?? null,
     priority: matchedTokens.find((t) => t.type === 'priority')?.value ?? null,
-    energy: matchedTokens.find((t) => t.type === 'energy')?.value ?? null,
     tags: matchedTokens.filter((t) => t.type === 'tag').map((t) => t.value),
     planForToday: matchedTokens.some((t) => t.type === 'planForToday'),
     matchedTokens,

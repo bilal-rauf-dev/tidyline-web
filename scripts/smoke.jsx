@@ -41,6 +41,7 @@ const documentStub = {
 const locationStub = { pathname: '/', search: '', hash: '', href: 'http://localhost/' }
 
 globalThis.localStorage = makeStorage()
+globalThis.localStorage.setItem('tidyline:profile', JSON.stringify({ isSetUp: true, name: 'Smoke', isGuest: false }))
 globalThis.sessionStorage = makeStorage()
 globalThis.document = documentStub
 globalThis.location = locationStub
@@ -62,10 +63,9 @@ const { default: App } = await import('../src/App.jsx')
 const { HomePage } = await import('../src/pages/HomePage.jsx')
 const { BoardPage } = await import('../src/pages/BoardPage.jsx')
 const { CalendarPage } = await import('../src/pages/CalendarPage.jsx')
-const { AnalyticsPage } = await import('../src/pages/AnalyticsPage.jsx')
+const { ListPage } = await import('../src/pages/ListPage.jsx')
 const { SettingsPage } = await import('../src/pages/SettingsPage.jsx')
 const { PlannerPage } = await import('../src/pages/PlannerPage.jsx')
-const { SomedayPage } = await import('../src/pages/SomedayPage.jsx')
 const { normalizeTask } = await import('../src/hooks/useTasks.js')
 
 const today = new Date()
@@ -132,11 +132,11 @@ const appearance = {
 // Each case asserts markers that prove the feature actually rendered, not
 // just that the component returned something.
 const cases = [
-  ['App shell', <App />, ['Open command palette', 'Tidyline', 'nav-indicator']],
+  ['App shell', <App />, ['Open navigation', 'Smoke']],
   [
     'HomePage',
     <HomePage tasks={tasks} />,
-    ['Today at a glance', 'Review the day', 'overdue', 'completed today', 'milestone-track', 'activity-dot'],
+    ['Today', 'Next 7 days', 'Plan what is due'],
   ],
   [
     'BoardPage',
@@ -169,25 +169,14 @@ const cases = [
     ['calendar-grid', 'calendar-day', 'calendar-day-workload'],
   ],
   [
-    'AnalyticsPage',
-    <AnalyticsPage tasks={tasks} />,
-    ['milestone-track', 'ring-tile', 'trend-col', 'sparkline', 'activity-dot', 'Postpone patterns'],
+    'ListPage',
+    <ListPage tasks={tasks} />,
+    ['All tasks', 'task-table', 'Recurring weekly report'],
   ],
   [
     'PlannerPage',
     <PlannerPage tasks={tasks} setScheduledStart={noop} updateTask={noop} />,
     ['Day planner', 'Board tasks', 'planner-timeline', 'Scheduled focus block'],
-  ],
-  [
-    'SomedayPage',
-    <SomedayPage
-      tasks={tasks}
-      addSomedayTask={noop}
-      promoteSomeday={noop}
-      deleteTask={noop}
-      updateTask={noop}
-    />,
-    ['Someday / Maybe', 'Holding area', 'Maybe learn pottery'],
   ],
   [
     'SettingsPage',

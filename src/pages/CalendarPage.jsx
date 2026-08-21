@@ -10,26 +10,18 @@ import {
 import { formatDate } from '../utils/dates'
 import { TaskForm } from '../components/TaskForm'
 import { ChevronLeftIcon, ChevronRightIcon } from '../components/icons'
-import {
-  buildRedistributionPlan,
-  DEFAULT_OVERLOAD_HOURS,
-  formatWorkload,
-  getDayWorkload,
-} from '../utils/workload'
-import { WorkloadRedistributeDialog } from '../components/WorkloadRedistributeDialog'
+import { DEFAULT_OVERLOAD_HOURS, formatWorkload, getDayWorkload } from '../utils/workload'
 
 export function CalendarPage({
   tasks,
   addTask,
   setDeadline,
-  rescheduleTasks = () => {},
   templates = [],
   overloadHours = DEFAULT_OVERLOAD_HOURS,
 }) {
   const [viewDate, setViewDate] = useState(() => new Date())
   const [selectedDate, setSelectedDate] = useState(null)
   const [dropTarget, setDropTarget] = useState(null)
-  const [redistributionPlan, setRedistributionPlan] = useState(null)
 
   const weeks = useMemo(() => getMonthWeeks(viewDate), [viewDate])
   const tasksByDate = useMemo(() => groupTasksByDate(tasks), [tasks])
@@ -173,17 +165,6 @@ export function CalendarPage({
               <strong>{formatWorkload(selectedWorkload.estimatedMinutes)} scheduled</strong>
               <span>Above your {overloadHours}-hour daily threshold.</span>
             </div>
-            <button
-              type="button"
-              className="secondary"
-              onClick={() =>
-                setRedistributionPlan(
-                  buildRedistributionPlan(tasks, selectedDate, overloadHours),
-                )
-              }
-            >
-              Preview moving flexible tasks
-            </button>
           </div>
         )}
       </section>
@@ -199,18 +180,6 @@ export function CalendarPage({
         />
       )}
 
-      {redistributionPlan && (
-        <WorkloadRedistributeDialog
-          plan={redistributionPlan}
-          onClose={() => setRedistributionPlan(null)}
-          onConfirm={(proposals) =>
-            rescheduleTasks(
-              proposals.map((proposal) => ({ id: proposal.task.id, deadline: proposal.to })),
-              'calendar',
-            )
-          }
-        />
-      )}
     </main>
   )
 }

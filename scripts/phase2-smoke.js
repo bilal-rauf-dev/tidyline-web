@@ -1,4 +1,4 @@
-import { normalizeTask } from '../src/hooks/useTasks'
+import { applyDailyMaintenance, normalizeTask } from '../src/hooks/useTasks'
 import { DEFAULT_FILTERS, filterTasks } from '../src/utils/filters'
 import { taskToTemplate } from '../src/hooks/useTemplates'
 
@@ -26,8 +26,9 @@ const released = normalizeTask({
   waitingFor: 'Reply',
   followUpDate: today,
 })
-assert(released.status === 'active', 'Due follow-up did not release the waiting task')
-assert(!released.followUpDate && !released.waitingFor, 'Released waiting metadata was not cleared')
+const maintained = applyDailyMaintenance([released], today)[0]
+assert(maintained.status === 'active', 'Due follow-up did not release the waiting task')
+assert(!maintained.followUpDate && !maintained.waitingFor, 'Released waiting metadata was not cleared')
 
 const candidates = [
   normalizeTask({

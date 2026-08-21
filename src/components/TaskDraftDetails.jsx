@@ -10,7 +10,7 @@ import {
 } from './icons'
 import { RecurrencePicker } from './RecurrencePicker'
 import { SelectMenu } from './SelectMenu'
-import { EnergyLevelControl } from './EnergyLevelControl'
+import { PriorityControl } from './PriorityControl'
 import { toDateStr } from '../utils/calendar'
 
 function addNamedUrl(draft, onChange, type) {
@@ -116,9 +116,9 @@ export function TaskDraftDetails({ draft, deadline, onChange }) {
           />
         </label>
 
-        <EnergyLevelControl
-          value={draft.energyLevel}
-          onChange={(energyLevel) => onChange({ ...draft, energyLevel })}
+        <PriorityControl
+          value={draft.priority}
+          onChange={(priority) => onChange({ ...draft, priority })}
         />
       </div>
 

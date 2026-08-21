@@ -25,6 +25,6 @@ dist-ssr
 
 # Smoke test output
 .smoke
-.phase1-smoke
-.phase2-smoke
-.phase3-smoke
+.*-smoke*
+.*-tests
+.claude/

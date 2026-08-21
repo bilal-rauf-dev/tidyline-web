@@ -22,6 +22,7 @@ export function UpcomingSection({ tasks, selectedIds = [], ...taskHandlers }) {
             key={task.id}
             task={task}
             selected={selectedIds.includes(task.id)}
+            focused={task.id === taskHandlers.focusedTaskId}
             contextLabel={`Starts ${formatDate(task.startDate)}`}
             {...taskHandlers}
           />

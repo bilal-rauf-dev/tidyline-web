@@ -33,6 +33,7 @@ export function OverdueSection({ groups, selectedIds = [], ...taskHandlers }) {
                   key={task.id}
                   task={task}
                   selected={selectedIds.includes(task.id)}
+                  focused={task.id === taskHandlers.focusedTaskId}
                   {...taskHandlers}
                 />
               ))}
