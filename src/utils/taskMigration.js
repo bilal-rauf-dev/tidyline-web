@@ -96,6 +96,14 @@ export function normalizeTask(value) {
     notes: waiting.notes,
     location: typeof task.location === 'string' ? task.location : '',
     duration: normalizeDuration(task.duration),
+    startedAt:
+      !task.done && typeof task.startedAt === 'string' && Number.isFinite(new Date(task.startedAt).getTime())
+        ? task.startedAt
+        : null,
+    actualMinutes:
+      Number.isFinite(Number(task.actualMinutes)) && Number(task.actualMinutes) > 0
+        ? Number(task.actualMinutes)
+        : null,
     checklist: normalizeChecklist(task.checklist),
     links,
     createdAt: typeof task.createdAt === 'string' ? task.createdAt : BOOT_TIME,

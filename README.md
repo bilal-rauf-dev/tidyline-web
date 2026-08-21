@@ -16,6 +16,8 @@ TidyLine has three primary views:
 
 Tasks can include a deadline, reminders, tags, notes, location, an estimate, a checklist, links, and recurrence. They can also be pinned, duplicated, archived, completed, or edited in bulk. Tasks without a deadline remain visible in Later.
 
+Press **Start** when beginning work. TidyLine preserves active timing across reloads, accumulates paused intervals, and records actual minutes on completion. After three valid estimated-and-timed tasks, it uses the median of your personal estimate ratios to show a calm calibrated expectation such as `45m · usually ~1h 20m`. Missing estimates use completed-task history or a conservative fallback rather than counting as zero.
+
 Quick Add understands ordinary dates plus a deliberately small inline syntax:
 
 ```text
@@ -51,7 +53,7 @@ npm run check
 
 ## Refactor status
 
-Phase 2 of the ADHD-first time-awareness refactor is complete. The application surface and persisted task model have been reduced before calibration, derived start timing, and the final Now experience are added in later phases. See `docs/refactor/PLAN.md` for the sequence.
+Phase 3 of the ADHD-first time-awareness refactor is complete. Surface reduction and actual-time calibration are in place; derived start timing and the final Now selection model remain later phases. See `docs/refactor/PLAN.md` for the sequence.
 
 ## Contributors
 

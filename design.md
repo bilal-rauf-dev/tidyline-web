@@ -1,6 +1,6 @@
 # TidyLine design and behavior contract
 
-Updated for Phase 2 of the ADHD-first time-awareness refactor.
+Updated for Phase 3 of the ADHD-first time-awareness refactor.
 
 ## Product principle
 
@@ -27,7 +27,7 @@ Settings is a utility destination, not a fourth work view.
 
 ### Now
 
-Now currently chooses the earliest open, unarchived task. It displays the deadline distance, estimate, and tags, with Done and Open details actions. This is a transitional rule; Phase 5 will replace it only after calibrated duration and derived start timing exist.
+Now currently chooses the earliest open, unarchived task. It displays the deadline distance, estimate, and tags, with Start/Pause, Done, and Open details actions. This is a transitional selection rule; Phase 5 will replace it only after derived start timing exists.
 
 ### Board
 
@@ -50,20 +50,38 @@ Calendar renders tasks that have deadlines and are not archived. Dragging a task
 
 ## Task model
 
-The normalized Phase 2 record contains only:
+The normalized Phase 3 record contains only:
 
-`id`, `title`, `deadline`, `reminders`, `tags`, `done`, `completedAt`, `pinned`, `archived`, `recurrence`, `notes`, `location`, `duration`, `checklist`, `links`, and `createdAt`.
+`id`, `title`, `deadline`, `reminders`, `tags`, `done`, `completedAt`, `pinned`, `archived`, `recurrence`, `notes`, `location`, `duration`, `startedAt`, `actualMinutes`, `checklist`, `links`, and `createdAt`.
 
 Contracts:
 
 - `deadline` is a local `YYYY-MM-DD` string or `null`; null tasks remain visible in Later.
 - Completion writes `completedAt`; reopening clears it.
+- `startedAt` is the current active interval or `null`. Starting twice is idempotent.
+- Pause adds the rounded positive elapsed interval to `actualMinutes` and clears `startedAt`; Resume starts a new interval. Completion performs the same finalization before marking the task done.
+- A task completed without being started remains valid and has no invented actual duration.
 - Relative reminders resolve from the current deadline when checked, so moving a deadline also moves its reminder.
 - Completing a recurring task creates its next occurrence while resetting instance progress.
 - Links are URL references; TidyLine does not upload files.
 - Import normalization filters malformed nested records rather than dropping the complete task collection.
 
-Storage uses a versioned envelope: `{ schemaVersion: 2, tasks: [...] }`. The loader also accepts the original top-level array. During migration, prior attachment references become links; prior blocked-state metadata is retained as a `waiting` tag and explanatory notes. Deprecated preference records are removed.
+Storage uses a versioned envelope: `{ schemaVersion: 3, tasks: [...] }`. The loader also accepts the original top-level array and earlier envelopes. During migration, prior attachment references become links; prior blocked-state metadata is retained as a `waiting` tag and explanatory notes. Timing fields initialize to `null`. Deprecated preference records are removed.
+
+## Time and calibration
+
+Timing is task work capture, not a stopwatch product. The UI exposes Start, Pause/Resume, and Done without timer dashboards, productivity scores, or Pomodoro controls. Active state is textual as well as visual.
+
+Calibration uses completed tasks with positive estimates and actual durations no greater than seven days. After three valid samples, TidyLine takes the median `actualMinutes / estimatedMinutes` ratio and bounds it to 0.5×–4×. Invalid, unfinished, zero, and runaway samples do not influence it.
+
+The canonical duration estimator follows this order:
+
+1. explicit estimate multiplied by calibrated ratio when available;
+2. explicit estimate unchanged while calibration is still learning;
+3. median valid completed-task duration for an unestimated task;
+4. a conservative 45-minute fallback.
+
+Expected durations round to five-minute increments. Calibrated values appear only where they support a decision. Completion feedback is neutral and temporary: `Estimated 30m · took 1h 10m.` Settings exposes the learned multiplier read-only; users never configure it.
 
 ## Quick Add
 

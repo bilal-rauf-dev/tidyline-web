@@ -1,4 +1,4 @@
-export const TASK_SCHEMA_VERSION = 2
+export const TASK_SCHEMA_VERSION = 3
 
 const REMOVED_PREFERENCE_KEYS = [
   'tidyline:bucket-order',

@@ -4,6 +4,7 @@ import { isSoundEnabled, playChime, setSoundEnabled } from '../utils/notificatio
 import { ACCENT_OPTIONS, DENSITY_OPTIONS } from '../hooks/useTheme'
 import { Checkbox } from '../components/Checkbox'
 import { ChevronDownIcon } from '../components/icons'
+import { CALIBRATION_MIN_SAMPLES, getCalibration } from '../utils/calibration'
 
 function SettingsSection({ title, description, initiallyOpen = false, children }) {
   const [isOpen, setIsOpen] = useState(initiallyOpen)
@@ -33,6 +34,7 @@ export function SettingsPage({
   const [soundOn, setSoundOn] = useState(isSoundEnabled)
   const [workspaceName, setWorkspaceName] = useState(profile?.name ?? '')
   const completedCount = tasks.filter((task) => task.done).length
+  const calibration = getCalibration(tasks)
 
   function exportTasks() {
     const url = URL.createObjectURL(new Blob([serializeTasks(tasks)], { type: 'application/json' }))
@@ -116,6 +118,20 @@ export function SettingsPage({
           >
             {soundOn ? 'Mute' : 'Unmute'}
           </button>
+        </div>
+      </SettingsSection>
+
+      <SettingsSection title="Calibration" description="Learned from completed timed tasks" initiallyOpen>
+        <div className="settings-row">
+          <span>
+            Personal estimate multiplier
+            <small className="settings-note">
+              {calibration.calibrated
+                ? `Your timed tasks usually take about ${calibration.multiplier.toFixed(1)}× your estimate, based on ${calibration.sampleCount} tasks.`
+                : `Time ${CALIBRATION_MIN_SAMPLES - calibration.sampleCount} more estimated task${CALIBRATION_MIN_SAMPLES - calibration.sampleCount === 1 ? '' : 's'} to calibrate this automatically.`}
+            </small>
+          </span>
+          <strong>{calibration.calibrated ? `${calibration.multiplier.toFixed(1)}×` : 'Learning'}</strong>
         </div>
       </SettingsSection>
 

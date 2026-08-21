@@ -1,6 +1,7 @@
 import { Link } from 'wouter'
 import { formatDate, getCountdownLabel } from '../utils/dates'
 import { TagList } from '../components/TagList'
+import { durationToMinutes, estimateTaskDuration, formatMinutes } from '../utils/calibration'
 
 function byAttention(a, b) {
   if (!a.deadline && !b.deadline) return a.createdAt.localeCompare(b.createdAt)
@@ -9,7 +10,7 @@ function byAttention(a, b) {
   return a.deadline.localeCompare(b.deadline)
 }
 
-export function NowPage({ tasks, onComplete }) {
+export function NowPage({ tasks, onComplete, onStart, onPause }) {
   const next = tasks
     .filter((task) => !task.done && !task.archived)
     .sort(byAttention)[0]
@@ -34,11 +35,17 @@ export function NowPage({ tasks, onComplete }) {
           </p>
           {next.duration && (
             <p className="card-note">
-              Estimated {next.duration.value}{next.duration.unit === 'hr' ? 'h' : 'm'}
+              Estimated {formatMinutes(durationToMinutes(next.duration))}
+              {estimateTaskDuration(next, tasks).source === 'calibrated'
+                ? ` · usually ~${formatMinutes(estimateTaskDuration(next, tasks).minutes)}`
+                : ''}
             </p>
           )}
           <TagList tags={next.tags} />
           <div className="welcome-actions">
+            <button type="button" className={next.startedAt ? 'secondary active' : 'primary'} onClick={() => (next.startedAt ? onPause(next.id) : onStart(next.id))}>
+              {next.startedAt ? 'Pause' : next.actualMinutes ? 'Resume' : 'Start'}
+            </button>
             <button type="button" className="primary" onClick={() => onComplete(next.id)}>Done</button>
             <Link href={`/board?expand=${encodeURIComponent(next.id)}`} className="secondary">Open details</Link>
           </div>

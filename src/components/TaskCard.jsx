@@ -20,6 +20,7 @@ import { TaskDetailDialog } from './TaskDetailDialog'
 import { describeRecurrence } from '../utils/recurrence'
 import { getCountdownLabel, getDeadlineParts } from '../utils/dates'
 import { parseTags } from '../utils/tags'
+import { durationToMinutes, estimateTaskDuration, formatMinutes } from '../utils/calibration'
 
 export function TaskCard({
   task,
@@ -28,6 +29,8 @@ export function TaskCard({
   selected,
   onSelect,
   onToggle,
+  onStart,
+  onPause,
   onDelete,
   onUpdate,
   onTogglePin,
@@ -59,6 +62,8 @@ export function TaskCard({
   }
 
   const deadlineParts = task.deadline ? getDeadlineParts(task.deadline) : null
+  const estimateMinutes = durationToMinutes(task.duration)
+  const expected = task.duration ? estimateTaskDuration(task, allTasks) : null
   const checklistDone = task.checklist.filter((item) => item.done).length
   const classNames = ['task']
   if (task.done) classNames.push('done')
@@ -85,6 +90,16 @@ export function TaskCard({
           <span className="task-grip" aria-hidden="true"><GripIcon /></span>
         )}
         <strong>{task.title}</strong>
+        {!task.done && !task.archived && (
+          <button
+            type="button"
+            className={task.startedAt ? 'task-start active' : 'task-start'}
+            onClick={() => (task.startedAt ? onPause(task.id) : onStart(task.id))}
+            aria-pressed={Boolean(task.startedAt)}
+          >
+            {task.startedAt ? 'Pause' : task.actualMinutes ? 'Resume' : 'Start'}
+          </button>
+        )}
         <label className="task-toggle">
           <Checkbox checked={task.done} onChange={() => onToggle(task.id)} />
           Done
@@ -131,7 +146,14 @@ export function TaskCard({
               {task.notes && <span className="task-flag" title="Has notes"><NotesIcon /></span>}
               {task.links.length > 0 && <span className="task-flag" title={`${task.links.length} link(s)`}><LinkIcon /></span>}
               {task.checklist.length > 0 && <span className="task-flag text">{checklistDone}/{task.checklist.length}</span>}
-              {task.duration && <span className="task-flag text" title="Estimated duration">{task.duration.value}{task.duration.unit === 'hr' ? 'h' : 'm'}</span>}
+              {task.duration && (
+                <span className="task-flag text" title="Estimated and calibrated duration">
+                  {formatMinutes(estimateMinutes)}
+                  {expected.source === 'calibrated' ? ` · usually ~${formatMinutes(expected.minutes)}` : ''}
+                </span>
+              )}
+              {task.startedAt && <span className="task-flag text timing-active">In progress</span>}
+              {task.done && task.actualMinutes && <span className="task-flag text">Took {formatMinutes(task.actualMinutes)}</span>}
             </div>
 
             <TagList tags={task.tags} />
@@ -149,7 +171,7 @@ export function TaskCard({
       )}
 
       {isExpanded && (
-        <TaskDetailDialog task={task} handlers={{ ...detailHandlers, onUpdate }} onClose={() => setIsExpanded(false)} />
+        <TaskDetailDialog task={task} allTasks={allTasks} handlers={{ ...detailHandlers, onUpdate, onStart, onPause }} onClose={() => setIsExpanded(false)} />
       )}
     </li>
   )

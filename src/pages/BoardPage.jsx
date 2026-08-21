@@ -93,6 +93,8 @@ export function BoardPage({
     selectionMode,
     onSelect: toggleSelected,
     onToggle: taskActions.toggleTask,
+    onStart: taskActions.startTask,
+    onPause: taskActions.pauseTask,
     onDelete: taskActions.deleteTask,
     onUpdate: taskActions.updateTask,
     onTogglePin: taskActions.togglePin,

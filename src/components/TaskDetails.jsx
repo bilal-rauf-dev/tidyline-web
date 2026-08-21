@@ -14,6 +14,7 @@ import { RecurrencePicker } from './RecurrencePicker'
 import { mapsSearchUrl } from '../utils/maps'
 import { Checkbox } from './Checkbox'
 import { SelectMenu } from './SelectMenu'
+import { durationToMinutes, estimateTaskDuration, formatMinutes } from '../utils/calibration'
 
 function LinkRow({ onAdd }) {
   const [label, setLabel] = useState('')
@@ -37,11 +38,30 @@ function LinkRow({ onAdd }) {
   )
 }
 
-export function TaskDetails({ task, handlers }) {
+export function TaskDetails({ task, allTasks, handlers }) {
   const [checklistDraft, setChecklistDraft] = useState('')
+  const expected = estimateTaskDuration(task, allTasks)
+  const estimateMinutes = durationToMinutes(task.duration)
 
   return (
     <div className="task-details-panel">
+      <div className="detail-block timing-block">
+        <span className="field-icon-head"><ClockIcon />Time</span>
+        <p className="timing-summary">
+          {estimateMinutes ? `Estimated ${formatMinutes(estimateMinutes)}` : 'No estimate yet'}
+          {estimateMinutes && expected.source === 'calibrated' ? ` · usually ~${formatMinutes(expected.minutes)}` : ''}
+          {task.actualMinutes ? ` · ${task.done ? 'took' : 'logged'} ${formatMinutes(task.actualMinutes)}` : ''}
+        </p>
+        {!task.done && !task.archived && (
+          <button
+            type="button"
+            className={task.startedAt ? 'secondary timing-button active' : 'primary timing-button'}
+            onClick={() => (task.startedAt ? handlers.onPause(task.id) : handlers.onStart(task.id))}
+          >
+            {task.startedAt ? 'Pause' : task.actualMinutes ? 'Resume' : 'Start'}
+          </button>
+        )}
+      </div>
       <label className="field-icon">
         <span className="field-icon-head"><NotesIcon />Notes</span>
         <textarea

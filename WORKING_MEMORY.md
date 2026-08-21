@@ -7,7 +7,7 @@ Baseline commit: `0407ea0`
 
 ## Current objective
 
-Refactor TidyLine into a small, local-first tool for ADHD-oriented time awareness. The north star is: what needs doing, when must it start, and what should happen now. Work one phase at a time; do not commit or open a PR. Phase 2 is complete pending user review. Phase 3 must not begin without approval.
+Refactor TidyLine into a small, local-first tool for ADHD-oriented time awareness. The north star is: what needs doing, when must it start, and what should happen now. Work one phase at a time; do not commit or open a PR. Phase 3 is complete pending user review. Phase 4 must not begin without approval.
 
 ## Current architecture
 
@@ -21,7 +21,7 @@ Refactor TidyLine into a small, local-first tool for ADHD-oriented time awarenes
 
 Active keys:
 
-- `tidyline:tasks` — schema envelope version 2
+- `tidyline:tasks` — schema envelope version 3
 - `tidyline:profile`
 - `tidyline:theme`, `tidyline:accent`, `tidyline:density`
 - `tidyline:notificationSound`
@@ -31,7 +31,7 @@ On load, removed configuration keys are cleaned up. Old top-level task arrays re
 
 Normalized task fields:
 
-`id`, `title`, `deadline`, `reminders`, `tags`, `done`, `completedAt`, `pinned`, `archived`, `recurrence`, `notes`, `location`, `duration`, `checklist`, `links`, `createdAt`.
+`id`, `title`, `deadline`, `reminders`, `tags`, `done`, `completedAt`, `pinned`, `archived`, `recurrence`, `notes`, `location`, `duration`, `startedAt`, `actualMinutes`, `checklist`, `links`, `createdAt`.
 
 Migration preserves meaningful legacy data before dropping deprecated keys: attachment URL records become links, and blocked-state owner/follow-up details become notes plus a `waiting` tag. Malformed nested records are filtered independently so one bad item does not hide all local tasks.
 
@@ -54,6 +54,16 @@ Migration preserves meaningful legacy data before dropping deprecated keys: atta
 - Replaced stale tests with boundary, migration, retained-core, parser, and active-surface smoke coverage.
 - Updated README and design contract to match shipped behavior.
 
+## Phase 3 changes
+
+- Added reload-safe Start/Pause/Resume timing using `startedAt` plus accumulated `actualMinutes`; no session-history or timer subsystem was added.
+- Completion finalizes active elapsed time and can show neutral estimate-versus-actual feedback.
+- Recurring instances and duplicates reset timing; bulk completion closes active intervals.
+- Added `src/utils/calibration.js` as the canonical duration boundary.
+- Global calibration requires three valid completed samples, uses a bounded median ratio (0.5×–4×), and ignores invalid/runaway data.
+- Unestimated work uses median valid completed duration, then a 45-minute fallback; it never counts as zero.
+- Settings shows learned calibration read-only. Tag-specific calibration is deliberately deferred.
+
 ## Verification and known gaps
 
 `npm run check` is the phase gate. It covers lint, production build, SSR surface rendering, horizon boundaries, migration, recurrence/reminders, task update semantics, and Quick Add parsing. A real-browser interaction and responsive/accessibility pass remains necessary in Phase 8.
@@ -62,4 +72,4 @@ The pre-existing untracked `.logic-tests/` directory is user-owned and ignored b
 
 ## Next phase boundary
 
-Phase 3 adds only the calibration foundation: `startedAt`, `actualMinutes`, completion feedback, and a bounded calibration multiplier with tested fallback behavior. Do not add derived `startBy`, Now scoring, workload UI, routines, PWA work, or ICS in Phase 3.
+Phase 4 adds the derived time-blindness model: calibrated `startBy`, simple fit language, start-aware horizons/countdowns, useful future-time representations, and lightweight resurfacing. Do not begin the final Now selection experience, routines, PWA work, or ICS in Phase 4.

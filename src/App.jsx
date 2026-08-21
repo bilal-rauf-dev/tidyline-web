@@ -6,6 +6,7 @@ import { MenuIcon } from './components/icons'
 import { CommandPalette } from './components/CommandPalette'
 import { DeleteConfirmDialog } from './components/DeleteConfirmDialog'
 import { TaskAddedToast } from './components/TaskAddedToast'
+import { CompletionFeedbackToast } from './components/CompletionFeedbackToast'
 import { NowPage } from './pages/NowPage'
 import { BoardPage } from './pages/BoardPage'
 import { CalendarPage } from './pages/CalendarPage'
@@ -197,7 +198,14 @@ function App() {
         {taskState.dataError && <p className="data-error" role="alert">{taskState.dataError}</p>}
         <div className="route-view" key={location}>
           <Switch>
-            <Route path="/"><NowPage tasks={taskState.tasks} onComplete={taskState.completeTask} /></Route>
+            <Route path="/">
+              <NowPage
+                tasks={taskState.tasks}
+                onComplete={taskState.completeTask}
+                onStart={taskState.startTask}
+                onPause={taskState.pauseTask}
+              />
+            </Route>
             <Route path="/board">
               <BoardPage {...taskState} addTask={createTask} deleteTask={requestDelete} />
             </Route>
@@ -252,6 +260,14 @@ function App() {
             setTaskAdded(null)
           }}
           onDismiss={() => setTaskAdded(null)}
+        />
+      )}
+
+      {taskState.completionFeedback && (
+        <CompletionFeedbackToast
+          key={taskState.completionFeedback.id}
+          feedback={taskState.completionFeedback}
+          onDismiss={taskState.dismissCompletionFeedback}
         />
       )}
     </div>

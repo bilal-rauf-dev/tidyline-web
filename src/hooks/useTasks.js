@@ -3,6 +3,8 @@ import { deadlineForBucket } from '../utils/buckets'
 import { nextOccurrence } from '../utils/recurrence'
 import { cleanupLegacyPreferences, migrateTaskData, taskEnvelope } from '../utils/tasksIO'
 import { normalizeTask } from '../utils/taskMigration'
+import { completeTiming, pauseTiming, startTiming } from '../utils/taskTiming'
+import { durationToMinutes } from '../utils/calibration'
 
 export { normalizeTask } from '../utils/taskMigration'
 
@@ -40,6 +42,8 @@ function nextInstance(task, deadline) {
     completedAt: null,
     pinned: false,
     archived: false,
+    startedAt: null,
+    actualMinutes: null,
     checklist: task.checklist.map((item) => ({ ...item, done: false })),
     createdAt: new Date().toISOString(),
   })
@@ -49,6 +53,7 @@ export function useTasks() {
   const [initial] = useState(loadTaskState)
   const [tasks, setTasks] = useState(initial.tasks)
   const [undoState, setUndoState] = useState(null)
+  const [completionFeedback, setCompletionFeedback] = useState(null)
 
   useEffect(() => {
     if (!initial.canPersist) return
@@ -64,6 +69,11 @@ export function useTasks() {
   function commit(message, nextTasks) {
     setUndoState({ message, snapshot: tasks })
     setTasks(nextTasks)
+  }
+
+  function persistImmediately(nextTasks) {
+    if (!initial.canPersist) return
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(taskEnvelope(nextTasks)))
   }
 
   function mapTask(id, changes) {
@@ -125,10 +135,10 @@ export function useTasks() {
     const target = tasks.find((task) => task.id === id)
     if (!target || target.done) return
 
+    const completedAt = new Date().toISOString()
+    const completedTarget = normalizeTask(completeTiming(target, completedAt))
     let next = tasks.map((task) =>
-      task.id === id
-        ? normalizeTask({ ...task, done: true, completedAt: new Date().toISOString() })
-        : task,
+      task.id === id ? completedTarget : task,
     )
     let createdNext = false
 
@@ -140,7 +150,33 @@ export function useTasks() {
       }
     }
 
+    const estimateMinutes = durationToMinutes(target.duration)
+    if (estimateMinutes && completedTarget.actualMinutes) {
+      setCompletionFeedback({
+        id: `${target.id}:${completedAt}`,
+        title: target.title,
+        estimateMinutes,
+        actualMinutes: completedTarget.actualMinutes,
+      })
+    }
+    persistImmediately(next)
     commit(createdNext ? 'Completed — next one scheduled' : 'Task completed', next)
+  }
+
+  function startTask(id) {
+    const next = tasks.map((task) =>
+      task.id === id ? normalizeTask(startTiming(task)) : task,
+    )
+    persistImmediately(next)
+    setTasks(next)
+  }
+
+  function pauseTask(id) {
+    const next = tasks.map((task) =>
+      task.id === id ? normalizeTask(pauseTiming(task)) : task,
+    )
+    persistImmediately(next)
+    setTasks(next)
   }
 
   function toggleTask(id) {
@@ -149,6 +185,7 @@ export function useTasks() {
       completeTask(id)
       return
     }
+    setCompletionFeedback(null)
     setTasks(mapTask(id, { done: false, completedAt: null }))
   }
 
@@ -177,6 +214,8 @@ export function useTasks() {
       completedAt: null,
       pinned: false,
       archived: false,
+      startedAt: null,
+      actualMinutes: null,
       createdAt: new Date().toISOString(),
     })
     const index = tasks.findIndex((task) => task.id === id)
@@ -267,14 +306,13 @@ export function useTasks() {
   function bulkComplete(ids) {
     const selected = new Set(ids)
     const stamp = new Date().toISOString()
-    commit(
-      `${ids.length} task${ids.length === 1 ? '' : 's'} completed`,
-      tasks.map((task) =>
-        selected.has(task.id) && !task.done
-          ? normalizeTask({ ...task, done: true, completedAt: stamp })
-          : task,
-      ),
+    const next = tasks.map((task) =>
+      selected.has(task.id) && !task.done
+        ? normalizeTask(completeTiming(task, stamp))
+        : task,
     )
+    persistImmediately(next)
+    commit(`${ids.length} task${ids.length === 1 ? '' : 's'} completed`, next)
   }
 
   function bulkArchive(ids) {
@@ -305,6 +343,7 @@ export function useTasks() {
 
   function undo() {
     if (!undoState) return
+    setCompletionFeedback(null)
     setTasks(undoState.snapshot)
     setUndoState(null)
   }
@@ -317,6 +356,8 @@ export function useTasks() {
     deleteTask,
     toggleTask,
     completeTask,
+    startTask,
+    pauseTask,
     togglePin,
     archiveTask,
     unarchiveTask,
@@ -341,5 +382,7 @@ export function useTasks() {
     undoState,
     undo,
     dismissUndo: () => setUndoState(null),
+    completionFeedback,
+    dismissCompletionFeedback: () => setCompletionFeedback(null),
   }
 }

@@ -887,6 +887,54 @@ button {
   min-width: 0;
 }
 
+.task-start {
+  flex: 0 0 auto;
+  min-height: 1.75rem;
+  padding: 0.25rem 0.55rem;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--accent);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.task-start.active,
+.timing-active {
+  color: var(--accent);
+}
+
+.bucket-column.dark .task-start {
+  color: var(--text-on-dark);
+}
+
+.timing-block {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.45rem 0.8rem;
+}
+
+.timing-block .field-icon-head {
+  grid-column: 1 / -1;
+}
+
+.timing-summary {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 0.85rem;
+}
+
+.timing-button {
+  min-width: 5rem;
+}
+
+.completion-feedback-toast {
+  bottom: 5.5rem;
+}
+
 .edit-reminders {
   display: grid;
   gap: 0.5rem;

@@ -12,6 +12,8 @@ export const TASK_FIELDS = [
   'notes',
   'location',
   'duration',
+  'startedAt',
+  'actualMinutes',
   'checklist',
   'links',
   'createdAt',
