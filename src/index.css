@@ -99,6 +99,14 @@ body {
   background: var(--bg);
 }
 
+button,
+a,
+input,
+textarea,
+select {
+  -webkit-tap-highlight-color: transparent;
+}
+
 h1,
 h2,
 h3 {

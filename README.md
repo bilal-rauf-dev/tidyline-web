@@ -32,7 +32,7 @@ It extracts the deadline, duration, reminder, tag, and supported recurrence phra
 
 ## Data and reminders
 
-There is no account or backend. Tasks, routine definitions, and preferences are stored in browser `localStorage`; task data can be imported or exported as JSON. The versioned task boundary safely reads the earlier array format and preserves legacy attachment URLs as links and blocked-task details as notes and tags. Routines use a separate versioned store and never alter task records.
+There is no account or backend. Tasks, routine definitions, and preferences are stored in browser `localStorage`; the workspace can be exported or imported as JSON. The versioned task boundary safely reads the earlier array format and preserves legacy attachment URLs as links and blocked-task details as notes and tags. Routines use a separate versioned store, are included as an optional backup section, and never alter task records.
 
 Browser alerts are checked only while TidyLine is open in a browser tab or installed window. Closing it stops reminder delivery; there is no push or background-sync service.
 
@@ -59,7 +59,7 @@ npm run check
 
 ## Refactor status
 
-Phase 7 of the ADHD-first time-awareness refactor is complete. The low-decision core, honest active-page reminders, install metadata, calendar export, and isolated one-action routine flow are in place. See `docs/refactor/PLAN.md` for the final polish phase.
+The automated gate for Phase 8 of the ADHD-first time-awareness refactor is complete. The low-decision core, honest active-page reminders, install metadata, calendar export, isolated one-action routine flow, routine-inclusive workspace backup, and final migration scenario checks are in place. Live visual review is still pending because the in-app browser runtime cannot initialize. See `docs/refactor/PLAN.md` for the delivery state.
 
 ## Contributors
 

@@ -14,7 +14,7 @@ Suggested commit message: `feat: make start-by timing drive task planning`
 - Added calm fit outcomes: Fits comfortably, Getting tight, and Won't fit at your usual pace. Fit uses remaining calibrated task duration, earlier committed work, and a deterministic six-hour daily capacity; no score or settings were introduced.
 - Added nullable `resurfaceDate` with one “Bring back on” date field. Invalid dates after the deadline normalize to null. Recurring instances and duplicates reset it.
 - Added a 21-day continuous Calendar ribbon. Bar height uses canonical expected workload at each attention date; dots show deadline concentration. Month cells also mark start counts.
-- Updated provisional Now ordering and sidebar language to use attention/start timing. Phase 5 still owns final one-task selection and the `5 more minutes`/`Not this` interactions.
+- Updated Now ordering and sidebar language to use attention/start timing; Phase 5 subsequently delivered the final one-task selection and the `5 more minutes`/`Not this` interactions.
 
 The removed manual Planner was not restored. Its sizing requirement is satisfied by the shared canonical-duration workload utilities and Calendar ribbon rather than a blank scheduling grid.
 

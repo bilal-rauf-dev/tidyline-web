@@ -165,6 +165,7 @@ function App() {
         accent={appearance.accent}
         onAccentChange={appearance.setAccent}
         onImportTasks={taskState.importTasks}
+        onImportRoutines={routineState.importRoutines}
         onComplete={profile.completeSetup}
       />
     )
@@ -234,6 +235,8 @@ function App() {
                 askBeforeDelete={askBeforeDelete}
                 onAskBeforeDeleteChange={setAskBeforeDelete}
                 profile={profile}
+                routines={routineState.routines}
+                importRoutines={routineState.importRoutines}
               />
             </Route>
           </Switch>

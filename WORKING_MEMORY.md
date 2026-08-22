@@ -7,7 +7,7 @@ Baseline commit: `0407ea0`
 
 ## Current objective
 
-Refactor TidyLine into a small, local-first tool for ADHD-oriented time awareness. The north star is: what needs doing, when must it start, and what should happen now. Work one phase at a time; do not commit or open a PR. Phase 7 is complete pending user review. Phase 8 must not begin without approval.
+Refactor TidyLine into a small, local-first tool for ADHD-oriented time awareness. The north star is: what needs doing, when must it start, and what should happen now. Work one phase at a time; do not commit or open a PR. Phase 8 automated verification is complete; live visual browser review remains pending because the in-app browser runtime cannot initialize.
 
 ## Current architecture
 
@@ -77,7 +77,7 @@ The pre-existing untracked `.logic-tests/` directory is user-owned and ignored b
 - `startBy` is derived from planning deadline minus canonical expected duration and a fixed 30-minute buffer; it is never persisted or configured.
 - Today automatically includes due/missed starts, start-today, active, and resurfaced tasks.
 - `resurfaceDate` is the only new persisted Phase 4 field; schema version is 4, and dates after the deadline normalize to null.
-- Cards, details, provisional Now, and sidebar search use start-oriented language. Now ordering uses attention date but final rotation/actions remain Phase 5.
+- Cards, details, Now, and sidebar search use start-oriented language. Now ordering uses attention date; Phase 5 finalized the one-task rotation/actions.
 - Calendar has a continuous 21-day calibrated-work ribbon plus start markers in the month grid. The manual Planner remains removed.
 - Fit outcomes use six hours of deterministic daily capacity and earlier committed calibrated work; no score or setting exists.
 
@@ -107,9 +107,17 @@ The pre-existing untracked `.logic-tests/` directory is user-owned and ignored b
 - The editor is intentionally one name plus one action per line. New input is validated at 1–50 actions.
 - Running shows one action, step position, advance/finish, and stop. Run position is session-only; no task creation, scheduling, triggers, history, streaks, or failure state exists.
 - Removed templates are not migrated or renamed into routines. Task schema remains version 4.
-- Routine definitions are device-local in their own store; the existing task JSON import/export remains task-only.
+- Routine definitions are device-local in their own store and are included as an optional `routines` section in workspace JSON backups; task schema remains version 4.
 - `phase7-smoke` verifies isolated fields, loss-aware step normalization, array/envelope migration, ordered progression, safe completion, and invalid/future schema rejection.
+
+## Phase 8 changes
+
+- Added a final calibrated-start scenario smoke test covering learned timing, derived start/attention dates, Now eligibility, and malformed legacy nested data.
+- Workspace export/import now carries routine definitions in an optional `routines` section while preserving the version 4 task envelope and task-only backup compatibility.
+- Added mobile tap-highlight cleanup and completed a static review of focus-visible styles, reduced-motion behavior, touch-target sizing, narrow-layout rules, and routine stacking.
+- Audited stale product references and migration-only legacy names. Historical migration fixtures and cleanup keys remain intentionally retained.
+- `npm run check` passes all lint, build, render, phase, and parser gates. Required live visual checks at 375px, 390px, 414px, 1280px, and 1920px are still pending because browser setup fails before localhost page discovery with a trusted-runtime path error.
 
 ## Next phase boundary
 
-Phase 8 is final polish and delivery: responsive checks at the required widths, keyboard/focus/reduced-motion review, migration hardening, stale-reference cleanup, final documentation, and the time-blindness scenario test. Do not start without user approval.
+Phase 8 is automated-gate complete but not fully delivered until the live browser review can run. The remaining check is visual inspection and interaction at the required widths, plus keyboard and reduced-motion behavior in the running app.

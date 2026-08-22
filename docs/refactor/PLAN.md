@@ -1,6 +1,6 @@
 # TidyLine ADHD-first time-awareness refactor
 
-Status: Phase 7 complete; Phase 8 pending approval
+Status: Phase 8 automated gate complete; live browser review pending
 Branch: `refactor/adhd-first-time-awareness`
 
 ## North star
@@ -33,6 +33,6 @@ The differentiator is calibrated time awareness: TidyLine learns the gap between
 | 5. Now view | Complete | Low-decision one-task surface is the primary entry experience |
 | 6. Reminders, PWA, and ICS | Complete | Honest reminder copy, install manifest, valid calendar export |
 | 7. Routines | Complete | Small ordered-trigger routine flow, isolated from tasks and templates |
-| 8. Polish and delivery | Planned | Responsive, accessible, migrated, documented, and fully green checks |
+| 8. Polish and delivery | Automated gate complete; browser review pending | Responsive, accessible, migrated, documented, and fully green checks |
 
-Phase 7 passed its implementation gate. Phase 8 is blocked until the user approves the final polish and delivery boundary.
+Phase 8 automated checks pass, including the final time-blindness scenario and workspace backup compatibility. Delivery remains pending the live visual and interaction review because the in-app browser runtime fails trusted-component initialization before it can reach localhost.

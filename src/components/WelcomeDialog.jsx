@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { parseImportedTasks } from '../utils/tasksIO'
+import { parseImportedRoutines } from '../utils/routineIO'
 import { ACCENT_OPTIONS } from '../hooks/useTheme'
 import { BrandMonogram } from './BrandMonogram'
 
-export function WelcomeDialog({ accent, onAccentChange, onImportTasks, onComplete }) {
+export function WelcomeDialog({ accent, onAccentChange, onImportTasks, onImportRoutines, onComplete }) {
   const nameInputRef = useRef(null)
   const fileInputRef = useRef(null)
   const [name, setName] = useState('')
@@ -30,9 +31,12 @@ export function WelcomeDialog({ accent, onAccentChange, onImportTasks, onComplet
     const reader = new FileReader()
     reader.onload = () => {
       try {
-        const tasks = parseImportedTasks(String(reader.result))
+        const raw = String(reader.result)
+        const tasks = parseImportedTasks(raw)
+        const routines = parseImportedRoutines(raw)
         onImportTasks(tasks)
-        setImportMessage(`${tasks.length} ${tasks.length === 1 ? 'task' : 'tasks'} imported.`)
+        onImportRoutines?.(routines ?? [])
+        setImportMessage(`${tasks.length} ${tasks.length === 1 ? 'task' : 'tasks'}${routines?.length ? ` and ${routines.length} ${routines.length === 1 ? 'routine' : 'routines'}` : ''} imported.`)
       } catch {
         setImportMessage('That file is not a valid TidyLine export.')
       }

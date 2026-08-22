@@ -54,6 +54,15 @@ export function serializeRoutines(routines) {
   return JSON.stringify(routineEnvelope(routines), null, 2)
 }
 
+export function parseImportedRoutines(json) {
+  const value = JSON.parse(json)
+  if (!value || typeof value !== 'object' || !Array.isArray(value.routines)) return null
+  return migrateRoutineData({
+    schemaVersion: value.routineSchemaVersion,
+    routines: value.routines,
+  }).routines
+}
+
 export function getRoutineStep(routine, stepIndex) {
   if (!routine || !Number.isInteger(stepIndex) || stepIndex < 0) return null
   return routine.steps[stepIndex] ?? null

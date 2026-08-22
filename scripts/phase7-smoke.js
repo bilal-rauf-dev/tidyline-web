@@ -4,8 +4,10 @@ import {
   getRoutineStep,
   migrateRoutineData,
   normalizeRoutine,
+  parseImportedRoutines,
   serializeRoutines,
 } from '../src/utils/routineIO'
+import { serializeTasks } from '../src/utils/tasksIO'
 
 function assert(condition, message) {
   if (!condition) throw new Error(message)
@@ -34,6 +36,9 @@ const legacy = migrateRoutineData([routine])
 assert(legacy.schemaVersion === ROUTINE_SCHEMA_VERSION && legacy.migratedFrom === 0, 'Routine array migration failed')
 const envelope = JSON.parse(serializeRoutines([routine]))
 assert(envelope.schemaVersion === ROUTINE_SCHEMA_VERSION && envelope.routines.length === 1, 'Routine envelope failed')
+const workspace = JSON.parse(serializeTasks([], [routine]))
+assert(workspace.schemaVersion === 4 && workspace.routineSchemaVersion === ROUTINE_SCHEMA_VERSION, 'Workspace backup did not include routines')
+assert(parseImportedRoutines(JSON.stringify(workspace))?.[0].title === 'Leaving the house', 'Routine backup import failed')
 
 assert(getRoutineStep(routine, 0)?.id === 'keys', 'Routine did not begin with its first action')
 assert(getRoutineStep(routine, 1)?.text === 'Put on shoes', 'Routine order changed')

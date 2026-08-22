@@ -56,11 +56,16 @@ export function useRoutines() {
     setRoutines((current) => current.filter((routine) => routine.id !== id))
   }
 
+  function importRoutines(newRoutines) {
+    setRoutines(newRoutines.map(normalizeRoutine))
+  }
+
   return {
     routines,
     dataError: initial.dataError,
     addRoutine,
     updateRoutine,
     deleteRoutine,
+    importRoutines,
   }
 }

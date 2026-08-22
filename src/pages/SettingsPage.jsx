@@ -1,4 +1,5 @@
 import { useId, useRef, useState } from 'react'
+import { parseImportedRoutines } from '../utils/routineIO'
 import { parseImportedTasks, serializeTasks } from '../utils/tasksIO'
 import { isSoundEnabled, playChime, setSoundEnabled } from '../utils/notifications'
 import { ACCENT_OPTIONS, DENSITY_OPTIONS } from '../hooks/useTheme'
@@ -29,6 +30,8 @@ export function SettingsPage({
   askBeforeDelete,
   onAskBeforeDeleteChange,
   profile,
+  routines = [],
+  importRoutines,
 }) {
   const fileInputRef = useRef(null)
   const [soundOn, setSoundOn] = useState(isSoundEnabled)
@@ -37,7 +40,7 @@ export function SettingsPage({
   const calibration = getCalibration(tasks)
 
   function exportTasks() {
-    const url = URL.createObjectURL(new Blob([serializeTasks(tasks)], { type: 'application/json' }))
+    const url = URL.createObjectURL(new Blob([serializeTasks(tasks, routines)], { type: 'application/json' }))
     const link = document.createElement('a')
     link.href = url
     link.download = 'tidyline-tasks.json'
@@ -52,7 +55,10 @@ export function SettingsPage({
     const reader = new FileReader()
     reader.onload = () => {
       try {
-        importTasks(parseImportedTasks(String(reader.result)))
+        const raw = String(reader.result)
+        importTasks(parseImportedTasks(raw))
+        const importedRoutines = parseImportedRoutines(raw)
+        if (importedRoutines && importRoutines) importRoutines(importedRoutines)
       } catch {
         window.alert('That file is not a valid TidyLine export.')
       }
@@ -145,7 +151,7 @@ export function SettingsPage({
       </SettingsSection>
 
       <SettingsSection title="Your data" description="Import, export, and cleanup">
-        <div className="settings-row"><span>Export tasks</span><button type="button" className="secondary" onClick={exportTasks}>Export JSON</button></div>
+        <div className="settings-row"><span>Export workspace</span><button type="button" className="secondary" onClick={exportTasks}>Export JSON</button></div>
         <div className="settings-row">
           <span>Import tasks</span>
           <button type="button" className="secondary" onClick={() => fileInputRef.current?.click()}>Import JSON</button>

@@ -34,8 +34,13 @@ export function cleanupLegacyPreferences(storage) {
   REMOVED_PREFERENCE_KEYS.forEach((key) => storage.removeItem(key))
 }
 
-export function serializeTasks(tasks) {
-  return JSON.stringify(taskEnvelope(tasks), null, 2)
+export function serializeTasks(tasks, routines = null) {
+  const envelope = taskEnvelope(tasks)
+  if (Array.isArray(routines)) {
+    envelope.routines = routines
+    envelope.routineSchemaVersion = 1
+  }
+  return JSON.stringify(envelope, null, 2)
 }
 
 export function parseImportedTasks(json) {

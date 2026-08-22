@@ -1,6 +1,6 @@
 # TidyLine design and behavior contract
 
-Updated for Phase 7 of the ADHD-first time-awareness refactor.
+Updated for Phase 8 automated verification of the ADHD-first time-awareness refactor.
 
 ## Product principle
 
@@ -54,7 +54,7 @@ Calendar renders tasks that have deadlines and are not archived. A continuous 21
 
 Routines are ordered sequences started explicitly by the user. Management stays compact: a name plus one concrete action per line. Running a routine replaces the list/editor with one large current action and one dominant advance control. Stop is neutral and discards only session progress.
 
-Routine definitions persist separately from tasks. They contain only `id`, `title`, ordered `steps` (`id`, `text`), and `createdAt`. There are no automatic triggers, recurrence, deadlines, task creation, completion history, streaks, or template migration. Run position is deliberately session-only.
+Routine definitions persist separately from tasks and travel in an optional workspace-backup section. They contain only `id`, `title`, ordered `steps` (`id`, `text`), and `createdAt`. There are no automatic triggers, recurrence, deadlines, task creation, completion history, streaks, or template migration. Run position is deliberately session-only.
 
 ## Task model
 
