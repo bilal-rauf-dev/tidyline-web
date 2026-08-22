@@ -242,3 +242,4 @@ if (failures > 0) {
 }
 
 console.log('\nAll pages mounted without throwing.')
+process.exit(0)

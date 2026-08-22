@@ -54,8 +54,8 @@ function activeTaskId() {
 function App() {
   const taskState = useTasks()
   const appearance = useTheme()
-  const profile = useProfile()
   const auth = useAuth()
+  const profile = useProfile(auth.user)
   const bucketConfig = useBucketConfig()
   const templateState = useTemplates()
   const savedFilterState = useSavedFilters()
@@ -243,11 +243,7 @@ function App() {
     ),
   )
 
-  useEffect(() => {
-    if (auth.isAuthenticated && !profile.isSetUp && auth.displayName) {
-      profile.completeSetup(auth.displayName)
-    }
-  }, [auth.isAuthenticated, auth.displayName, profile])
+
 
   if (!profile.isSetUp && !auth.isAuthenticated) {
     return (

@@ -106,6 +106,11 @@ export function SettingsPage({
     }
   }
 
+  async function handleSignOut() {
+    await auth.signOut()
+    // profile resets automatically via useProfile's auth sync effect
+  }
+
   return (
     <main className="app-shell settings-shell">
       <header className="hero">
@@ -165,7 +170,7 @@ export function SettingsPage({
                   <small>{auth.email}</small>
                 </div>
               </div>
-              <button type="button" className="secondary" onClick={auth.signOut}>
+              <button type="button" className="secondary" onClick={handleSignOut}>
                 Sign out
               </button>
             </div>
