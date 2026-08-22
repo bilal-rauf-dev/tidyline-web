@@ -20,6 +20,7 @@ import { useBucketConfig } from './hooks/useBucketConfig'
 import { useShortcuts } from './hooks/useShortcuts'
 import { useTemplates } from './hooks/useTemplates'
 import { useSavedFilters } from './hooks/useSavedFilters'
+import { useAuth } from './hooks/useAuth'
 import { PlannerPage } from './pages/PlannerPage'
 import { SomedayPage } from './pages/SomedayPage'
 import { DEFAULT_OVERLOAD_HOURS } from './utils/workload'
@@ -54,6 +55,7 @@ function App() {
   const taskState = useTasks()
   const appearance = useTheme()
   const profile = useProfile()
+  const auth = useAuth()
   const bucketConfig = useBucketConfig()
   const templateState = useTemplates()
   const savedFilterState = useSavedFilters()
@@ -241,13 +243,18 @@ function App() {
     ),
   )
 
-  if (!profile.isSetUp) {
+  useEffect(() => {
+    if (auth.isAuthenticated && !profile.isSetUp && auth.displayName) {
+      profile.completeSetup(auth.displayName)
+    }
+  }, [auth.isAuthenticated, auth.displayName, profile])
+
+  if (!profile.isSetUp && !auth.isAuthenticated) {
     return (
       <WelcomeDialog
-        accent={appearance.accent}
-        onAccentChange={appearance.setAccent}
         onImportTasks={taskState.importTasks}
         onComplete={profile.completeSetup}
+        onGoogleSignIn={auth.signInWithGoogle}
       />
     )
   }
@@ -305,6 +312,7 @@ function App() {
               <HomePage
                 tasks={taskState.tasks}
                 workspaceName={profile.name}
+                auth={auth}
               />
             </Route>
             <Route path="/board">
@@ -362,6 +370,7 @@ function App() {
                 overloadHours={overloadHours}
                 onOverloadHoursChange={setOverloadHours}
                 profile={profile}
+                auth={auth}
               />
             </Route>
           </Switch>

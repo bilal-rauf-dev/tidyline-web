@@ -59,6 +59,7 @@ globalThis.window = {
 
 const { renderToString } = await import('react-dom/server')
 const { default: App } = await import('../src/App.jsx')
+const { WelcomeDialog } = await import('../src/components/WelcomeDialog.jsx')
 const { HomePage } = await import('../src/pages/HomePage.jsx')
 const { BoardPage } = await import('../src/pages/BoardPage.jsx')
 const { CalendarPage } = await import('../src/pages/CalendarPage.jsx')
@@ -67,6 +68,9 @@ const { SettingsPage } = await import('../src/pages/SettingsPage.jsx')
 const { PlannerPage } = await import('../src/pages/PlannerPage.jsx')
 const { SomedayPage } = await import('../src/pages/SomedayPage.jsx')
 const { normalizeTask } = await import('../src/hooks/useTasks.js')
+
+// Set up a pre-configured profile for App shell tests
+globalThis.localStorage.setItem('tidyline:profile', JSON.stringify({ isSetUp: true, name: 'Guest', isGuest: true }))
 
 const today = new Date()
 const iso = (offsetDays) => {
@@ -132,11 +136,20 @@ const appearance = {
 // Each case asserts markers that prove the feature actually rendered, not
 // just that the component returned something.
 const cases = [
-  ['App shell', <App />, ['Open command palette', 'Tidyline', 'nav-indicator']],
+  ['App shell', <App />, ['Open navigation', 'TidyLine', 'app-layout']],
+  [
+    'WelcomeDialog',
+    <WelcomeDialog
+      onImportTasks={noop}
+      onComplete={noop}
+      onGoogleSignIn={noop}
+    />,
+    ['Make this space yours', 'Sign in with Google', 'Start as guest', 'Import JSON'],
+  ],
   [
     'HomePage',
     <HomePage tasks={tasks} />,
-    ['Today at a glance', 'Review the day', 'overdue', 'completed today', 'milestone-track', 'activity-dot'],
+    ['Today at a glance', 'overdue', 'completed today', 'milestone-track', 'activity-dot'],
   ],
   [
     'BoardPage',

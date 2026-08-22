@@ -5940,6 +5940,191 @@ textarea,
   color: #fff;
 }
 
+/* Authentication (Google OAuth / Supabase Auth) */
+
+.home-google-auth-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.7rem;
+  padding: 0.45rem 0.95rem;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-btn);
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition:
+    background var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease),
+    box-shadow var(--dur-fast) var(--ease);
+}
+
+.home-google-auth-btn:hover {
+  background: var(--surface-raised);
+  border-color: color-mix(in srgb, var(--text) 24%, var(--line));
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.home-google-auth-btn:active {
+  transform: scale(0.97);
+}
+
+.home-user-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-top: 0.7rem;
+  padding: 0.35rem 0.55rem 0.35rem 0.4rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: calc(var(--radius-btn) + 4px);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.home-user-avatar-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.home-user-avatar {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--line);
+}
+
+.home-user-avatar-fallback {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.home-user-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  text-align: left;
+}
+
+.home-user-name {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+}
+
+.home-user-email {
+  font-size: 0.7rem;
+  color: var(--text-soft);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+}
+
+.home-signout-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.65rem;
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-btn);
+  color: var(--text-soft);
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-left: 0.15rem;
+  transition:
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease);
+}
+
+.home-signout-btn:hover {
+  color: var(--text);
+  background: var(--surface);
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--line));
+}
+
+.home-signout-btn svg {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+.settings-account-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.settings-account-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.settings-user-avatar {
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--line);
+}
+
+.settings-user-avatar-fallback {
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.settings-user-meta {
+  display: flex;
+  flex-direction: column;
+}
+
+.settings-user-meta strong {
+  font-size: 0.88rem;
+  color: var(--text);
+}
+
+.settings-user-meta small {
+  font-size: 0.76rem;
+  color: var(--text-soft);
+}
+
+.settings-google-btn,
+.welcome-google-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .sidebar-review {
   display: flex;
   align-items: center;
@@ -6370,31 +6555,9 @@ textarea,
   line-height: 1.55;
 }
 
-.welcome-form {
+.welcome-content {
   display: grid;
-  gap: 1rem;
-}
-
-.welcome-name-field,
-.welcome-accent-field {
-  display: grid;
-  gap: 0.45rem;
-  min-width: 0;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  color: var(--text-soft);
-  font-size: 0.82rem;
-  font-weight: 700;
-}
-
-.welcome-name-field input {
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.welcome-accent-field legend {
-  padding: 0;
+  gap: 1.25rem;
 }
 
 .welcome-import {
@@ -6402,7 +6565,7 @@ textarea,
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 0.9rem;
+  padding: 0.9rem 1rem;
   border: 1px solid var(--line);
   border-radius: var(--radius-btn);
   background: var(--surface-raised);
@@ -6425,14 +6588,31 @@ textarea,
 }
 
 .welcome-import-message {
-  margin: -0.4rem 0 0;
+  margin: -0.5rem 0 0;
 }
 
 .welcome-actions {
-  display: flex;
-  justify-content: space-between;
-  gap: 0.75rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
   padding-top: 0.25rem;
+}
+
+.welcome-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.85rem;
+  padding: 0.65rem 1.1rem;
+  font-size: 0.88rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+@media (max-width: 520px) {
+  .welcome-actions {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* This override belongs after the base Home cards: grid-area must win over
