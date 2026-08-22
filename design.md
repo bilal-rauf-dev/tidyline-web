@@ -1,6 +1,6 @@
 # TidyLine design and behavior contract
 
-Updated for Phase 6 of the ADHD-first time-awareness refactor.
+Updated for Phase 7 of the ADHD-first time-awareness refactor.
 
 ## Product principle
 
@@ -12,7 +12,7 @@ The active information architecture is:
 2. **Board** — the complete deadline horizon.
 3. **Calendar** — month-level deadline placement.
 
-Settings is a utility destination, not a fourth work view.
+Routines and Settings are utility destinations, not additional primary work views.
 
 ## Visual language
 
@@ -49,6 +49,12 @@ Board search matches title, notes, location, and tags. Active and archived recor
 ### Calendar
 
 Calendar renders tasks that have deadlines and are not archived. A continuous 21-day ribbon shows calibrated work at attention dates and deadline concentration, making empty and crowded periods visually distinct. Month cells mark start counts alongside deadlines. Dragging changes only the deadline; selecting a date allows creation. A quiet export action downloads open deadlines and supported reminders as `.ics`. The Calendar does not restore manual focus-block scheduling.
+
+### Routines
+
+Routines are ordered sequences started explicitly by the user. Management stays compact: a name plus one concrete action per line. Running a routine replaces the list/editor with one large current action and one dominant advance control. Stop is neutral and discards only session progress.
+
+Routine definitions persist separately from tasks. They contain only `id`, `title`, ordered `steps` (`id`, `text`), and `createdAt`. There are no automatic triggers, recurrence, deadlines, task creation, completion history, streaks, or template migration. Run position is deliberately session-only.
 
 ## Task model
 

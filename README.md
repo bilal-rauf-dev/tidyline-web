@@ -14,6 +14,8 @@ TidyLine has three primary views:
 - **Board** automatically groups tasks into Today, This Week, This Month, and Later based on when work needs to begin—not only when it is due.
 - **Calendar** combines a month view with a continuous three-week workload ribbon, supports drag-to-reschedule, and exports open deadlines and reminders as `.ics`.
 
+**Routines** is a secondary utility for short sequences such as leaving home or closing down work. A routine is entered as ordered actions and, when run, shows only the next action. It does not create tasks, schedules, streaks, or completion history.
+
 Tasks can include a deadline, reminders, tags, notes, location, an estimate, a checklist, links, and recurrence. They can also be pinned, duplicated, archived, completed, or edited in bulk. Tasks without a deadline remain visible in Later.
 
 Press **Start** when beginning work. TidyLine preserves active timing across reloads, accumulates paused intervals, and records actual minutes on completion. After three valid estimated-and-timed tasks, it uses the median of your personal estimate ratios to show a calm calibrated expectation such as `45m · usually ~1h 20m`. Missing estimates use completed-task history or a conservative fallback rather than counting as zero.
@@ -30,7 +32,7 @@ It extracts the deadline, duration, reminder, tag, and supported recurrence phra
 
 ## Data and reminders
 
-There is no account or backend. Tasks and preferences are stored in browser `localStorage`, and task data can be imported or exported as JSON. The versioned task boundary safely reads the earlier array format and preserves legacy attachment URLs as links and blocked-task details as notes and tags.
+There is no account or backend. Tasks, routine definitions, and preferences are stored in browser `localStorage`; task data can be imported or exported as JSON. The versioned task boundary safely reads the earlier array format and preserves legacy attachment URLs as links and blocked-task details as notes and tags. Routines use a separate versioned store and never alter task records.
 
 Browser alerts are checked only while TidyLine is open in a browser tab or installed window. Closing it stops reminder delivery; there is no push or background-sync service.
 
@@ -53,11 +55,11 @@ npm run build
 npm run check
 ```
 
-`npm run check` runs linting, the production build, render smoke tests, migration and date-boundary checks, retained recurrence/reminder checks, ICS/PWA validation, and parser tests.
+`npm run check` runs linting, the production build, render smoke tests, migration and date-boundary checks, retained recurrence/reminder checks, ICS/PWA validation, ordered-routine checks, and parser tests.
 
 ## Refactor status
 
-Phase 6 of the ADHD-first time-awareness refactor is complete. The low-decision core, honest active-page reminders, install metadata, and calendar export are in place. See `docs/refactor/PLAN.md` for the remaining sequence.
+Phase 7 of the ADHD-first time-awareness refactor is complete. The low-decision core, honest active-page reminders, install metadata, calendar export, and isolated one-action routine flow are in place. See `docs/refactor/PLAN.md` for the final polish phase.
 
 ## Contributors
 

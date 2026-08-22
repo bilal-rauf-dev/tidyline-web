@@ -11,7 +11,9 @@ import { NowPage } from './pages/NowPage'
 import { BoardPage } from './pages/BoardPage'
 import { CalendarPage } from './pages/CalendarPage'
 import { SettingsPage } from './pages/SettingsPage'
+import { RoutinesPage } from './pages/RoutinesPage'
 import { useTasks } from './hooks/useTasks'
+import { useRoutines } from './hooks/useRoutines'
 import { useReminderNotifications } from './hooks/useReminderNotifications'
 import { useTheme } from './hooks/useTheme'
 import { useProfile } from './hooks/useProfile'
@@ -21,7 +23,7 @@ import { toDateStr } from './utils/calendar'
 import { WelcomeDialog } from './components/WelcomeDialog'
 
 const DELETE_CONFIRM_KEY = 'tidyline:confirm-delete'
-const ROUTES = new Set(['/', '/board', '/calendar', '/settings'])
+const ROUTES = new Set(['/', '/board', '/calendar', '/routines', '/settings'])
 
 function loadDeleteConfirmation() {
   return localStorage.getItem(DELETE_CONFIRM_KEY) !== 'false'
@@ -35,6 +37,7 @@ function activeTaskId() {
 
 function App() {
   const taskState = useTasks()
+  const routineState = useRoutines()
   const appearance = useTheme()
   const profile = useProfile()
   const [location, navigate] = useLocation()
@@ -101,6 +104,7 @@ function App() {
       { id: 'now', label: 'Go to Now', run: () => navigate('/') },
       { id: 'board', label: 'Go to Board', run: () => navigate('/board') },
       { id: 'calendar', label: 'Go to Calendar', run: () => navigate('/calendar') },
+      { id: 'routines', label: 'Go to Routines', run: () => navigate('/routines') },
       { id: 'settings', label: 'Go to Settings', run: () => navigate('/settings') },
       { id: 'archive', label: 'Show archived tasks', run: () => navigate('/board?view=archived') },
       {
@@ -211,6 +215,15 @@ function App() {
             </Route>
             <Route path="/calendar">
               <CalendarPage tasks={taskState.tasks} addTask={createTask} setDeadline={taskState.setDeadline} />
+            </Route>
+            <Route path="/routines">
+              <RoutinesPage
+                routines={routineState.routines}
+                dataError={routineState.dataError}
+                onAdd={routineState.addRoutine}
+                onUpdate={routineState.updateRoutine}
+                onDelete={routineState.deleteRoutine}
+              />
             </Route>
             <Route path="/settings">
               <SettingsPage

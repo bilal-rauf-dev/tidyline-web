@@ -8,6 +8,7 @@ import {
   HomeIcon,
   SearchIcon,
   SettingsIcon,
+  RepeatIcon,
 } from './icons'
 import { BrandMonogram } from './BrandMonogram'
 import { DEFAULT_FILTERS, filterTasks } from '../utils/filters'
@@ -158,9 +159,14 @@ export function Sidebar({
         ))}
       </ul>
 
-      <Link href="/settings" className={location === '/settings' ? 'sidebar-review active' : 'sidebar-review'} onClick={onNavigate} title="Settings">
-        <SettingsIcon /><span>Settings</span>
-      </Link>
+      <div className="sidebar-utility-links">
+        <Link href="/routines" className={location === '/routines' ? 'sidebar-review active' : 'sidebar-review'} onClick={onNavigate} title="Routines">
+          <RepeatIcon /><span>Routines</span>
+        </Link>
+        <Link href="/settings" className={location === '/settings' ? 'sidebar-review active' : 'sidebar-review'} onClick={onNavigate} title="Settings">
+          <SettingsIcon /><span>Settings</span>
+        </Link>
+      </div>
 
       <button type="button" className="sidebar-collapse" onClick={onToggleCollapse} aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
         <ChevronLeftIcon /><span>Collapse</span>

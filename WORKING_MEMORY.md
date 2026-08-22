@@ -1,19 +1,19 @@
 # TidyLine project working memory
 
-Updated: 2026-08-21
+Updated: 2026-08-22
 Repository: `C:\Users\Bilal\Desktop\Developer Files\tidyline-web`
 Branch: `refactor/adhd-first-time-awareness`
 Baseline commit: `0407ea0`
 
 ## Current objective
 
-Refactor TidyLine into a small, local-first tool for ADHD-oriented time awareness. The north star is: what needs doing, when must it start, and what should happen now. Work one phase at a time; do not commit or open a PR. Phase 6 is complete pending user review. Phase 7 must not begin without approval.
+Refactor TidyLine into a small, local-first tool for ADHD-oriented time awareness. The north star is: what needs doing, when must it start, and what should happen now. Work one phase at a time; do not commit or open a PR. Phase 7 is complete pending user review. Phase 8 must not begin without approval.
 
 ## Current architecture
 
 - React 19 + Vite 8, JavaScript/JSX, wouter, chrono-node.
 - Entry: `src/main.jsx`; shell/routes: `src/App.jsx`.
-- Primary routes: `/` (Now), `/board`, `/calendar`. Utility route: `/settings`. Unknown routes redirect to Now.
+- Primary routes: `/` (Now), `/board`, `/calendar`. Utility routes: `/routines`, `/settings`. Unknown routes redirect to Now.
 - Central state: `src/hooks/useTasks.js`; normalization/migration: `src/utils/taskMigration.js`; storage envelope/import/export: `src/utils/tasksIO.js`.
 - Primary work views are Now, Board, and Calendar. Now is the final low-decision one-task entry surface built on calibrated timing.
 
@@ -22,6 +22,7 @@ Refactor TidyLine into a small, local-first tool for ADHD-oriented time awarenes
 Active keys:
 
 - `tidyline:tasks` — schema envelope version 4
+- `tidyline:routines` — separate routine envelope version 1
 - `tidyline:profile`
 - `tidyline:theme`, `tidyline:accent`, `tidyline:density`
 - `tidyline:notificationSound`
@@ -66,7 +67,7 @@ Migration preserves meaningful legacy data before dropping deprecated keys: atta
 
 ## Verification and known gaps
 
-`npm run check` is the phase gate. It covers lint, production build, SSR surface rendering, horizon boundaries, migration, recurrence/reminders, task update semantics, ICS/PWA validation, and Quick Add parsing. A real-browser interaction and responsive/accessibility pass remains necessary in Phase 8; the desktop browser runtime currently fails trusted-component initialization.
+`npm run check` is the phase gate. It covers lint, production build, SSR surface rendering, horizon boundaries, migration, recurrence/reminders, task update semantics, ICS/PWA validation, ordered routine progression, and Quick Add parsing. A real-browser interaction and responsive/accessibility pass remains necessary in Phase 8; the desktop browser runtime currently fails trusted-component initialization.
 
 The pre-existing untracked `.logic-tests/` directory is user-owned and ignored by lint/build. Do not delete or overwrite it.
 
@@ -99,6 +100,16 @@ The pre-existing untracked `.logic-tests/` directory is user-owned and ignored b
 - Snooze state now retains complete reminder IDs containing colons.
 - `phase6-smoke` validates ICS structure and all supported recurrence mappings, plus manifest identity, scope, icon presence, and HTML linkage. Schema remains version 4.
 
+## Phase 7 changes
+
+- Added `/routines` as a secondary utility route and command-palette destination; the primary Now/Board/Calendar navigation model is unchanged.
+- Routine definitions are isolated in `src/utils/routineIO.js` and `src/hooks/useRoutines.js` with fields `id`, `title`, ordered `steps` (`id`, `text`), and `createdAt`.
+- The editor is intentionally one name plus one action per line. New input is validated at 1–50 actions.
+- Running shows one action, step position, advance/finish, and stop. Run position is session-only; no task creation, scheduling, triggers, history, streaks, or failure state exists.
+- Removed templates are not migrated or renamed into routines. Task schema remains version 4.
+- Routine definitions are device-local in their own store; the existing task JSON import/export remains task-only.
+- `phase7-smoke` verifies isolated fields, loss-aware step normalization, array/envelope migration, ordered progression, safe completion, and invalid/future schema rejection.
+
 ## Next phase boundary
 
-Phase 7 is optional: consider only the smallest ordered-trigger routine flow if the core remains stable. Do not turn routines into templates, projects, recurring tasks, or another configuration-heavy surface, and do not start without user approval.
+Phase 8 is final polish and delivery: responsive checks at the required widths, keyboard/focus/reduced-motion review, migration hardening, stale-reference cleanup, final documentation, and the time-blindness scenario test. Do not start without user approval.
