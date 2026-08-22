@@ -5,6 +5,7 @@ import { formatDate } from '../utils/dates'
 import { collectTags, tagTone } from '../utils/tags'
 import { describeRecurrence } from '../utils/recurrence'
 import { PlusIcon } from './icons'
+import { ensureNotificationPermission } from '../utils/notifications'
 
 const EXAMPLE_HINTS = ['tomorrow 8pm', 'for 2h', 'remind 1h before', 'every weekday', '#tag']
 
@@ -89,6 +90,8 @@ export function QuickAddModal({ isOpen, onClose, onAddTask, onOpenFullForm, task
       setSubmitError('Reminder must be before the deadline.')
       return
     }
+
+    if (parsed.reminderMinutes !== null) ensureNotificationPermission()
 
     onAddTask({
       title: parsed.title,
@@ -232,6 +235,7 @@ export function QuickAddModal({ isOpen, onClose, onAddTask, onOpenFullForm, task
               </ul>
             </div>
           )}
+          {reminderToken && <small className="reminder-truth">Alerts are checked only while TidyLine is open.</small>}
 
           {!rawInput.trim() && (
             <div className="quick-add-hints">

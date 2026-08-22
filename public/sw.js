@@ -1,6 +1,6 @@
 /*
- * Minimal service worker. Its only job is to host notifications that carry
- * action buttons — the plain Notification constructor cannot render actions.
+ * Minimal service worker. It provides the worker registration needed for the
+ * installable app and hosts notifications that carry action buttons.
  *
  * It deliberately does NOT cache, sync, or handle push. Task data lives in
  * localStorage, which is unreachable from a worker, so every action is

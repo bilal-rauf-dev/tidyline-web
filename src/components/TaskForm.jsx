@@ -163,6 +163,7 @@ export function TaskForm({
             <button type="button" className="icon-action" onClick={addReminder} aria-label="Add reminder"><PlusIcon /></button>
           </div>
         </div>
+        <small className="reminder-truth">Alerts are checked only while TidyLine is open.</small>
 
         <DayContext mode="deadline" tasks={allTasks} value={deadline} />
         <DayContext mode="reminder" tasks={allTasks} value={reminderInput} />

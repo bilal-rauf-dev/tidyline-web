@@ -1,6 +1,6 @@
 # TidyLine ADHD-first time-awareness refactor
 
-Status: Phase 5 complete; Phase 6 pending approval
+Status: Phase 6 complete; Phase 7 pending approval
 Branch: `refactor/adhd-first-time-awareness`
 
 ## North star
@@ -31,8 +31,8 @@ The differentiator is calibrated time awareness: TidyLine learns the gap between
 | 3. Calibration foundation | Complete | Start/actual duration persists safely; completion feedback and multiplier utilities tested |
 | 4. Time-blindness model | Complete | Canonical calibrated duration, derived `startBy`, fit language, resurface behavior |
 | 5. Now view | Complete | Low-decision one-task surface is the primary entry experience |
-| 6. Reminders, PWA, and ICS | Planned | Honest reminder copy, install manifest, valid calendar export |
+| 6. Reminders, PWA, and ICS | Complete | Honest reminder copy, install manifest, valid calendar export |
 | 7. Routines | Planned | Small ordered-trigger routine flow, only if core remains stable |
 | 8. Polish and delivery | Planned | Responsive, accessible, migrated, documented, and fully green checks |
 
-Phase 5 passed its implementation gate. Phase 6 is blocked until the user approves the reminders/PWA/ICS boundary.
+Phase 6 passed its implementation gate. Phase 7 remains optional and is blocked until the user approves the smallest routines boundary.

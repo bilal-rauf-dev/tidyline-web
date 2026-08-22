@@ -104,7 +104,7 @@ export function SettingsPage({
         <div className="settings-row">
           <span>
             Reminder sound
-            <small className="settings-note">Browser reminders currently work while TidyLine is active.</small>
+            <small className="settings-note">Alerts are checked only while TidyLine is open in a browser tab. Closing it stops reminder delivery.</small>
           </span>
           <button
             type="button"

@@ -7,7 +7,7 @@ Baseline commit: `0407ea0`
 
 ## Current objective
 
-Refactor TidyLine into a small, local-first tool for ADHD-oriented time awareness. The north star is: what needs doing, when must it start, and what should happen now. Work one phase at a time; do not commit or open a PR. Phase 5 is complete pending user review. Phase 6 must not begin without approval.
+Refactor TidyLine into a small, local-first tool for ADHD-oriented time awareness. The north star is: what needs doing, when must it start, and what should happen now. Work one phase at a time; do not commit or open a PR. Phase 6 is complete pending user review. Phase 7 must not begin without approval.
 
 ## Current architecture
 
@@ -66,7 +66,7 @@ Migration preserves meaningful legacy data before dropping deprecated keys: atta
 
 ## Verification and known gaps
 
-`npm run check` is the phase gate. It covers lint, production build, SSR surface rendering, horizon boundaries, migration, recurrence/reminders, task update semantics, and Quick Add parsing. A real-browser interaction and responsive/accessibility pass remains necessary in Phase 8.
+`npm run check` is the phase gate. It covers lint, production build, SSR surface rendering, horizon boundaries, migration, recurrence/reminders, task update semantics, ICS/PWA validation, and Quick Add parsing. A real-browser interaction and responsive/accessibility pass remains necessary in Phase 8; the desktop browser runtime currently fails trusted-component initialization.
 
 The pre-existing untracked `.logic-tests/` directory is user-owned and ignored by lint/build. Do not delete or overwrite it.
 
@@ -89,6 +89,16 @@ The pre-existing untracked `.logic-tests/` directory is user-owned and ignored b
 - New-task focus, grouped native actions, explicit link/button focus styles, 48px hit areas, narrow-screen stacking, and the existing global reduced-motion rule cover the Phase 5 interaction contract.
 - `phase5-smoke` verifies urgency/size ordering, exclusions, wraparound, and empty selection as part of `npm run check`.
 
+## Phase 6 changes
+
+- Reminder copy now says alerts are checked only while TidyLine is open. No push, background sync, offline caching, or closed-app delivery is claimed.
+- Quick Add requests notification permission from the submit gesture when it creates a parsed reminder.
+- `manifest.webmanifest` plus linked document metadata uses the existing 1254×1254 logo and standalone display mode; the existing minimal worker remains the installation/notification-action boundary.
+- Calendar exports open deadlines and supported reminders through `src/utils/ics.js`. Output uses UTC timestamps, device-timezone metadata, CRLF, text escaping, and 75-byte folding.
+- Task recurrence maps to ICS recurrence rules; relative/absolute reminders become alarms; recurring reminders and reminder-only tasks remain exportable as transparent events.
+- Snooze state now retains complete reminder IDs containing colons.
+- `phase6-smoke` validates ICS structure and all supported recurrence mappings, plus manifest identity, scope, icon presence, and HTML linkage. Schema remains version 4.
+
 ## Next phase boundary
 
-Phase 6 covers truthful reminders, PWA installation, and valid ICS export. Do not start it without user approval, and do not imply background reminder guarantees before service-worker behavior is verified.
+Phase 7 is optional: consider only the smallest ordered-trigger routine flow if the core remains stable. Do not turn routines into templates, projects, recurring tasks, or another configuration-heavy surface, and do not start without user approval.

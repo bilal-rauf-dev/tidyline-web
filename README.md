@@ -12,7 +12,7 @@ TidyLine has three primary views:
 
 - **Now** chooses one open task internally from start urgency, deadline proximity, calibrated fit, and reasonable size. It offers only `5 more minutes`, `Done`, and `Not this` as primary choices.
 - **Board** automatically groups tasks into Today, This Week, This Month, and Later based on when work needs to begin—not only when it is due.
-- **Calendar** combines a month view with a continuous three-week workload ribbon and supports drag-to-reschedule.
+- **Calendar** combines a month view with a continuous three-week workload ribbon, supports drag-to-reschedule, and exports open deadlines and reminders as `.ics`.
 
 Tasks can include a deadline, reminders, tags, notes, location, an estimate, a checklist, links, and recurrence. They can also be pinned, duplicated, archived, completed, or edited in bulk. Tasks without a deadline remain visible in Later.
 
@@ -32,7 +32,9 @@ It extracts the deadline, duration, reminder, tag, and supported recurrence phra
 
 There is no account or backend. Tasks and preferences are stored in browser `localStorage`, and task data can be imported or exported as JSON. The versioned task boundary safely reads the earlier array format and preserves legacy attachment URLs as links and blocked-task details as notes and tags.
 
-Browser reminders currently run while TidyLine is active. Background delivery is not promised yet.
+Browser alerts are checked only while TidyLine is open in a browser tab or installed window. Closing it stops reminder delivery; there is no push or background-sync service.
+
+The Calendar export uses UTC event timestamps with the device timezone recorded, and includes supported task recurrence and reminder alarms. TidyLine also includes standalone installation metadata for browsers that offer app installation. Installation does not imply offline reminder delivery.
 
 ## Development
 
@@ -51,11 +53,11 @@ npm run build
 npm run check
 ```
 
-`npm run check` runs linting, the production build, render smoke tests, migration and date-boundary checks, retained recurrence/reminder checks, and parser tests.
+`npm run check` runs linting, the production build, render smoke tests, migration and date-boundary checks, retained recurrence/reminder checks, ICS/PWA validation, and parser tests.
 
 ## Refactor status
 
-Phase 5 of the ADHD-first time-awareness refactor is complete. Surface reduction, actual-time calibration, derived start timing, fit language, resurfacing, and the low-decision Now flow are in place. See `docs/refactor/PLAN.md` for the remaining sequence.
+Phase 6 of the ADHD-first time-awareness refactor is complete. The low-decision core, honest active-page reminders, install metadata, and calendar export are in place. See `docs/refactor/PLAN.md` for the remaining sequence.
 
 ## Contributors
 

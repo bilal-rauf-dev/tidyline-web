@@ -43,7 +43,11 @@ export function useReminderNotifications(tasks, { onComplete } = {}) {
       if (data.action === 'snooze' && data.taskId) {
         snoozedRef.current.set(
           `${data.taskId}:${data.reminderId}`,
-          Date.now() + SNOOZE_MINUTES * 60000,
+          {
+            dueAt: Date.now() + SNOOZE_MINUTES * 60000,
+            taskId: data.taskId,
+            reminderId: data.reminderId,
+          },
         )
       }
     }
@@ -68,7 +72,8 @@ export function useReminderNotifications(tasks, { onComplete } = {}) {
 
         task.reminders.forEach((reminder) => {
           const snoozeKey = `${task.id}:${reminder.id}`
-          const snoozedUntil = snoozedRef.current.get(snoozeKey)
+          const snooze = snoozedRef.current.get(snoozeKey)
+          const snoozedUntil = snooze?.dueAt
 
           if (snoozedUntil && now < snoozedUntil) {
             return
@@ -98,12 +103,11 @@ export function useReminderNotifications(tasks, { onComplete } = {}) {
       })
 
       // Fire any snoozes whose time has come.
-      snoozedRef.current.forEach((dueAt, key) => {
+      snoozedRef.current.forEach(({ dueAt, taskId, reminderId }, key) => {
         if (now < dueAt || firedRef.current.has(`snooze:${key}:${dueAt}`)) {
           return
         }
 
-        const [taskId, reminderId] = key.split(':')
         const task = tasksRef.current.find((entry) => entry.id === taskId)
 
         if (!task || task.done || task.archived) {

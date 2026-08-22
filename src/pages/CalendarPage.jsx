@@ -12,6 +12,7 @@ import { TaskForm } from '../components/TaskForm'
 import { ChevronLeftIcon, ChevronRightIcon } from '../components/icons'
 import { TimeRibbon } from '../components/TimeRibbon'
 import { deriveStartBy } from '../utils/timeAwareness'
+import { serializeCalendar } from '../utils/ics'
 
 export function CalendarPage({ tasks, addTask, setDeadline }) {
   const [viewDate, setViewDate] = useState(() => new Date())
@@ -41,11 +42,27 @@ export function CalendarPage({ tasks, addTask, setDeadline }) {
     if (id) setDeadline(id, dateStr)
   }
 
+  function exportCalendar() {
+    const calendar = serializeCalendar(tasks)
+    const url = URL.createObjectURL(new Blob([calendar], { type: 'text/calendar;charset=utf-8' }))
+    const link = document.createElement('a')
+    link.href = url
+    link.download = 'tidyline-deadlines.ics'
+    link.click()
+    URL.revokeObjectURL(url)
+  }
+
   return (
     <main className="app-shell calendar-shell">
-      <header className="hero">
-        <h1>Calendar</h1>
-        <p className="hero-copy">See where deadlines collect and how far apart they really are.</p>
+      <header className="hero calendar-hero">
+        <div>
+          <h1>Calendar</h1>
+          <p className="hero-copy">See where deadlines collect and how far apart they really are.</p>
+        </div>
+        <div className="calendar-export">
+          <button type="button" className="secondary" onClick={exportCalendar}>Export calendar</button>
+          <small>Open deadlines and reminders · device timezone</small>
+        </div>
       </header>
 
       <TimeRibbon tasks={tasks} referenceDate={referenceDate} />

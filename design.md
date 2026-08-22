@@ -1,6 +1,6 @@
 # TidyLine design and behavior contract
 
-Updated for Phase 5 of the ADHD-first time-awareness refactor.
+Updated for Phase 6 of the ADHD-first time-awareness refactor.
 
 ## Product principle
 
@@ -48,7 +48,7 @@ Board search matches title, notes, location, and tags. Active and archived recor
 
 ### Calendar
 
-Calendar renders tasks that have deadlines and are not archived. A continuous 21-day ribbon shows calibrated work at attention dates and deadline concentration, making empty and crowded periods visually distinct. Month cells mark start counts alongside deadlines. Dragging changes only the deadline; selecting a date allows creation. The Calendar does not restore manual focus-block scheduling.
+Calendar renders tasks that have deadlines and are not archived. A continuous 21-day ribbon shows calibrated work at attention dates and deadline concentration, making empty and crowded periods visually distinct. Month cells mark start counts alongside deadlines. Dragging changes only the deadline; selecting a date allows creation. A quiet export action downloads open deadlines and supported reminders as `.ics`. The Calendar does not restore manual focus-block scheduling.
 
 ## Task model
 
@@ -106,9 +106,13 @@ Supported extraction is intentionally narrow:
 
 Unrecognized syntax stays ordinary title text. New parser tokens should not be added without a clear end-to-end task-model need.
 
-## Reminder truthfulness
+## Reminders, installation, and calendar export
 
-The current browser reminder checker runs while the application is active. Product copy must say this plainly. Offline/background guarantees require later service-worker verification and must not be implied by notification permission alone.
+The browser reminder checker runs only while the application is open. This limitation appears where reminders are created and in Settings. Notification permission, service-worker registration, and app installation do not imply push, background sync, offline caching, or closed-app delivery.
+
+The service worker remains minimal and local: it hosts notification actions and satisfies the installed-app worker boundary, but it does not cache task data or communicate with a backend. The manifest uses existing brand assets and standalone display metadata.
+
+Calendar export is a one-way snapshot, not synchronization. Open deadline events use UTC timestamps derived from the device’s local deadline time and record the device timezone as calendar metadata. Task recurrence maps to `RRULE`; relative/absolute reminders map to `VALARM`; independently recurring reminders use transparent recurring events. Export does not change task storage or schema version.
 
 ## Engineering boundaries
 

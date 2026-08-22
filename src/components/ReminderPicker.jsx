@@ -30,6 +30,7 @@ export function ReminderPicker({ reminders, onAdd, onRemove, task }) {
         <BellIcon />
         Reminders
       </span>
+      <small className="reminder-truth">Alerts are checked only while TidyLine is open.</small>
 
       {reminders.length > 0 && (
         <ul className="reminder-strip">
