@@ -28,3 +28,11 @@ dist-ssr
 .phase1-smoke
 .phase2-smoke
 .phase3-smoke
+.parser-tests
+.logic-tests
+
+# Environment variables
+.env
+.env.*
+.env.local
+!.env.example

@@ -1,26 +1,18 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { parseImportedTasks } from '../utils/tasksIO'
-import { ACCENT_OPTIONS } from '../hooks/useTheme'
 import { BrandMonogram } from './BrandMonogram'
+import { GoogleIcon } from './icons'
 
-export function WelcomeDialog({ accent, onAccentChange, onImportTasks, onComplete }) {
-  const nameInputRef = useRef(null)
+export function WelcomeDialog({
+  onImportTasks,
+  onComplete,
+  onGoogleSignIn,
+}) {
   const fileInputRef = useRef(null)
-  const [name, setName] = useState('')
   const [importMessage, setImportMessage] = useState('')
 
-  useEffect(() => {
-    nameInputRef.current?.focus()
-  }, [])
-
   function finishAsGuest() {
-    onComplete('', true)
-  }
-
-  function handleSubmit(event) {
-    event.preventDefault()
-    if (!name.trim()) return
-    onComplete(name, false)
+    onComplete?.('', true)
   }
 
   function handleImport(event) {
@@ -49,45 +41,14 @@ export function WelcomeDialog({ accent, onAccentChange, onImportTasks, onComplet
           <span>TidyLine</span>
         </div>
         <div className="welcome-copy">
-          <p className="welcome-kicker">Local workspace</p>
+          <p className="welcome-kicker">Welcome to TidyLine</p>
           <h1 id="welcome-title">Make this space yours.</h1>
           <p>
-            Your name helps distinguish this local TidyLine workspace. No account or
-            online signup is needed.
+            Sign in with Google to sync your tasks across devices, or start immediately as a guest.
           </p>
         </div>
 
-        <form className="welcome-form" onSubmit={handleSubmit}>
-          <label className="welcome-name-field">
-            <span>Your name</span>
-            <input
-              ref={nameInputRef}
-              type="text"
-              value={name}
-              maxLength="48"
-              placeholder="What should we call this workspace?"
-              onChange={(event) => setName(event.target.value)}
-            />
-          </label>
-
-          <fieldset className="welcome-accent-field">
-            <legend>Choose an accent colour</legend>
-            <div className="accent-choices" role="group" aria-label="Choose an accent colour">
-              {ACCENT_OPTIONS.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  className={accent === option.value ? 'accent-swatch active' : 'accent-swatch'}
-                  style={{ background: option.value }}
-                  onClick={() => onAccentChange(option.value)}
-                  aria-pressed={accent === option.value}
-                  aria-label={option.label}
-                  title={option.label}
-                />
-              ))}
-            </div>
-          </fieldset>
-
+        <div className="welcome-content">
           <div className="welcome-import">
             <div>
               <strong>Already have TidyLine data?</strong>
@@ -107,15 +68,23 @@ export function WelcomeDialog({ accent, onAccentChange, onImportTasks, onComplet
           {importMessage && <p className="welcome-import-message" role="status">{importMessage}</p>}
 
           <div className="welcome-actions">
-            <button type="button" className="secondary" onClick={finishAsGuest}>
+            {onGoogleSignIn && (
+              <button
+                type="button"
+                className="primary welcome-google-btn"
+                onClick={onGoogleSignIn}
+              >
+                <GoogleIcon size={18} />
+                <span>Sign in with Google</span>
+              </button>
+            )}
+            <button type="button" className="secondary welcome-guest-btn" onClick={finishAsGuest}>
               Start as guest
             </button>
-            <button type="submit" className="primary" disabled={!name.trim()}>
-              Continue
-            </button>
           </div>
-        </form>
+        </div>
       </section>
     </main>
   )
 }
+

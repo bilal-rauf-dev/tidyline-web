@@ -1,4 +1,6 @@
 <div align="center">
+# Shawal made changes
+
   <img src="public/logo.svg" alt="TidyLine logo" width="96" height="96" />
 
 # TidyLine

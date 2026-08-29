@@ -14,10 +14,11 @@ import { ActivityGrid } from '../components/ActivityGrid'
 import { Sparkline } from '../components/Sparkline'
 import { TagList } from '../components/TagList'
 import { HomeDaybreak } from '../components/HomeDaybreak'
-import { PlusIcon } from '../components/icons'
+import { PlusIcon, GoogleIcon, LogOutIcon } from '../components/icons'
 import { isOverdue } from '../utils/overdue'
 import { toDateStr } from '../utils/calendar'
 import { isTaskPlannedForToday, isTaskUpcoming } from '../utils/taskFields'
+import { useAuth } from '../hooks/useAuth'
 
 const UPCOMING_LIMIT = 6
 const HOME_HEATMAP_DAYS = 35
@@ -49,7 +50,10 @@ function getGreeting(date = new Date()) {
 export function HomePage({
   tasks: allTasks,
   workspaceName = '',
+  auth: propAuth,
 }) {
+  const fallbackAuth = useAuth()
+  const auth = propAuth || fallbackAuth
   const [featureIndex, setFeatureIndex] = useState(0)
   const greeting = useMemo(() => getGreeting(), [])
   const tasks = useMemo(
@@ -131,13 +135,21 @@ export function HomePage({
     }
   }, [tasks])
 
+  const headingGreeting = useMemo(() => {
+    if (auth.isAuthenticated && auth.displayName) {
+      const firstName = auth.displayName.trim().split(' ')[0]
+      return `${greeting}, ${firstName}`
+    }
+    return workspaceName ? `${greeting}` : greeting
+  }, [auth.isAuthenticated, auth.displayName, greeting, workspaceName])
+
   return (
     <>
       <main className="app-shell home-shell">
         <section className="home-dashboard" aria-label="Home dashboard">
           <header className="home-welcome">
             <div>
-              <h1>{workspaceName ? `${greeting}` : greeting}</h1>
+              <h1>{headingGreeting}</h1>
               <p>
                 See what needs your attention, make a little progress, and leave the rest
                 somewhere you can trust.
@@ -148,6 +160,49 @@ export function HomePage({
                 <span className="home-add-mark" aria-hidden="true"><PlusIcon /></span>
                 Add a task
               </Link>
+
+              {!auth.isAuthenticated ? (
+                <button
+                  type="button"
+                  className="home-google-auth-btn"
+                  onClick={auth.signInWithGoogle}
+                  aria-label="Sign in with Google"
+                >
+                  <GoogleIcon size={18} />
+                  <span>Sign in with Google</span>
+                </button>
+              ) : (
+                <div className="home-user-badge">
+                  <div className="home-user-avatar-wrap">
+                    {auth.avatarUrl ? (
+                      <img
+                        src={auth.avatarUrl}
+                        alt={auth.displayName}
+                        className="home-user-avatar"
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <div className="home-user-avatar-fallback" aria-hidden="true">
+                        {auth.displayName.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                  </div>
+                  <div className="home-user-meta">
+                    <span className="home-user-name">{auth.displayName}</span>
+                    {auth.email && <span className="home-user-email">{auth.email}</span>}
+                  </div>
+                  <button
+                    type="button"
+                    className="home-signout-btn"
+                    onClick={auth.signOut}
+                    title="Sign out"
+                    aria-label="Sign out"
+                  >
+                    <LogOutIcon />
+                    <span>Sign out</span>
+                  </button>
+                </div>
+              )}
             </div>
           </header>
 

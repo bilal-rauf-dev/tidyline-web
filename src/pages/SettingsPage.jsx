@@ -6,7 +6,7 @@ import { Checkbox } from '../components/Checkbox'
 import { BucketConfigMenu } from '../components/BucketConfigMenu'
 import { BUCKET_ORDER } from '../utils/buckets'
 import { TemplateSettings } from '../components/TemplateSettings'
-import { ChevronDownIcon } from '../components/icons'
+import { ChevronDownIcon, GoogleIcon } from '../components/icons'
 
 function SettingsSection({ title, description, initiallyOpen = false, children }) {
   const [isOpen, setIsOpen] = useState(initiallyOpen)
@@ -50,6 +50,7 @@ export function SettingsPage({
   overloadHours = 6,
   onOverloadHoursChange = () => {},
   profile = null,
+  auth = null,
 }) {
   const fileInputRef = useRef(null)
   const [soundOn, setSoundOn] = useState(isSoundEnabled)
@@ -105,6 +106,11 @@ export function SettingsPage({
     }
   }
 
+  async function handleSignOut() {
+    await auth.signOut()
+    // profile resets automatically via useProfile's auth sync effect
+  }
+
   return (
     <main className="app-shell settings-shell">
       <header className="hero">
@@ -133,6 +139,75 @@ export function SettingsPage({
               Save name
             </button>
           </div>
+        </SettingsSection>
+      )}
+
+      {auth && (
+        <SettingsSection
+          title="Account"
+          description={
+            auth.isAuthenticated
+              ? 'Signed in with Google (Supabase Auth)'
+              : auth.isConfigured
+                ? 'Sign in with Google'
+                : 'Local mode (no backend configured)'
+          }
+          initiallyOpen
+        >
+          {auth.isAuthenticated ? (
+            <div className="settings-row settings-account-row">
+              <div className="settings-account-info">
+                <div className="settings-user-avatar-wrap">
+                  {auth.avatarUrl ? (
+                    <img
+                      src={auth.avatarUrl}
+                      alt={auth.displayName}
+                      className="settings-user-avatar"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <div className="settings-user-avatar-fallback">
+                      {auth.displayName.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                </div>
+                <div className="settings-user-meta">
+                  <strong>{auth.displayName}</strong>
+                  <small>{auth.email}</small>
+                </div>
+              </div>
+              <button type="button" className="secondary" onClick={handleSignOut}>
+                Sign out
+              </button>
+            </div>
+          ) : auth.isConfigured ? (
+            <div className="settings-row">
+              <span>
+                Supabase Authentication
+                <small className="settings-note">
+                  Sign in with your Google account via Supabase Auth.
+                </small>
+              </span>
+              <button
+                type="button"
+                className="secondary settings-google-btn"
+                onClick={auth.signInWithGoogle}
+              >
+                <GoogleIcon size={16} />
+                <span>Sign in with Google</span>
+              </button>
+            </div>
+          ) : (
+            <div className="settings-row">
+              <span>
+                Local mode
+                <small className="settings-note">
+                  No Supabase backend is configured, so tasks stay in this browser. Set
+                  VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to enable Google sign-in.
+                </small>
+              </span>
+            </div>
+          )}
         </SettingsSection>
       )}
 
