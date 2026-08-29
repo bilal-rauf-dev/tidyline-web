@@ -250,7 +250,7 @@ function App() {
       <WelcomeDialog
         onImportTasks={taskState.importTasks}
         onComplete={profile.completeSetup}
-        onGoogleSignIn={auth.signInWithGoogle}
+        onGoogleSignIn={auth.isConfigured ? auth.signInWithGoogle : undefined}
       />
     )
   }

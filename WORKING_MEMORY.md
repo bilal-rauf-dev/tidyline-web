@@ -9,7 +9,9 @@ Audited commit: `0407ea0` (`Merge pull request #10 from bilal-rauf-dev/feat/edit
 
 TidyLine is a local-first, deadline-driven task manager. A task is organized by how soon its deadline is, with Today through Later buckets, plus separate Upcoming, Overdue, Someday / Maybe, Calendar, Day Planner, Analytics, Settings, reminders, recurrence, templates, saved filters, workload awareness, and an end-of-day review.
 
-There is no backend or account system. Task and preference data live in browser `localStorage`; attachments are URL references rather than uploaded files.
+There is no *required* backend or account system: TidyLine still runs fully local-first out of the box, and task/preference data lives in browser `localStorage`; attachments are URL references rather than uploaded files.
+
+**2026-08-29 update:** the `backend` branch adds an *optional* Supabase Auth integration (`src/supabaseClient.js`, `src/hooks/useAuth.js`) for Google sign-in, gated behind `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` (see `.env.example`). Fixed a bug where an unconfigured/unreachable Supabase backend crashed the whole app at module load (see git history on this branch) — `supabaseClient.js` now exports `null` when unconfigured instead of throwing, and `useAuth.js`/the UI treat that as local-only mode rather than an error.
 
 ## Runtime and structure
 
