@@ -1,5 +1,4 @@
 <div align="center">
-# Shawal made changes
 
   <img src="public/logo.svg" alt="TidyLine logo" width="96" height="96" />
 
@@ -90,5 +89,6 @@ npm run check   # Lint + build + all smoke/parser tests
 
 ## Contributors
 
-- **[bilal-rauf-dev](https://github.com/bilal-rauf-dev)** — Lead
-- **[talha-rauf-dev](https://github.com/talha-rauf-dev)**
+- **[bilal-rauf-dev](https://github.com/bilal-rauf-dev)** — Lead/Frontend developer
+- **[shawal-cfd](https://github.com/shawal-cfd)** — Backend developer
+- **[talha-rauf-dev](https://github.com/talha-rauf-dev)** — Senior manager
