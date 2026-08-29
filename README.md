@@ -1,8 +1,5 @@
 <div align="center">
-<<<<<<< Updated upstream
 
-=======
->>>>>>> Stashed changes
   <img src="public/logo.svg" alt="TidyLine logo" width="96" height="96" />
 
 # TidyLine
@@ -117,10 +114,6 @@ npm run check   # Lint + build + all smoke/parser tests
 
 ## Contributors
 
-<<<<<<< Updated upstream
-- **[bilal-rauf-dev](https://github.com/bilal-rauf-dev)** — Lead/Frontend developer
-=======
 - **[bilal-rauf-dev](https://github.com/bilal-rauf-dev)** — Lead / Frontend developer
->>>>>>> Stashed changes
 - **[shawal-cfd](https://github.com/shawal-cfd)** — Backend developer
 - **[talha-rauf-dev](https://github.com/talha-rauf-dev)** — Senior manager
