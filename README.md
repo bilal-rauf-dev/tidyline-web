@@ -1,10 +1,20 @@
 <div align="center">
+<<<<<<< Updated upstream
 
+=======
+>>>>>>> Stashed changes
   <img src="public/logo.svg" alt="TidyLine logo" width="96" height="96" />
 
 # TidyLine
 
 A deadline-focused task manager that organizes your work by how soon it's due — not by folder, project, or priority you have to set yourself.
+
+![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=0B1520)
+![Vite](https://img.shields.io/badge/Vite-8-646CFF?style=flat-square&logo=vite&logoColor=white)
+![Supabase](https://img.shields.io/badge/Supabase%20Auth-optional-3FCF8E?style=flat-square&logo=supabase&logoColor=white)
+![wouter](https://img.shields.io/badge/wouter-routing-8A5CF6?style=flat-square)
+![chrono--node](https://img.shields.io/badge/chrono--node-NL%20dates-FF8A3D?style=flat-square)
+![ESLint](https://img.shields.io/badge/ESLint-9-4B32C3?style=flat-square&logo=eslint&logoColor=white)
 
 </div>
 
@@ -57,15 +67,30 @@ Add a task with a deadline and TidyLine automatically places it into the right t
 **Everything else**
 
 - Command palette (`Ctrl+K`) and keyboard shortcuts for common actions
-- Light/dark mode, selectable accent color, and compact/comfortable density
+- Light/dark mode, a selectable accent color, and compact/comfortable density
 - Export and import your tasks as JSON
-- All data stored locally in your browser — no account, no backend
+- All task data stays in your browser's local storage — no account required
+
+<table>
+<tr><td width="60"><img src="https://img.shields.io/badge/-%23FF5A36-FF5A36?style=flat-square" alt="Coral" /></td><td>Coral <sub>(default)</sub></td>
+<td width="60"><img src="https://img.shields.io/badge/-%236D5AE6-6D5AE6?style=flat-square" alt="Violet" /></td><td>Violet</td>
+<td width="60"><img src="https://img.shields.io/badge/-%230F7D68-0F7D68?style=flat-square" alt="Teal" /></td><td>Teal</td>
+<td width="60"><img src="https://img.shields.io/badge/-%23A85F07-A85F07?style=flat-square" alt="Amber" /></td><td>Amber</td>
+<td width="60"><img src="https://img.shields.io/badge/-%2337507A-37507A?style=flat-square" alt="Indigo" /></td><td>Indigo</td>
+</tr>
+</table>
+
+*The five accent options available under Settings → Appearance. Pick one hue to carry every highlight, button, and today marker in the app.*
+
+> [!NOTE]
+> TidyLine is local-first by design: it works fully offline, no sign-up needed, with tasks living in this browser's local storage. An optional Google sign-in (via Supabase Auth) is available to give the workspace your name and picture — task data itself isn't synced to a server yet, so it still stays on this device.
 
 ## Tech stack
 
 - [React 19](https://react.dev/) + [Vite](https://vite.dev/) for the app and build tooling
 - [wouter](https://github.com/molefrog/wouter) for routing
 - [chrono-node](https://github.com/wanasit/chrono) for natural-language date parsing in quick-add
+- [Supabase Auth](https://supabase.com/auth) for optional Google sign-in — entirely opt-in; see [Local development](#local-development)
 - ESLint for linting, plus a set of custom smoke-test and parser-test scripts (no traditional test framework)
 
 ## Local development
@@ -74,6 +99,9 @@ Add a task with a deadline and TidyLine automatically places it into the right t
 npm install
 npm run dev
 ```
+
+> [!TIP]
+> Google sign-in is optional. To enable it, copy `.env.example` to `.env` and fill in a Supabase project's `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`. Without it, TidyLine runs entirely in local/guest mode.
 
 Other useful scripts:
 
@@ -89,6 +117,10 @@ npm run check   # Lint + build + all smoke/parser tests
 
 ## Contributors
 
+<<<<<<< Updated upstream
 - **[bilal-rauf-dev](https://github.com/bilal-rauf-dev)** — Lead/Frontend developer
+=======
+- **[bilal-rauf-dev](https://github.com/bilal-rauf-dev)** — Lead / Frontend developer
+>>>>>>> Stashed changes
 - **[shawal-cfd](https://github.com/shawal-cfd)** — Backend developer
 - **[talha-rauf-dev](https://github.com/talha-rauf-dev)** — Senior manager
