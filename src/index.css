@@ -110,3 +110,32 @@ h3 {
   font-family: var(--font);
   font-weight: 800;
 }
+
+.app-crash-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  min-height: 100vh;
+  padding: 2rem;
+  text-align: center;
+  color: var(--text);
+  background: var(--bg);
+}
+
+.app-crash-screen p {
+  color: var(--text-soft);
+  max-width: 32rem;
+}
+
+.app-crash-screen button {
+  margin-top: 0.5rem;
+  padding: 0.6rem 1.4rem;
+  border: none;
+  border-radius: var(--radius-btn);
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}

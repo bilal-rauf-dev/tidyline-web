@@ -4,9 +4,16 @@ import { supabase } from '../supabaseClient'
 export function useAuth() {
   const [user, setUser] = useState(null)
   const [session, setSession] = useState(null)
-  const [loading, setLoading] = useState(true)
+  // No Supabase client at all (unconfigured/no backend) means there's nothing to wait on.
+  const [loading, setLoading] = useState(Boolean(supabase))
 
   useEffect(() => {
+    if (!supabase) {
+      // Local-only mode: no backend configured. `loading` was already initialized to
+      // `false` above for this case, so there is nothing to resolve or set here.
+      return
+    }
+
     // Check initial active session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
@@ -32,6 +39,12 @@ export function useAuth() {
   }, [])
 
   const signInWithGoogle = useCallback(async () => {
+    if (!supabase) {
+      throw new Error(
+        'Google sign-in is unavailable: no Supabase backend is configured for this app.',
+      )
+    }
+
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
@@ -46,6 +59,10 @@ export function useAuth() {
   }, [])
 
   const signOut = useCallback(async () => {
+    if (!supabase) {
+      return
+    }
+
     const { error } = await supabase.auth.signOut()
     if (error) {
       console.error('Error signing out:', error.message)
@@ -67,6 +84,9 @@ export function useAuth() {
     session,
     loading,
     isAuthenticated: Boolean(user),
+    // Whether a Supabase backend is configured at all — lets callers hide/disable
+    // sign-in UI instead of offering a button that can only ever throw.
+    isConfigured: Boolean(supabase),
     displayName,
     email,
     avatarUrl,

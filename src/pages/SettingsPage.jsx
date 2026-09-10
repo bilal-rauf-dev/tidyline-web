@@ -145,7 +145,13 @@ export function SettingsPage({
       {auth && (
         <SettingsSection
           title="Account"
-          description={auth.isAuthenticated ? 'Signed in with Google (Supabase Auth)' : 'Sign in with Google'}
+          description={
+            auth.isAuthenticated
+              ? 'Signed in with Google (Supabase Auth)'
+              : auth.isConfigured
+                ? 'Sign in with Google'
+                : 'Local mode (no backend configured)'
+          }
           initiallyOpen
         >
           {auth.isAuthenticated ? (
@@ -174,7 +180,7 @@ export function SettingsPage({
                 Sign out
               </button>
             </div>
-          ) : (
+          ) : auth.isConfigured ? (
             <div className="settings-row">
               <span>
                 Supabase Authentication
@@ -190,6 +196,16 @@ export function SettingsPage({
                 <GoogleIcon size={16} />
                 <span>Sign in with Google</span>
               </button>
+            </div>
+          ) : (
+            <div className="settings-row">
+              <span>
+                Local mode
+                <small className="settings-note">
+                  No Supabase backend is configured, so tasks stay in this browser. Set
+                  VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to enable Google sign-in.
+                </small>
+              </span>
             </div>
           )}
         </SettingsSection>
