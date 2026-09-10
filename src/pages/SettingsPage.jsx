@@ -107,8 +107,8 @@ export function SettingsPage({
   }
 
   async function handleSignOut() {
-    await auth.signOut()
-    // profile resets automatically via useProfile's auth sync effect
+    profile?.resetProfile?.()
+    await auth?.signOut?.()
   }
 
   return (

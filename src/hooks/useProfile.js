@@ -1,118 +1,108 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 const STORAGE_KEY = 'tidyline:profile'
-const GUEST_NAME = 'Guest'
+const GUEST_NAME  = 'Guest'
 
 function normalizeName(value) {
   return String(value ?? '').trim().replace(/\s+/g, ' ').slice(0, 48)
 }
 
+/**
+ * Load the saved workspace name from localStorage (so it can pre-fill the
+ * WelcomeDialog for returning guests), but do NOT restore isSetUp — guests
+ * must explicitly choose "Start as guest" every session.
+ */
 function loadProfile() {
   try {
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? 'null')
-
-    if (!stored?.isSetUp) {
-      return { isSetUp: false, name: '', isGuest: false }
-    }
-
     return {
-      isSetUp: true,
-      name: normalizeName(stored.name) || GUEST_NAME,
-      isGuest: Boolean(stored.isGuest),
+      isSetUp:  false,                                       // always start fresh
+      name:     normalizeName(stored?.name) || '',           // recall previous name
+      isGuest:  false,
     }
   } catch {
     return { isSetUp: false, name: '', isGuest: false }
   }
 }
 
+function googleNameFrom(authUser) {
+  return (
+    authUser?.user_metadata?.full_name ||
+    authUser?.user_metadata?.name      ||
+    authUser?.email?.split('@')[0]     ||
+    'User'
+  )
+}
+
 /**
- * Local-only profile metadata. It deliberately stays separate from task data,
- * so a future synced account can replace this record without migrating tasks.
+ * Local-only profile metadata. Stays separate from task data.
  *
- * Pass `authUser` (the raw Supabase user object from useAuth().user) so this
- * hook can react to sign-in and sign-out events in a single, race-free place:
+ * Pass `authUser`  (raw Supabase user from useAuth().user) so the hook can
+ * react to sign-in / sign-out events.
  *
- *   SIGNED IN  → if profile isn't set up or is a guest session, update the
- *                name to the Google display name.
- *   SIGNED OUT → automatically reset the profile so the WelcomeDialog shows.
- *                No external coordination in App.jsx is needed.
+ * Pass `settingsCtx` ({ settings, updateSettings }) when the user is
+ * authenticated so that the workspace name is read from / written to
+ * user_settings rather than localStorage.
+ *
+ * SIGNED IN  → profile is derived from auth + settings; localStorage is not
+ *              written (profile.isSetUp is always true, isGuest always false).
+ * SIGNED OUT → profile resets so WelcomeDialog re-appears.
+ * GUEST      → unchanged localStorage behaviour.
  */
-export function useProfile(authUser = null) {
-  const [profile, setProfile] = useState(loadProfile)
+export function useProfile(authUser = null, settingsCtx = null) {
+  const isAuthenticated = Boolean(authUser)
+  const { settings = null, updateSettings = null } = settingsCtx ?? {}
 
-  // Persist to localStorage whenever the profile is active.
+  const [localProfile, setLocalProfile] = useState(loadProfile)
+
+  const activeProfile = authUser
+    ? {
+        isSetUp: true,
+        name:
+          normalizeName(settings?.workspaceName || googleNameFrom(authUser)) ||
+          GUEST_NAME,
+        isGuest: false,
+      }
+    : localProfile
+
+  // ── Guest localStorage persistence (authenticated users skip this) ────────
   useEffect(() => {
-    if (!profile.isSetUp) {
-      return
-    }
-
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(profile))
-  }, [profile])
-
-  // ─── Auth ↔ profile sync ──────────────────────────────────────────────────
-  // Track the previous user ref to distinguish sign-in, sign-out, and mount.
-  const prevUserRef = useRef(authUser)
-
-  useEffect(() => {
-    const prevUser = prevUserRef.current
-    prevUserRef.current = authUser
-
-    if (authUser) {
-      // User is signed in with Google. Sync the display name if the profile
-      // isn't set up yet, or if the current session was a guest session.
-      const googleName =
-        authUser.user_metadata?.full_name ||
-        authUser.user_metadata?.name ||
-        authUser.email?.split('@')[0] ||
-        'User'
-
-      setProfile((current) => {
-        if (!current.isSetUp || current.isGuest) {
-          return {
-            isSetUp: true,
-            name: normalizeName(googleName) || GUEST_NAME,
-            isGuest: false,
-          }
-        }
-        // Already set up as a real (non-guest) user — don't overwrite.
-        return current
-      })
-    } else if (prevUser) {
-      // authUser just went from truthy → null: the user signed out.
-      // Reset immediately so App.jsx re-renders with the WelcomeDialog.
-      localStorage.removeItem(STORAGE_KEY)
-      setProfile({ isSetUp: false, name: '', isGuest: false })
-    }
-    // On initial mount where authUser is null and prevUser is also null,
-    // do nothing — we respect whatever was already in localStorage
-    // (a guest session should survive a page refresh).
-  }, [authUser])
-  // ─────────────────────────────────────────────────────────────────────────
+    if (isAuthenticated || !localProfile.isSetUp) return
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(localProfile))
+  }, [localProfile, isAuthenticated])
 
   function completeSetup(name, isGuest = false) {
-    setProfile({
+    setLocalProfile({
       isSetUp: true,
-      name: isGuest ? GUEST_NAME : normalizeName(name) || GUEST_NAME,
+      name:    isGuest ? GUEST_NAME : normalizeName(name) || GUEST_NAME,
       isGuest,
     })
   }
 
   function setName(name) {
-    setProfile((current) => ({
-      ...current,
-      isSetUp: true,
-      name: normalizeName(name) || GUEST_NAME,
-      isGuest: normalizeName(name) === '',
-    }))
+    const normalized = normalizeName(name) || GUEST_NAME
+
+    if (isAuthenticated) {
+      // For authenticated users, persist to Supabase via settingsCtx.
+      updateSettings?.({ workspaceName: normalized })
+    } else {
+      // For guests, update local state (localStorage effect handles persistence).
+      setLocalProfile((current) => ({
+        ...current,
+        isSetUp: true,
+        name:    normalized,
+        isGuest: normalizeName(name) === '',
+      }))
+    }
   }
 
   function resetProfile() {
     localStorage.removeItem(STORAGE_KEY)
-    setProfile({ isSetUp: false, name: '', isGuest: false })
+    setLocalProfile({ isSetUp: false, name: '', isGuest: false })
   }
 
   return {
-    ...profile,
+    ...activeProfile,
     completeSetup,
     setName,
     resetProfile,

@@ -50,7 +50,7 @@ export function useAuth() {
     if (error) {
       console.error('Error signing out:', error.message)
       throw error
-    }
+    } 
   }, [])
 
   const displayName =
