@@ -6697,3 +6697,186 @@ textarea,
   color: var(--text-on-dark);
   font-weight: 700;
 }
+
+/* ── Loading Spinner Screen ────────────────────────────────────────────── */
+.loading-spinner-screen {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.25rem;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+}
+
+.loading-spinner-ring {
+  display: inline-block;
+  position: relative;
+  width: 44px;
+  height: 44px;
+}
+
+.loading-spinner-ring div {
+  box-sizing: border-box;
+  display: block;
+  position: absolute;
+  width: 36px;
+  height: 36px;
+  margin: 4px;
+  border: 3px solid var(--accent);
+  border-radius: 50%;
+  animation: loading-spinner-ring 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+  border-color: var(--accent) transparent transparent transparent;
+}
+
+.loading-spinner-ring div:nth-child(1) {
+  animation-delay: -0.45s;
+}
+
+.loading-spinner-ring div:nth-child(2) {
+  animation-delay: -0.3s;
+}
+
+.loading-spinner-ring div:nth-child(3) {
+  animation-delay: -0.15s;
+}
+
+@keyframes loading-spinner-ring {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-spinner-label {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text-soft);
+  letter-spacing: -0.01em;
+}
+
+/* ── Migration Banner ─────────────────────────────────────────────────── */
+.migration-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.85rem 1.25rem;
+  padding: 0.85rem 1.25rem;
+  margin: 0.75rem 1rem 0.5rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--accent);
+  border-radius: var(--radius-card);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+  animation: toast-in var(--dur-move) var(--ease);
+}
+
+.migration-banner-icon {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.migration-banner-text {
+  margin: 0;
+  flex: 1;
+  min-width: 240px;
+  font-size: 0.88rem;
+  color: var(--text);
+  line-height: 1.45;
+}
+
+.migration-banner-text strong {
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.migration-banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.migration-banner-import {
+  padding: 0.45rem 0.9rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border-radius: var(--radius-btn);
+  border: none;
+  background: var(--accent);
+  color: #ffffff;
+  cursor: pointer;
+  transition: opacity var(--dur-fast) var(--ease);
+}
+
+.migration-banner-import:hover {
+  opacity: 0.9;
+}
+
+.migration-banner-dismiss {
+  padding: 0.45rem 0.75rem;
+  font-size: 0.82rem;
+  font-weight: 500;
+  border-radius: var(--radius-btn);
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--text-soft);
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease);
+}
+
+.migration-banner-dismiss:hover {
+  background: var(--surface-raised);
+  color: var(--text);
+}
+
+/* ── DB Error Toast ───────────────────────────────────────────────────── */
+.db-error-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 1.5rem;
+  transform: translateX(-50%);
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1.1rem;
+  border-radius: var(--radius-card);
+  background: #2a1215;
+  border: 1px solid rgba(255, 90, 54, 0.4);
+  color: #ffebe8;
+  font-size: 0.86rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  animation: toast-in var(--dur-move) var(--ease);
+  max-width: 90vw;
+}
+
+.db-error-toast-icon {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.db-error-toast-message {
+  margin: 0;
+  line-height: 1.4;
+}
+
+.db-error-toast-dismiss {
+  background: none;
+  border: none;
+  color: #ffa896;
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+}
+
+.db-error-toast-dismiss:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}

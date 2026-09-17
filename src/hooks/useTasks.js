@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { deadlineForBucket } from '../utils/buckets'
 import { toDateStr } from '../utils/calendar'
 import { nextOccurrence } from '../utils/recurrence'
@@ -12,6 +12,14 @@ import {
   normalizeStartDate,
   shiftStartDateForDeadline,
 } from '../utils/taskFields'
+import {
+  deleteTaskRow,
+  deleteManyTaskRows,
+  fetchTasks,
+  replaceAllTasks,
+  upsertManyTasks,
+  upsertTask,
+} from '../utils/supabaseStorage'
 
 const STORAGE_KEY = 'tidyline:tasks'
 const UNDO_MS = 6000
@@ -77,7 +85,7 @@ export function normalizeTask(task) {
   }
 }
 
-function loadTasks() {
+function loadTasksFromLocalStorage() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     const parsed = raw ? JSON.parse(raw) : []
@@ -112,14 +120,120 @@ function nextInstance(task, deadline) {
   })
 }
 
-export function useTasks() {
-  const [tasks, setTasks] = useState(loadTasks)
-  const [undoState, setUndoState] = useState(null)
+/**
+ * useTasks — the main task state hook.
+ *
+ * Pass `auth` (the object returned by useAuth) to enable Supabase sync.
+ * When `auth.isAuthenticated` is false (guest), the hook behaves exactly as
+ * before: data lives in localStorage, reads are synchronous, writes are instant.
+ *
+ * When authenticated:
+ *  - Tasks are fetched from Supabase on mount (loading = true until done).
+ *  - Every mutation optimistically updates local state and fires a background
+ *    Supabase write. Failed writes surface via `dbError`.
+ *  - `hasPendingMigration` is true when the DB is empty but localStorage has
+ *    tasks. Call `migrateLocalTasks()` to import them.
+ */
+export function useTasks(auth = null) {
+  const isAuthenticated = auth?.isAuthenticated ?? false
+  const userId          = auth?.user?.id ?? null
 
+  // For guests: load synchronously from localStorage.
+  // For authenticated: start empty, populate from Supabase asynchronously.
+  const [tasks,               setTasks]               = useState(() =>
+    isAuthenticated ? [] : loadTasksFromLocalStorage(),
+  )
+  const [undoState,           setUndoState]           = useState(null)
+  const [loading,             setLoading]             = useState(() => Boolean(isAuthenticated && userId))
+  const [dbError,             setDbError]             = useState(null)
+  const [hasPendingMigration, setHasPendingMigration] = useState(false)
+
+  // Track previous auth state so we can detect sign-out transitions and
+  // prevent Supabase data from leaking into the guest session.
+  const prevAuthRef = useRef(isAuthenticated)
+
+  // Keep a ref to current tasks so the daily-maintenance interval can read
+  // them without stale closure issues.
+  const tasksRef = useRef(tasks)
+  useEffect(() => { tasksRef.current = tasks }, [tasks])
+
+  // ── Reset on sign-out (authenticated → guest) ─────────────────────────────
+  // When the user signs out, React state still holds the Supabase-fetched
+  // tasks. We must clear them and reload from localStorage so the guest
+  // session never sees another account's data.
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks))
-  }, [tasks])
+    const wasAuthenticated = prevAuthRef.current
+    prevAuthRef.current = isAuthenticated
 
+    if (wasAuthenticated && !isAuthenticated) {
+      // User just signed out — reset to local-only data.
+      setTasks(loadTasksFromLocalStorage())
+      setUndoState(null)
+      setDbError(null)
+      setHasPendingMigration(false)
+      setLoading(false)
+    }
+  }, [isAuthenticated])
+
+  // ── Initial Supabase fetch (authenticated users only) ─────────────────────
+  useEffect(() => {
+    if (!isAuthenticated || !userId) return
+
+    let cancelled = false
+
+    fetchTasks(userId)
+      .then((data) => {
+        if (cancelled) return
+        setDbError(null)
+
+        // Offer migration if the user has local tasks but nothing in the DB yet.
+        if (data.length === 0) {
+          const alreadyDismissed = sessionStorage.getItem('tidyline:tasks-migration-dismissed')
+          if (!alreadyDismissed) {
+            try {
+              const local = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]')
+              if (Array.isArray(local) && local.length > 0) {
+                setHasPendingMigration(true)
+              }
+            } catch { /* ignore */ }
+          }
+        }
+
+        setTasks(data.map(normalizeTask))
+        setLoading(false)
+      })
+      .catch((err) => {
+        if (cancelled) return
+        console.error('[useTasks] fetch failed:', err)
+        setDbError('Could not load tasks from your account. Check your connection.')
+        setLoading(false)
+      })
+
+    return () => { cancelled = true }
+  }, [isAuthenticated, userId])
+
+  // ── Guest localStorage persistence ────────────────────────────────────────
+  // Only runs for guest users. Authenticated writes go through Supabase helpers.
+  // Skip the write when we just transitioned from authenticated to prevent
+  // stale Supabase data from being flushed into localStorage.
+  const authStableRef = useRef(isAuthenticated)
+  useEffect(() => {
+    if (isAuthenticated) { authStableRef.current = true; return }
+
+    // If we just transitioned from authenticated → guest, the reset effect
+    // above already set tasks to the correct local data. However, this
+    // effect fires in the same render cycle with the stale tasks value from
+    // before the reset. Skip this write until the next genuine guest change.
+    if (authStableRef.current) { authStableRef.current = false; return }
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks))
+  }, [tasks, isAuthenticated])
+
+  // ── Daily maintenance: clear past plannedDates, release expired waits ─────
+  // Uses the tasks ref so it doesn't need tasks in its deps. This keeps the
+  // interval stable. Note: these updates are intentionally NOT synced to
+  // Supabase — normalizeTask on the next fetch will produce the same result,
+  // and the DB row is corrected the next time that task is touched by the user.
   useEffect(() => {
     const interval = window.setInterval(() => {
       const today = toDateStr(new Date())
@@ -139,9 +253,9 @@ export function useTasks() {
                 ...task,
                 plannedDate:
                   task.plannedDate && task.plannedDate < today ? null : task.plannedDate,
-                status: releaseWaiting ? 'active' : task.status,
-                waitingFor: releaseWaiting ? '' : task.waitingFor,
-                followUpDate: releaseWaiting ? null : task.followUpDate,
+                status:     releaseWaiting ? 'active'  : task.status,
+                waitingFor: releaseWaiting ? ''        : task.waitingFor,
+                followUpDate: releaseWaiting ? null    : task.followUpDate,
               }
             })
           : current
@@ -151,203 +265,226 @@ export function useTasks() {
     return () => window.clearInterval(interval)
   }, [])
 
+  // ── Undo timer ────────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!undoState) {
-      return undefined
-    }
-
+    if (!undoState) return undefined
     const timer = setTimeout(() => setUndoState(null), UNDO_MS)
     return () => clearTimeout(timer)
   }, [undoState])
+
+  // ── Internal helpers ──────────────────────────────────────────────────────
+
+  function handleSyncError(label, err) {
+    console.error(`[useTasks] ${label} error:`, {
+      message: err?.message,
+      details: err?.details,
+      hint: err?.hint,
+      code: err?.code,
+      raw: err,
+    })
+    setDbError(err?.message ? `Failed to sync task: ${err.message}` : 'Failed to sync a change. Your data is safe locally — retry or refresh.')
+  }
+
+  function syncUpsert(task) {
+    if (!isAuthenticated || !userId) return
+    upsertTask(userId, task).catch((err) => handleSyncError('upsert', err))
+  }
+
+  function syncUpsertMany(taskList) {
+    if (!isAuthenticated || !userId || taskList.length === 0) return
+    upsertManyTasks(userId, taskList).catch((err) => handleSyncError('upsert_many', err))
+  }
+
+  function syncDelete(taskId) {
+    if (!isAuthenticated || !userId) return
+    deleteTaskRow(taskId).catch((err) => handleSyncError('delete', err))
+  }
+
+  function syncDeleteMany(taskIds) {
+    if (!isAuthenticated || !userId || taskIds.length === 0) return
+    deleteManyTaskRows(taskIds).catch((err) => handleSyncError('delete_many', err))
+  }
 
   function commit(message, nextTasks) {
     setUndoState({ message, snapshot: tasks })
     setTasks(nextTasks)
   }
 
+  /** Look up a task in the current snapshot. */
+  function getTask(id) {
+    return tasksRef.current.find((t) => t.id === id) ?? null
+  }
+
   function mapTask(id, changes) {
     return tasks.map((task) => (task.id === id ? { ...task, ...changes } : task))
   }
 
+  /**
+   * Apply an updater function to one task, update state, and sync the result.
+   * Reads from `tasks` closure for the Supabase payload; uses functional
+   * setTasks for correctness under React batching.
+   */
   function patch(id, updater) {
+    // Read the task at call time (closure) for the Supabase payload.
+    const task = getTask(id)
+    if (!task) return
+    const changes = updater(task)
+    if (!changes || Object.keys(changes).length === 0) return
+    const updated = { ...task, ...changes }
+
+    // Functional form ensures correctness if multiple patches queue up.
     setTasks((current) =>
-      current.map((task) => (task.id === id ? { ...task, ...updater(task) } : task)),
+      current.map((t) => (t.id === id ? { ...t, ...changes } : t)),
     )
+    syncUpsert(updated)
   }
 
+  // ── Mutations ─────────────────────────────────────────────────────────────
+
   function addTask({
-    title,
-    deadline,
-    reminders,
-    tags = [],
-    recurrence = null,
-    notes = '',
-    checklist = [],
-    links = [],
-    attachments = [],
-    location = '',
-    duration = null,
-    startDate = null,
-    energyLevel = null,
-    scheduledStart = null,
-    archived = false,
-    status = 'active',
-    waitingFor = '',
-    followUpDate = null,
-    plannedDate = null,
+    title, deadline, reminders, tags = [], recurrence = null,
+    notes = '', checklist = [], links = [], attachments = [],
+    location = '', duration = null, startDate = null, energyLevel = null,
+    scheduledStart = null, archived = false, status = 'active',
+    waitingFor = '', followUpDate = null, plannedDate = null,
   }) {
     const task = normalizeTask({
       id: crypto.randomUUID(),
-      title,
-      deadline,
-      reminders,
-      tags,
-      recurrence,
-      notes,
-      checklist,
-      links,
-      attachments,
-      location,
-      duration,
-      startDate,
-      energyLevel,
-      scheduledStart,
-      archived,
-      status,
-      waitingFor,
-      followUpDate,
-      plannedDate,
-      originalDeadline: deadline,
-      postponeHistory: [],
+      title, deadline, reminders, tags, recurrence, notes, checklist, links,
+      attachments, location, duration, startDate, energyLevel, scheduledStart,
+      archived, status, waitingFor, followUpDate, plannedDate,
+      originalDeadline: deadline, postponeHistory: [],
       createdAt: new Date().toISOString(),
     })
 
     setTasks((current) => [task, ...current])
+    syncUpsert(task)
     return task
   }
 
   function addSomedayTask({ title, notes = '', tags = [] }) {
     const task = normalizeTask({
       id: crypto.randomUUID(),
-      title,
-      deadline: null,
-      reminders: [],
-      tags,
-      notes,
+      title, deadline: null, reminders: [], tags, notes,
       createdAt: new Date().toISOString(),
     })
 
     setTasks((current) => [task, ...current])
+    syncUpsert(task)
     return task
   }
 
   function updateTask(id, updates, source = 'edit') {
+    const task = getTask(id)
+    if (!task) return
+    const updated = applyTaskUpdates(task, updates, source)
+    if (updated === task) return
     setTasks((current) =>
-      current.map((task) => (task.id === id ? applyTaskUpdates(task, updates, source) : task)),
+      current.map((t) => (t.id === id ? updated : t)),
     )
+    syncUpsert(updated)
   }
 
   function deleteTask(id) {
     commit('Task deleted', tasks.filter((task) => task.id !== id))
+    syncDelete(id)
   }
 
   function completeTask(id) {
-    const target = tasks.find((task) => task.id === id)
+    const target = getTask(id)
+    if (!target || target.done) return
 
-    if (!target || target.done) {
-      return
-    }
-
-    let next = tasks.map((task) =>
-      task.id === id ? { ...task, done: true, completedAt: new Date().toISOString() } : task,
-    )
+    const completed = { ...target, done: true, completedAt: new Date().toISOString() }
+    let next = tasks.map((t) => (t.id === id ? completed : t))
     let createdNext = false
+    let newInstance = null
 
     // Recurring tasks materialise their next instance on completion.
     if (target.recurrence && target.deadline) {
       const upcoming = nextOccurrence(target.recurrence, target.deadline)
-
       if (upcoming) {
-        next = [nextInstance(target, upcoming), ...next]
+        newInstance = nextInstance(target, upcoming)
+        next = [newInstance, ...next]
         createdNext = true
       }
     }
 
     commit(createdNext ? 'Completed — next one scheduled' : 'Task completed', next)
+    syncUpsert(completed)
+    if (newInstance) syncUpsert(newInstance)
   }
 
   function toggleTask(id) {
-    const target = tasks.find((task) => task.id === id)
+    const target = getTask(id)
 
     if (target && !target.done) {
       completeTask(id)
       return
     }
 
-    setTasks(mapTask(id, { done: false, completedAt: null }))
+    if (target) {
+      const updated = { ...target, done: false, completedAt: null }
+      setTasks(mapTask(id, { done: false, completedAt: null }))
+      syncUpsert(updated)
+    }
   }
 
   function togglePin(id) {
-    const target = tasks.find((task) => task.id === id)
-    setTasks(mapTask(id, { pinned: !target?.pinned }))
+    const target = getTask(id)
+    if (!target) return
+    const updated = { ...target, pinned: !target.pinned }
+    setTasks(mapTask(id, { pinned: !target.pinned }))
+    syncUpsert(updated)
   }
 
   function archiveTask(id) {
-    commit('Task archived', mapTask(id, { archived: true }))
+    const target = getTask(id)
+    if (!target) return
+    const updated = { ...target, archived: true }
+    commit('Task archived', tasks.map((t) => (t.id === id ? updated : t)))
+    syncUpsert(updated)
   }
 
   function unarchiveTask(id) {
+    const target = getTask(id)
+    if (!target) return
+    const updated = { ...target, archived: false }
     setTasks(mapTask(id, { archived: false }))
+    syncUpsert(updated)
   }
 
   function duplicateTask(id) {
-    const target = tasks.find((task) => task.id === id)
-
-    if (!target) {
-      return
-    }
+    const target = getTask(id)
+    if (!target) return
 
     const copy = normalizeTask({
       ...target,
       id: crypto.randomUUID(),
       title: `${target.title} (copy)`,
-      done: false,
-      completedAt: null,
-      pinned: false,
-      archived: false,
-      plannedDate: null,
-      scheduledStart: null,
-      status: 'active',
-      waitingFor: '',
-      followUpDate: null,
-      originalDeadline: target.deadline,
-      postponeHistory: [],
+      done: false, completedAt: null, pinned: false, archived: false,
+      plannedDate: null, scheduledStart: null, status: 'active',
+      waitingFor: '', followUpDate: null,
+      originalDeadline: target.deadline, postponeHistory: [],
       createdAt: new Date().toISOString(),
     })
 
-    const index = tasks.findIndex((task) => task.id === id)
+    const index = tasks.findIndex((t) => t.id === id)
     const next = [...tasks]
     next.splice(index + 1, 0, copy)
     setTasks(next)
+    syncUpsert(copy)
+    return copy
   }
 
   function setDeadline(id, deadline, source = 'calendar', extraUpdates = {}) {
-    const target = tasks.find((task) => task.id === id)
-
-    if (!target || (target.deadline === deadline && Object.keys(extraUpdates).length === 0)) {
-      return
-    }
+    const target = getTask(id)
+    if (!target || (target.deadline === deadline && Object.keys(extraUpdates).length === 0)) return
 
     const updated = applyTaskUpdates(target, { ...extraUpdates, deadline }, source)
+    if (updated === target) return
 
-    if (updated === target) {
-      return
-    }
-
-    commit(
-      'Task rescheduled',
-      tasks.map((task) => (task.id === id ? updated : task)),
-    )
+    commit('Task rescheduled', tasks.map((t) => (t.id === id ? updated : t)))
+    syncUpsert(updated)
   }
 
   function moveTaskToBucket(id, bucketKey, bucketOrder) {
@@ -358,7 +495,6 @@ export function useTasks() {
 
   function promoteSomeday(id, deadline) {
     if (!deadline) return
-
     patch(id, (task) =>
       task.deadline ? {} : { deadline, originalDeadline: deadline },
     )
@@ -371,23 +507,25 @@ export function useTasks() {
   function rescheduleTasks(moves, source = 'calendar') {
     const byId = new Map(moves.map((move) => [move.id, move.deadline]))
     let changed = false
+    const updatedList = []
+
     const next = tasks.map((task) => {
       const deadline = byId.get(task.id)
       if (!deadline || deadline === task.deadline) return task
       const updated = applyTaskUpdates(task, { deadline }, source)
-      if (updated !== task) changed = true
+      if (updated !== task) { changed = true; updatedList.push(updated) }
       return updated
     })
 
-    if (changed) commit(`${moves.length} tasks rescheduled`, next)
+    if (changed) {
+      commit(`${moves.length} tasks rescheduled`, next)
+      syncUpsertMany(updatedList)
+    }
   }
 
   function togglePlanForToday(id) {
     patch(id, (task) => {
-      if (isTaskUpcoming(task)) {
-        return {}
-      }
-
+      if (isTaskUpcoming(task)) return {}
       const today = toDateStr(new Date())
       return { plannedDate: task.plannedDate === today ? null : today }
     })
@@ -398,10 +536,7 @@ export function useTasks() {
   }
 
   function addReminder(id, reminder) {
-    if (!reminder) {
-      return
-    }
-
+    if (!reminder) return
     patch(id, (task) =>
       task.reminders.some((entry) => entry.id === reminder.id)
         ? {}
@@ -415,13 +550,10 @@ export function useTasks() {
     }))
   }
 
-  /* Rich detail fields (section A) */
+  /* Rich detail fields */
 
   function addChecklistItem(id, text) {
-    if (!text.trim()) {
-      return
-    }
-
+    if (!text.trim()) return
     patch(id, (task) => ({
       checklist: [...task.checklist, { id: crypto.randomUUID(), text: text.trim(), done: false }],
     }))
@@ -445,11 +577,7 @@ export function useTasks() {
     patch(id, (task) => {
       const index = task.checklist.findIndex((item) => item.id === itemId)
       const target = index + direction
-
-      if (index < 0 || target < 0 || target >= task.checklist.length) {
-        return {}
-      }
-
+      if (index < 0 || target < 0 || target >= task.checklist.length) return {}
       const checklist = [...task.checklist]
       const [moved] = checklist.splice(index, 1)
       checklist.splice(target, 0, moved)
@@ -482,20 +610,36 @@ export function useTasks() {
   function bulkComplete(ids) {
     const set = new Set(ids)
     const stamp = new Date().toISOString()
-    commit(
-      `${ids.length} task${ids.length === 1 ? '' : 's'} completed`,
-      tasks.map((task) =>
-        set.has(task.id) && !task.done ? { ...task, done: true, completedAt: stamp } : task,
-      ),
-    )
+    const updatedList = []
+
+    const next = tasks.map((task) => {
+      if (set.has(task.id) && !task.done) {
+        const updated = { ...task, done: true, completedAt: stamp }
+        updatedList.push(updated)
+        return updated
+      }
+      return task
+    })
+
+    commit(`${ids.length} task${ids.length === 1 ? '' : 's'} completed`, next)
+    syncUpsertMany(updatedList)
   }
 
   function bulkArchive(ids) {
     const set = new Set(ids)
-    commit(
-      `${ids.length} task${ids.length === 1 ? '' : 's'} archived`,
-      tasks.map((task) => (set.has(task.id) ? { ...task, archived: true } : task)),
-    )
+    const updatedList = []
+
+    const next = tasks.map((task) => {
+      if (set.has(task.id)) {
+        const updated = { ...task, archived: true }
+        updatedList.push(updated)
+        return updated
+      }
+      return task
+    })
+
+    commit(`${ids.length} task${ids.length === 1 ? '' : 's'} archived`, next)
+    syncUpsertMany(updatedList)
   }
 
   function bulkDelete(ids) {
@@ -504,27 +648,77 @@ export function useTasks() {
       `${ids.length} task${ids.length === 1 ? '' : 's'} deleted`,
       tasks.filter((task) => !set.has(task.id)),
     )
+    syncDeleteMany([...ids])
   }
 
   function importTasks(newTasks) {
-    setTasks(newTasks.map(normalizeTask))
+    const normalized = newTasks.map(normalizeTask)
+    setTasks(normalized)
+
+    if (isAuthenticated && userId) {
+      replaceAllTasks(userId, normalized).catch((err) =>
+        handleSyncError('importTasks replaceAll', err),
+      )
+    }
   }
 
   function clearCompleted() {
-    commit('Completed tasks cleared', tasks.filter((task) => !task.done))
+    const completedIds = tasks.filter((t) => t.done).map((t) => t.id)
+    commit('Completed tasks cleared', tasks.filter((t) => !t.done))
+    syncDeleteMany(completedIds)
   }
 
   function undo() {
-    if (!undoState) {
-      return
-    }
-
-    setTasks(undoState.snapshot)
+    if (!undoState) return
+    const snapshot = undoState.snapshot
+    setTasks(snapshot)
     setUndoState(null)
+
+    if (isAuthenticated && userId) {
+      // Replace all: delete current rows, re-insert the snapshot.
+      replaceAllTasks(userId, snapshot).catch((err) =>
+        handleSyncError('undo replaceAll', err),
+      )
+    }
+  }
+
+  /**
+   * One-time migration: copy localStorage tasks into Supabase.
+   * Offered via the MigrationBanner when DB is empty but local data exists.
+   */
+  async function migrateLocalTasks() {
+    if (!isAuthenticated || !userId) return
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY)
+      if (!raw) { setHasPendingMigration(false); return }
+
+      const parsed = JSON.parse(raw)
+      if (!Array.isArray(parsed) || parsed.length === 0) { setHasPendingMigration(false); return }
+
+      const normalized = parsed.map(normalizeTask)
+      await upsertManyTasks(userId, normalized)
+      setTasks(normalized)
+      localStorage.removeItem(STORAGE_KEY)
+      setHasPendingMigration(false)
+    } catch (err) {
+      console.error('[useTasks] migrateLocalTasks failed:', err)
+      setDbError('Failed to migrate local tasks to your account. Please try again.')
+    }
+  }
+
+  function dismissMigration() {
+    sessionStorage.setItem('tidyline:tasks-migration-dismissed', 'true')
+    setHasPendingMigration(false)
   }
 
   return {
     tasks,
+    loading,
+    dbError,
+    clearDbError: () => setDbError(null),
+    hasPendingMigration,
+    migrateLocalTasks,
+    dismissMigration,
     addTask,
     addSomedayTask,
     updateTask,

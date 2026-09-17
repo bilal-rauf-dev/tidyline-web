@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Route, Switch, useLocation } from 'wouter'
 import './App.css'
 import { Sidebar } from './components/Sidebar'
@@ -7,6 +7,9 @@ import { CommandPalette } from './components/CommandPalette'
 import { DeleteConfirmDialog } from './components/DeleteConfirmDialog'
 import { TaskAddedToast } from './components/TaskAddedToast'
 import { ShutdownDialog } from './components/ShutdownDialog'
+import { MigrationBanner } from './components/MigrationBanner'
+import { LoadingSpinner } from './components/LoadingSpinner'
+import { DbErrorToast } from './components/DbErrorToast'
 import { HomePage } from './pages/HomePage'
 import { BoardPage } from './pages/BoardPage'
 import { CalendarPage } from './pages/CalendarPage'
@@ -21,6 +24,7 @@ import { useShortcuts } from './hooks/useShortcuts'
 import { useTemplates } from './hooks/useTemplates'
 import { useSavedFilters } from './hooks/useSavedFilters'
 import { useAuth } from './hooks/useAuth'
+import { useUserSettings } from './hooks/useUserSettings'
 import { PlannerPage } from './pages/PlannerPage'
 import { SomedayPage } from './pages/SomedayPage'
 import { DEFAULT_OVERLOAD_HOURS } from './utils/workload'
@@ -28,6 +32,8 @@ import { QuickAddModal } from './components/QuickAddModal'
 import { toDateStr } from './utils/calendar'
 import { WelcomeDialog } from './components/WelcomeDialog'
 
+// ── Keys still kept in localStorage (guest + authenticated alike) ─────────────
+// tidyline:notificationSound is intentionally device-local (not synced to Supabase).
 const DELETE_CONFIRM_KEY = 'tidyline:confirm-delete'
 const OVERLOAD_HOURS_KEY = 'tidyline:overload-hours'
 
@@ -43,33 +49,73 @@ function loadOverloadHours() {
 /** The task under the caret or the pointer — what single-key actions act on. */
 function activeTaskId() {
   const focused = document.activeElement?.closest?.('[data-task-id]')
-
-  if (focused) {
-    return focused.dataset.taskId
-  }
-
+  if (focused) return focused.dataset.taskId
   return document.querySelector('[data-task-id]:hover')?.dataset.taskId ?? null
 }
 
 function App() {
-  const taskState = useTasks()
-  const appearance = useTheme()
-  const auth = useAuth()
-  const profile = useProfile(auth.user)
-  const bucketConfig = useBucketConfig()
-  const templateState = useTemplates()
-  const savedFilterState = useSavedFilters()
+  const auth          = useAuth()
+  const settingsState = useUserSettings(auth)
+
+  // Build the settingsCtx object passed to settings-aware hooks.
+  const settingsCtx = useMemo(() => ({
+    settings:        settingsState.settings,
+    updateSettings:  settingsState.updateSettings,
+    isAuthenticated: auth.isAuthenticated,
+  }), [settingsState.settings, settingsState.updateSettings, auth.isAuthenticated])
+
+  const taskState       = useTasks(auth)
+  const appearance      = useTheme(settingsCtx)
+  const profile         = useProfile(auth.user, auth.isAuthenticated ? settingsCtx : null)
+  const bucketConfig    = useBucketConfig(settingsCtx)
+  const templateState   = useTemplates(settingsCtx)
+  const savedFilterState = useSavedFilters(settingsCtx)
+
   const [location, navigate] = useLocation()
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false)
-  const [isCollapsed, setIsCollapsed] = useState(false)
-  const [isPaletteOpen, setIsPaletteOpen] = useState(false)
-  const [askBeforeDelete, setAskBeforeDelete] = useState(loadDeleteConfirmation)
-  const [pendingDeleteId, setPendingDeleteId] = useState(null)
-  const [taskAdded, setTaskAdded] = useState(null)
-  const [overloadHours, setOverloadHours] = useState(loadOverloadHours)
+  const [isDrawerOpen,   setIsDrawerOpen]   = useState(false)
+  const [isCollapsed,    setIsCollapsed]    = useState(false)
+  const [isPaletteOpen,  setIsPaletteOpen]  = useState(false)
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false)
   const [isShutdownOpen, setIsShutdownOpen] = useState(false)
+  const [taskAdded,      setTaskAdded]      = useState(null)
+  const [pendingDeleteId, setPendingDeleteId] = useState(null)
 
+  // ── Overload hours & delete-confirmation ──────────────────────────────────
+  // For authenticated users these come from user_settings once loaded;
+  // for guests they remain in localStorage as before.
+  const [askBeforeDelete, setAskBeforeDelete] = useState(loadDeleteConfirmation)
+  const [overloadHours,   setOverloadHours]   = useState(loadOverloadHours)
+
+  // Apply Supabase values when settings first load (authenticated only).
+  const settingsAppliedRef = useRef(false)
+  useEffect(() => {
+    if (auth.isAuthenticated && settingsState.settings !== null && !settingsAppliedRef.current) {
+      settingsAppliedRef.current = true
+      setAskBeforeDelete(settingsState.settings.confirmDelete)
+      setOverloadHours(settingsState.settings.overloadHours)
+    }
+  }, [auth.isAuthenticated, settingsState.settings])
+
+  // Persist changes — Supabase for authenticated, localStorage for guests.
+  useEffect(() => {
+    if (auth.isAuthenticated && settingsState.settings !== null) {
+      settingsState.updateSettings({ confirmDelete: askBeforeDelete })
+    } else if (!auth.isAuthenticated) {
+      localStorage.setItem(DELETE_CONFIRM_KEY, String(askBeforeDelete))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [askBeforeDelete])
+
+  useEffect(() => {
+    if (auth.isAuthenticated && settingsState.settings !== null) {
+      settingsState.updateSettings({ overloadHours })
+    } else if (!auth.isAuthenticated) {
+      localStorage.setItem(OVERLOAD_HOURS_KEY, String(overloadHours))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [overloadHours])
+
+  // ── Task helpers ──────────────────────────────────────────────────────────
   const { completeTask, toggleTask, deleteTask } = taskState
 
   const createTask = useCallback(
@@ -84,10 +130,7 @@ function App() {
   const dismissTaskAdded = useCallback(() => setTaskAdded(null), [])
 
   const editAddedTask = useCallback(() => {
-    if (!taskAdded) {
-      return
-    }
-
+    if (!taskAdded) return
     navigate(`/board?expand=${encodeURIComponent(taskAdded.id)}`)
     setTaskAdded(null)
   }, [navigate, taskAdded])
@@ -96,58 +139,36 @@ function App() {
     (parsed) => {
       const params = new URLSearchParams()
       params.set('add', '1')
-      if (parsed.title) params.set('title', parsed.title)
-      if (parsed.deadline) params.set('deadline', toDateStr(parsed.deadline))
-      if (parsed.tags && parsed.tags.length > 0) params.set('tags', parsed.tags.join(', '))
-      
-      // Phase 2/3 parameters
-      if (parsed.startDate) params.set('startDate', toDateStr(parsed.startDate))
-      if (parsed.reminderMinutes) params.set('reminderMinutes', String(parsed.reminderMinutes))
-      if (parsed.durationMinutes) params.set('durationMinutes', String(parsed.durationMinutes))
-      if (parsed.recurrence) params.set('recurrence', JSON.stringify(parsed.recurrence))
-      if (parsed.priority) params.set('priority', parsed.priority)
-      if (parsed.energy) params.set('energy', parsed.energy)
-      if (parsed.planForToday) params.set('planForToday', 'true')
-
+      if (parsed.title)            params.set('title', parsed.title)
+      if (parsed.deadline)         params.set('deadline', toDateStr(parsed.deadline))
+      if (parsed.tags?.length > 0) params.set('tags', parsed.tags.join(', '))
+      if (parsed.startDate)        params.set('startDate', toDateStr(parsed.startDate))
+      if (parsed.reminderMinutes)  params.set('reminderMinutes', String(parsed.reminderMinutes))
+      if (parsed.durationMinutes)  params.set('durationMinutes', String(parsed.durationMinutes))
+      if (parsed.recurrence)       params.set('recurrence', JSON.stringify(parsed.recurrence))
+      if (parsed.priority)         params.set('priority', parsed.priority)
+      if (parsed.energy)           params.set('energy', parsed.energy)
+      if (parsed.planForToday)     params.set('planForToday', 'true')
       navigate(`/board?${params.toString()}`)
     },
     [navigate],
   )
 
-  useEffect(() => {
-    localStorage.setItem(DELETE_CONFIRM_KEY, String(askBeforeDelete))
-  }, [askBeforeDelete])
-
-  useEffect(() => {
-    localStorage.setItem(OVERLOAD_HOURS_KEY, String(overloadHours))
-  }, [overloadHours])
-
   const requestDelete = useCallback(
     (taskId) => {
       setTaskAdded(null)
-
-      if (askBeforeDelete) {
-        setPendingDeleteId(taskId)
-        return
-      }
-
+      if (askBeforeDelete) { setPendingDeleteId(taskId); return }
       deleteTask(taskId)
     },
     [askBeforeDelete, deleteTask],
   )
 
-  const cancelDelete = useCallback(() => setPendingDeleteId(null), [])
+  const cancelDelete  = useCallback(() => setPendingDeleteId(null), [])
 
   const confirmDelete = useCallback(
     (dontAskAgain) => {
-      if (!pendingDeleteId) {
-        return
-      }
-
-      if (dontAskAgain) {
-        setAskBeforeDelete(false)
-      }
-
+      if (!pendingDeleteId) return
+      if (dontAskAgain) setAskBeforeDelete(false)
       deleteTask(pendingDeleteId)
       setPendingDeleteId(null)
     },
@@ -161,46 +182,35 @@ function App() {
 
   useReminderNotifications(taskState.tasks, { onComplete: onNotificationComplete })
 
+  // Keyboard: close drawer on Escape.
   useEffect(() => {
-    if (!isDrawerOpen) {
-      return undefined
-    }
-
+    if (!isDrawerOpen) return undefined
     function handleKeyDown(event) {
-      if (event.key === 'Escape') {
-        setIsDrawerOpen(false)
-      }
+      if (event.key === 'Escape') setIsDrawerOpen(false)
     }
-
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [isDrawerOpen])
 
   const focusSearch = useCallback(() => {
     const input = document.querySelector('.toolbar-search input')
-
-    if (input) {
-      input.focus()
-      return
-    }
-
+    if (input) { input.focus(); return }
     navigate('/board')
     setTimeout(() => document.querySelector('.toolbar-search input')?.focus(), 80)
   }, [navigate])
 
-
   const commands = useMemo(
     () => [
-      { id: 'new', label: 'Create task', hint: 'N/Q', run: () => setIsQuickAddOpen(true) },
-      { id: 'search', label: 'Focus search', hint: '/', run: focusSearch },
-      { id: 'home', label: 'Go to Home', run: () => navigate('/') },
-      { id: 'board', label: 'Go to Board', run: () => navigate('/board') },
-      { id: 'calendar', label: 'Go to Calendar', run: () => navigate('/calendar') },
-      { id: 'planner', label: 'Go to Day planner', run: () => navigate('/planner') },
-      { id: 'someday', label: 'Go to Someday / Maybe', run: () => navigate('/someday') },
-      { id: 'analytics', label: 'Go to Analytics', run: () => navigate('/analytics') },
-      { id: 'settings', label: 'Go to Settings', run: () => navigate('/settings') },
-      { id: 'archive', label: 'Show archived tasks', run: () => navigate('/board?view=archived') },
+      { id: 'new',      label: 'Create task',                             hint: 'N/Q', run: () => setIsQuickAddOpen(true) },
+      { id: 'search',   label: 'Focus search',                            hint: '/',   run: focusSearch },
+      { id: 'home',     label: 'Go to Home',                                           run: () => navigate('/') },
+      { id: 'board',    label: 'Go to Board',                                          run: () => navigate('/board') },
+      { id: 'calendar', label: 'Go to Calendar',                                       run: () => navigate('/calendar') },
+      { id: 'planner',  label: 'Go to Day planner',                                   run: () => navigate('/planner') },
+      { id: 'someday',  label: 'Go to Someday / Maybe',                               run: () => navigate('/someday') },
+      { id: 'analytics',label: 'Go to Analytics',                                     run: () => navigate('/analytics') },
+      { id: 'settings', label: 'Go to Settings',                                      run: () => navigate('/settings') },
+      { id: 'archive',  label: 'Show archived tasks',                                  run: () => navigate('/board?view=archived') },
       {
         id: 'theme',
         label: `Switch to ${appearance.theme === 'dark' ? 'light' : 'dark'} theme`,
@@ -219,12 +229,9 @@ function App() {
   useShortcuts(
     useMemo(
       () => ({
-        onPalette: () => setIsPaletteOpen((open) => !open),
-        onEscape: () => {
-          setIsPaletteOpen(false)
-          setIsQuickAddOpen(false)
-        },
-        onQuickAdd: () => setIsQuickAddOpen(true),
+        onPalette:    () => setIsPaletteOpen((open) => !open),
+        onEscape:     () => { setIsPaletteOpen(false); setIsQuickAddOpen(false) },
+        onQuickAdd:   () => setIsQuickAddOpen(true),
         onFocusSearch: focusSearch,
         onToggleActive: () => {
           const id = activeTaskId()
@@ -243,9 +250,47 @@ function App() {
     ),
   )
 
+  // ── Migration: combine tasks + settings pending migrations ────────────────
+  const showMigrationBanner =
+    auth.isAuthenticated &&
+    !taskState.loading &&
+    !settingsState.settingsLoading &&
+    (taskState.hasPendingMigration || settingsState.hasPendingSettingsMigration)
 
+  const localTaskCount = useMemo(() => {
+    if (!showMigrationBanner) return 0
+    try {
+      const raw = localStorage.getItem('tidyline:tasks')
+      const parsed = JSON.parse(raw ?? '[]')
+      return Array.isArray(parsed) ? parsed.length : 0
+    } catch { return 0 }
+  }, [showMigrationBanner])
 
-  if (!profile.isSetUp && !auth.isAuthenticated) {
+  async function handleMigrateAll() {
+    if (taskState.hasPendingMigration)              await taskState.migrateLocalTasks()
+    if (settingsState.hasPendingSettingsMigration)  await settingsState.migrateLocalSettings()
+  }
+
+  function handleDismissMigration() {
+    taskState.dismissMigration()
+    settingsState.dismissSettingsMigration()
+  }
+
+  // ── DB error surface (tasks or settings) ─────────────────────────────────
+  const dbError   = taskState.dbError ?? settingsState.settingsError
+  function clearError() {
+    if (taskState.dbError)        taskState.clearDbError()
+    if (settingsState.settingsError) settingsState.clearSettingsError()
+  }
+
+  // ── Loading gates ─────────────────────────────────────────────────────────
+  // 1. Show spinner while Supabase data is loading for authenticated users.
+  if (auth.isAuthenticated && (taskState.loading || settingsState.settingsLoading)) {
+    return <LoadingSpinner />
+  }
+
+  // 2. Show WelcomeDialog for guests who haven't set up yet (after auth resolves).
+  if (!profile.isSetUp && !auth.isAuthenticated && !auth.loading) {
     return (
       <WelcomeDialog
         onImportTasks={taskState.importTasks}
@@ -276,14 +321,8 @@ function App() {
         isCollapsed={isCollapsed}
         onToggleCollapse={() => setIsCollapsed((current) => !current)}
         onNavigate={() => setIsDrawerOpen(false)}
-        onOpenPalette={() => {
-          setIsDrawerOpen(false)
-          setIsPaletteOpen(true)
-        }}
-        onOpenShutdown={() => {
-          setIsDrawerOpen(false)
-          setIsShutdownOpen(true)
-        }}
+        onOpenPalette={() => { setIsDrawerOpen(false); setIsPaletteOpen(true) }}
+        onOpenShutdown={() => { setIsDrawerOpen(false); setIsShutdownOpen(true) }}
         workspaceName={profile.name}
         tasks={taskState.tasks}
         onOpenTask={(taskId) => {
@@ -302,6 +341,16 @@ function App() {
       )}
 
       <div className="app-content">
+        {/* One-time migration banner */}
+        {showMigrationBanner && (
+          <MigrationBanner
+            taskCount={localTaskCount}
+            hasSettings={settingsState.hasPendingSettingsMigration}
+            onMigrate={handleMigrateAll}
+            onDismiss={handleDismissMigration}
+          />
+        )}
+
         <div className="route-view" key={location}>
           <Switch>
             <Route path="/">
@@ -411,6 +460,11 @@ function App() {
           archiveTask={taskState.archiveTask}
           onClose={() => setIsShutdownOpen(false)}
         />
+      )}
+
+      {/* Supabase error toast */}
+      {dbError && (
+        <DbErrorToast message={dbError} onDismiss={clearError} />
       )}
     </div>
   )
