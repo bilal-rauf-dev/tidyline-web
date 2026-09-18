@@ -33,6 +33,9 @@ import { toDateStr } from './utils/calendar'
 import { WelcomeDialog } from './components/WelcomeDialog'
 import { LocalDataRecovery } from './components/LocalDataRecovery'
 import { SyncStatusBanner } from './components/SyncStatusBanner'
+import { AccountLoadError } from './components/AccountLoadError'
+import { OfflineBanner } from './components/OfflineBanner'
+import { registerNotificationWorker } from './utils/notifications'
 
 // ── Keys still kept in localStorage (guest + authenticated alike) ─────────────
 // tidyline:notificationSound is intentionally device-local (not synced to Supabase).
@@ -79,8 +82,76 @@ function App() {
   const [isPaletteOpen,  setIsPaletteOpen]  = useState(false)
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false)
   const [isShutdownOpen, setIsShutdownOpen] = useState(false)
+  const [migrationBusy, setMigrationBusy] = useState(false)
+  const migrationBusyRef = useRef(false)
   const [taskAdded,      setTaskAdded]      = useState(null)
   const [pendingDeleteId, setPendingDeleteId] = useState(null)
+  const [isOnline, setIsOnline] = useState(() => typeof navigator === 'undefined' || navigator.onLine !== false)
+  const [offlineReady, setOfflineReady] = useState(false)
+  const [offlineFailed, setOfflineFailed] = useState(false)
+  const [offlineSupported] = useState(() => typeof navigator !== 'undefined' && 'serviceWorker' in navigator)
+
+  useEffect(() => {
+    const update = () => setIsOnline(navigator.onLine !== false)
+    window.addEventListener('online', update)
+    window.addEventListener('offline', update)
+    return () => {
+      window.removeEventListener('online', update)
+      window.removeEventListener('offline', update)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return undefined
+    let active = true
+    const channels = new Set()
+    const timeouts = new Set()
+    let registration = null
+    let installingWorker = null
+
+    async function checkOfflineCopy() {
+      // A complete cache is useful only once this page is controlled by the
+      // worker. Registration alone does not guarantee offline navigation.
+      const controller = navigator.serviceWorker.controller
+      if (!active || !import.meta.env.PROD || !registration?.active || !controller) return
+      const channel = new MessageChannel()
+      channels.add(channel)
+      const timeout = window.setTimeout(() => {
+        channel.port1.close()
+        channels.delete(channel)
+        timeouts.delete(timeout)
+      }, 5000)
+      timeouts.add(timeout)
+      channel.port1.onmessage = (event) => {
+        if (active) setOfflineReady(event.data?.ready === true)
+        window.clearTimeout(timeout)
+        timeouts.delete(timeout)
+        channel.port1.close()
+        channels.delete(channel)
+      }
+      controller.postMessage({ type: 'tidyline:offline-status' }, [channel.port2])
+    }
+
+    registerNotificationWorker().then((registered) => {
+      if (!active) return
+      registration = registered
+      if (!registration) {
+        setOfflineFailed(true)
+        return
+      }
+      checkOfflineCopy()
+      installingWorker = registration.installing || registration.waiting
+      installingWorker?.addEventListener('statechange', checkOfflineCopy)
+    })
+    navigator.serviceWorker.addEventListener('controllerchange', checkOfflineCopy)
+    return () => {
+      active = false
+      navigator.serviceWorker.removeEventListener('controllerchange', checkOfflineCopy)
+      installingWorker?.removeEventListener('statechange', checkOfflineCopy)
+      for (const timeout of timeouts) window.clearTimeout(timeout)
+      for (const channel of channels) channel.port1.close()
+    }
+  }, [])
 
   // ── Overload hours & delete-confirmation ──────────────────────────────────
   // For authenticated users these come from user_settings once loaded;
@@ -270,8 +341,16 @@ function App() {
   }, [showMigrationBanner])
 
   async function handleMigrateAll() {
-    if (taskState.hasPendingMigration)              await taskState.migrateLocalTasks()
-    if (settingsState.hasPendingSettingsMigration)  await settingsState.migrateLocalSettings()
+    if (migrationBusyRef.current) return
+    migrationBusyRef.current = true
+    setMigrationBusy(true)
+    try {
+      if (taskState.hasPendingMigration)              await taskState.migrateLocalTasks()
+      if (settingsState.hasPendingSettingsMigration)  await settingsState.migrateLocalSettings()
+    } finally {
+      migrationBusyRef.current = false
+      setMigrationBusy(false)
+    }
   }
 
   function handleDismissMigration() {
@@ -288,8 +367,17 @@ function App() {
 
   // ── Loading gates ─────────────────────────────────────────────────────────
   // 1. Show spinner while Supabase data is loading for authenticated users.
-  if (auth.isAuthenticated && (taskState.loading || settingsState.settingsLoading)) {
+  if (taskState.loading || (auth.isAuthenticated && settingsState.settingsLoading)) {
     return <LoadingSpinner />
+  }
+
+  if (auth.isAuthenticated && taskState.accountLoadError) {
+    return (
+      <AccountLoadError
+        onRetry={taskState.retryAccountLoad}
+        onSignOut={auth.signOut}
+      />
+    )
   }
 
   if (!auth.isAuthenticated && !auth.loading && taskState.localDataError) {
@@ -356,13 +444,16 @@ function App() {
       )}
 
       <div className="app-content">
+        {!isOnline && <OfflineBanner isAuthenticated={auth.isAuthenticated} />}
         {/* One-time migration banner */}
         {showMigrationBanner && (
           <MigrationBanner
             taskCount={localTaskCount}
+            accountTaskCount={taskState.tasks.length}
             hasSettings={settingsState.hasPendingSettingsMigration}
             onMigrate={handleMigrateAll}
             onDismiss={handleDismissMigration}
+            busy={migrationBusy}
           />
         )}
 
@@ -440,6 +531,9 @@ function App() {
                 onOverloadHoursChange={setOverloadHours}
                 profile={profile}
                 auth={auth}
+                offlineReady={offlineReady}
+                offlineSupported={offlineSupported}
+                offlineFailed={offlineFailed}
               />
             </Route>
           </Switch>

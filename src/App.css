@@ -5185,6 +5185,72 @@ textarea,
   background: var(--surface-raised);
 }
 
+.planner-task-controls {
+  display: flex;
+  align-items: end;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+
+.planner-task-controls label {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+  font-size: 0.72rem;
+  color: var(--text-soft);
+}
+
+.planner-task-controls input {
+  width: 7.5rem;
+  max-width: 100%;
+  min-height: 2.5rem;
+  padding: 0.4rem;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.planner-task-controls button { min-height: 2.5rem; }
+.planner-source-list .planner-task-controls span { font-size: 0.72rem; }
+
+.planner-scheduled-controls {
+  margin-top: 1rem;
+}
+
+.planner-scheduled-controls h3 { margin: 0 0 0.6rem; }
+.planner-scheduled-controls ul { display: grid; gap: 0.7rem; }
+.planner-scheduled-controls li {
+  padding: 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface-raised);
+}
+
+.calendar-move-list ul { display: grid; gap: 0.7rem; }
+.calendar-move-list li {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  padding: 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+}
+.calendar-move-list form { display: flex; align-items: end; gap: 0.5rem; flex-wrap: wrap; }
+.calendar-move-list label { display: grid; gap: 0.2rem; font-size: 0.72rem; color: var(--text-soft); }
+.calendar-move-list input {
+  min-height: 2.5rem;
+  padding: 0.4rem;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--text);
+}
+.calendar-move-list button { min-height: 2.5rem; }
+
 /* Someday / Maybe */
 
 .someday-shell {
@@ -6920,4 +6986,11 @@ textarea,
 
 .sync-status-banner .secondary {
   flex: none;
+}
+
+.offline-banner {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-btn);
+  margin-bottom: 1rem;
 }

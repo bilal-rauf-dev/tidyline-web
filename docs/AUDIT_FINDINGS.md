@@ -7,19 +7,19 @@ Updated: 2026-09-18. The audit covered the tracked project files, including sour
 - Guest mode runs in a browser, but task data is local to that browser. Cross-device planning requires a configured Supabase backend and sign-in (`src/hooks/useAuth.js`, `src/hooks/useTasks.js`).
 - Current reminder scheduling runs in page JavaScript (`src/hooks/useReminderNotifications.js`). A closed page cannot deliver the promised reminder. Background push needs a service worker, server-side scheduling, subscriptions, retry handling, and device testing.
 - iOS and iPadOS Web Push requires a Home Screen web app. A regular Safari tab must still offer useful planning and truthful reminder guidance.
-- There is no service worker or offline asset cache. A previously visited route may fail to reload without a connection, despite the former README wording.
+- The original audit found no offline asset cache. WEB-02 now precaches the production shell and assets, but a real in-app browser reload still failed while the preview server was stopped. Do not claim offline reload works until ordinary browser tests pass.
 
 ## Data safety and sync
 
 - Invalid local task data and malformed imports previously risked silently presenting an empty workspace or dropping records (`src/hooks/useTasks.js`, `src/utils/tasksIO.js`). REL-01 added recovery and review.
 - Signed-in writes previously ran in the background with no durable retry queue. REL-02 now has a browser-stored operation queue, but needs a live interruption and multi-device test.
 - Cloud replacement previously deleted every account task before inserting the replacement (`src/utils/supabaseStorage.js`). REL-03 adds a transactional database function; the backend migration must be applied and tested.
-- Separate devices do not yet receive live changes or resolve conflicts. A second device can overwrite an edit made on the first; REL-04 needs a clear version and merge policy.
-- Local-to-account migration is offered only when the remote account is empty. Users with tasks in both places need a reviewed merge path.
+- Clean account views now refetch on focus and every minute, but simultaneous edits to the same task still have no version check. REL-04 needs a server conflict policy and a live two-device test.
+- Local-to-account migration now offers an additive merge when the remote account already has tasks. Same-ID divergent local tasks become separate copies; device and backend tests remain.
 
 ## Interaction and planner quality
 
-- Several task moves and duration changes rely on drag interactions. Touch and keyboard equivalents need a full pass across Board, Calendar, and Day planner.
+- Several task moves and duration changes originally relied on drag interactions. WEB-03 added explicit Day planner and Calendar controls; touch and keyboard equivalents still need a full device pass.
 - Dialog focus containment and focus return need browser-level checks.
 - Quick Add parses due times, but downstream task creation can reduce them to dates. Relative reminders then use a default deadline hour instead of the user's intended time.
 - Calendar workload redistribution describes proposed moves that do not yet change the tasks.

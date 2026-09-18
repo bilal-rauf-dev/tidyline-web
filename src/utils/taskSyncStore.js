@@ -11,7 +11,8 @@ function emptyState() {
 }
 
 function validateOperation(operation) {
-  if (!operation || typeof operation !== 'object' || typeof operation.id !== 'string') {
+  if (!operation || typeof operation !== 'object' ||
+      typeof operation.id !== 'string' || !operation.id.trim()) {
     throw new Error('The saved sync queue contains an invalid operation')
   }
   if (operation.kind === 'upsert' || operation.kind === 'replace') {
@@ -63,7 +64,9 @@ export function enqueueAccountOperation(storage, userId, snapshot, operation) {
 
 export function acknowledgeAccountOperation(storage, userId, operationId) {
   const current = readAccountSyncState(storage, userId)
-  if (current.operations[0]?.id !== operationId) return current
+  if (current.operations[0]?.id !== operationId) {
+    throw new Error('The saved sync queue changed while an operation was in flight')
+  }
   const next = { ...current, operations: current.operations.slice(1) }
   writeAccountSyncState(storage, userId, next)
   return next
@@ -72,6 +75,15 @@ export function acknowledgeAccountOperation(storage, userId, operationId) {
 export function cacheAccountSnapshot(storage, userId, snapshot) {
   validateTaskCollection(snapshot)
   const current = readAccountSyncState(storage, userId)
+  const next = { ...current, snapshot, hasSnapshot: true }
+  writeAccountSyncState(storage, userId, next)
+  return next
+}
+
+export function cacheCleanAccountSnapshot(storage, userId, snapshot) {
+  validateTaskCollection(snapshot)
+  const current = readAccountSyncState(storage, userId)
+  if (current.operations.length > 0) return null
   const next = { ...current, snapshot, hasSnapshot: true }
   writeAccountSyncState(storage, userId, next)
   return next

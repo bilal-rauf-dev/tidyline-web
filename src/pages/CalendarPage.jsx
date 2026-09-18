@@ -59,8 +59,7 @@ export function CalendarPage({
       <header className="hero">
         <h1>Calendar</h1>
         <p className="hero-copy">
-          Tasks are plotted on their deadline date. Click a day to add a task
-          due then.
+          Tasks are plotted on their deadline date. Select a day to add or move tasks.
         </p>
       </header>
 
@@ -186,6 +185,30 @@ export function CalendarPage({
           </div>
         )}
       </section>
+
+      {selectedDate && (tasksByDate[selectedDate] ?? []).length > 0 && (
+        <section className="entry-card calendar-move-list" aria-label={`Tasks due ${formatDate(selectedDate)}`}>
+          <h2>Tasks due {formatDate(selectedDate)}</h2>
+          <ul>
+            {tasksByDate[selectedDate].map((task) => (
+              <li key={task.id}>
+                <strong>{task.title}</strong>
+                <form onSubmit={(event) => {
+                  event.preventDefault()
+                  const targetDate = new FormData(event.currentTarget).get('date')
+                  if (targetDate && targetDate !== task.deadline) setDeadline(task.id, targetDate)
+                }}>
+                  <label>
+                    Move to
+                    <input type="date" name="date" defaultValue={selectedDate} min={task.startDate || undefined} required />
+                  </label>
+                  <button type="submit" className="secondary">Move task</button>
+                </form>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {selectedDate && (
         <TaskForm

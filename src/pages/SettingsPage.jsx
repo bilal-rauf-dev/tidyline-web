@@ -1,6 +1,6 @@
-import { useId, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { parseImportedTasks, serializeTasks } from '../utils/tasksIO'
-import { isSoundEnabled, playChime, setSoundEnabled } from '../utils/notifications'
+import { ensureNotificationPermission, getNotificationPermission, isSoundEnabled, playChime, setSoundEnabled } from '../utils/notifications'
 import { ACCENT_OPTIONS, DENSITY_OPTIONS } from '../hooks/useTheme'
 import { Checkbox } from '../components/Checkbox'
 import { BucketConfigMenu } from '../components/BucketConfigMenu'
@@ -52,13 +52,23 @@ export function SettingsPage({
   onOverloadHoursChange = () => {},
   profile = null,
   auth = null,
+  offlineReady = false,
+  offlineSupported = false,
+  offlineFailed = false,
 }) {
   const fileInputRef = useRef(null)
   const [soundOn, setSoundOn] = useState(isSoundEnabled)
+  const [notificationPermission, setNotificationPermission] = useState(getNotificationPermission)
   const [workspaceName, setWorkspaceName] = useState(profile?.name ?? '')
   const [importPreview, setImportPreview] = useState(null)
   const [importError, setImportError] = useState('')
   const completedCount = tasks.filter((task) => task.done).length
+
+  useEffect(() => {
+    const refreshPermission = () => setNotificationPermission(getNotificationPermission())
+    window.addEventListener('focus', refreshPermission)
+    return () => window.removeEventListener('focus', refreshPermission)
+  }, [])
 
   function handleExport() {
     const blob = new Blob([serializeTasks(tasks)], { type: 'application/json' })
@@ -279,7 +289,40 @@ export function SettingsPage({
         </div>
       </SettingsSection>
 
+      <SettingsSection title="Browser access" description="Offline reload" initiallyOpen>
+        <div className="settings-row">
+          <span>
+            Offline copy
+            <small className="settings-note">
+              Core files can be saved for offline access. Test reloading in your browser before relying on it.
+            </small>
+          </span>
+          <strong>{!offlineSupported || offlineFailed ? 'Unavailable in this browser' : offlineReady ? 'Core files saved' : 'Not ready yet'}</strong>
+        </div>
+      </SettingsSection>
+
       <SettingsSection title="Notifications" description="Reminder preferences" initiallyOpen>
+
+        <div className="settings-row">
+          <span>
+            Browser notifications
+            <small className="settings-note">
+              Scheduled reminders can appear while this page is open. Closed-page delivery is not available yet.
+              Browsers may delay timers in background tabs.
+            </small>
+          </span>
+          {notificationPermission === 'default' ? (
+            <button
+              type="button"
+              className="secondary"
+              onClick={async () => setNotificationPermission(await ensureNotificationPermission())}
+            >
+              Allow notifications
+            </button>
+          ) : (
+            <strong>{notificationPermission === 'granted' ? 'Allowed' : notificationPermission === 'denied' ? 'Blocked in browser settings' : 'Unavailable in this browser'}</strong>
+          )}
+        </div>
 
         <div className="settings-row">
           <span>

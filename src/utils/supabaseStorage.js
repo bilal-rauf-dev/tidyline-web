@@ -159,6 +159,14 @@ export async function replaceAllTasks(userId, tasks) {
   if (error) throw error
 }
 
+export async function insertManyTasks(userId, tasks) {
+  if (tasks.length === 0) return
+  const { error } = await supabase
+    .from('tasks')
+    .insert(tasks.map((task) => taskToRow(userId, task)))
+  if (error) throw error
+}
+
 // ── Settings CRUD ─────────────────────────────────────────────────────────────
 
 export async function fetchSettings(userId) {

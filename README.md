@@ -49,8 +49,8 @@ Add a task with a deadline and TidyLine automatically places it into the right t
 
 - Home — a daily-at-a-glance dashboard with today's progress and activity
 - Board — the core bucketed task list, grouped Today through Later, with configurable buckets
-- Calendar — month view with drag-to-reschedule
-- Day planner — drag actionable tasks onto an hour-by-hour timeline and resize blocks to set duration
+- Calendar — month view with date controls or drag to reschedule
+- Day planner — choose a start time and duration with controls, or drag tasks onto an hour-by-hour timeline
 - Someday / Maybe — a holding area for undated ideas you can promote to the board once they're ready
 - Analytics — completion trends, streaks, workload, and bucket breakdowns
 
@@ -80,7 +80,7 @@ Add a task with a deadline and TidyLine automatically places it into the right t
 *The five accent options available under Settings → Appearance. Pick one hue to carry every highlight, button, and today marker in the app.*
 
 > [!NOTE]
-> TidyLine runs in an ordinary browser without installation. Guest tasks are saved in that browser. A configured Supabase backend enables signed-in task sync. A connection is needed to load the app initially; previously visited pages are not yet cached for offline reload. Reminders currently depend on an open page, so closed-page delivery is still on the improvement plan.
+> TidyLine runs in an ordinary browser without installation. Guest tasks are saved in that browser. A configured Supabase backend enables signed-in task sync. Production builds save core files for offline use, but offline reload still needs verification in ordinary browsers and devices. Reminders currently depend on an open page, so closed-page delivery is still on the improvement plan.
 
 ## Tech stack
 

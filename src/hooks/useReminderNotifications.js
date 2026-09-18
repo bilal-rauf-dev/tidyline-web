@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { notifyReminder, registerNotificationWorker } from '../utils/notifications'
+import { notifyReminder } from '../utils/notifications'
 import { formatDate } from '../utils/dates'
 import { reminderInstances } from '../utils/reminders'
 
@@ -17,10 +17,6 @@ export function useReminderNotifications(tasks, { onComplete } = {}) {
   useEffect(() => {
     tasksRef.current = tasks
   }, [tasks])
-
-  useEffect(() => {
-    registerNotificationWorker()
-  }, [])
 
   // Notification action buttons are handled by the worker, which forwards the
   // click here because task state lives in localStorage, not in the worker.

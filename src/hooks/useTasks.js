@@ -4,10 +4,13 @@ import { toDateStr } from '../utils/calendar'
 import { nextOccurrence } from '../utils/recurrence'
 import { reminderKey } from '../utils/reminders'
 import { validateTaskCollection } from '../utils/tasksIO'
+import { planLocalTaskMigration } from '../utils/taskMigration'
 import {
+  accountSyncKey,
   acknowledgeAccountOperation,
   applyAccountOperations,
   cacheAccountSnapshot,
+  cacheCleanAccountSnapshot,
   enqueueAccountOperation,
   readAccountSyncState,
 } from '../utils/taskSyncStore'
@@ -23,6 +26,7 @@ import {
 import {
   deleteManyTaskRows,
   fetchTasks,
+  insertManyTasks,
   replaceAllTasks,
   upsertManyTasks,
 } from '../utils/supabaseStorage'
@@ -147,8 +151,8 @@ function nextInstance(task, deadline) {
  *  - Tasks are fetched from Supabase on mount (loading = true until done).
  *  - Mutations are first saved in a per-account browser queue, then submitted
  *    to Supabase. Failed writes stay queued and surface via the sync banner.
- *  - `hasPendingMigration` is true when the DB is empty but localStorage has
- *    tasks. Call `migrateLocalTasks()` to import them.
+ *  - `hasPendingMigration` is true when localStorage has tasks that can be
+ *    reviewed for an additive account merge.
  */
 export function useTasks(auth = null) {
   const isAuthenticated = auth?.isAuthenticated ?? false
@@ -162,13 +166,20 @@ export function useTasks(auth = null) {
   const [tasks,               setTasks]               = useState(initialLocalLoad.tasks)
   const [localDataError,      setLocalDataError]      = useState(initialLocalLoad.error)
   const [undoState,           setUndoState]           = useState(null)
-  const [loading,             setLoading]             = useState(() => Boolean(isAuthenticated && userId))
+  const [loadedAccountId,     setLoadedAccountId]     = useState(null)
+  const [loadGeneration,      setLoadGeneration]      = useState(0)
+  const [accountLoadError,    setAccountLoadError]    = useState(false)
   const [dbError,             setDbError]             = useState(null)
   const [hasPendingMigration, setHasPendingMigration] = useState(false)
   const [pendingSyncCount,    setPendingSyncCount]    = useState(0)
   const [syncing,             setSyncing]             = useState(false)
   const [syncError,           setSyncError]           = useState(false)
   const flushActiveRef = useRef(false)
+  const migrationActiveRef = useRef(false)
+  const loading = Boolean(
+    (isAuthenticated && userId && loadedAccountId !== userId) ||
+    (!isAuthenticated && loadedAccountId),
+  )
 
   // Track previous auth state so we can detect sign-out transitions and
   // prevent Supabase data from leaking into the guest session.
@@ -224,6 +235,60 @@ export function useTasks(auth = null) {
     }
   }, [isAuthenticated, userId, loading, flushSyncQueue])
 
+  // Refresh a clean account view when another device changes it. A pending
+  // browser operation always keeps precedence until it is resolved.
+  useEffect(() => {
+    if (!isAuthenticated || !userId || loading || accountLoadError) return undefined
+    let cancelled = false
+    let refreshing = false
+
+    async function refreshFromAccount() {
+      if (refreshing) return
+      try {
+        const before = readAccountSyncState(localStorage, userId)
+        if (before.operations.length > 0) return
+        refreshing = true
+        const remote = (await fetchTasks(userId)).map(normalizeTask)
+        const latest = readAccountSyncState(localStorage, userId)
+        if (cancelled || latest.operations.length > 0) return
+        if (!cacheCleanAccountSnapshot(localStorage, userId, remote)) return
+        tasksRef.current = remote
+        setTasks(remote)
+      } catch (error) {
+        console.error('[useTasks] account refresh failed:', error)
+      } finally {
+        refreshing = false
+      }
+    }
+
+    function onStorage(event) {
+      if (event.key !== accountSyncKey(userId)) return
+      try {
+        const saved = readAccountSyncState(localStorage, userId)
+        tasksRef.current = saved.snapshot
+        setTasks(saved.snapshot)
+        setPendingSyncCount(saved.operations.length)
+      } catch (error) {
+        console.error('[useTasks] shared account cache unreadable:', error)
+        setDbError('Saved account changes in this browser could not be read.')
+      }
+    }
+
+    function onFocus() {
+      if (document.visibilityState === 'visible') refreshFromAccount()
+    }
+
+    const interval = window.setInterval(refreshFromAccount, 60_000)
+    window.addEventListener('focus', onFocus)
+    window.addEventListener('storage', onStorage)
+    return () => {
+      cancelled = true
+      window.clearInterval(interval)
+      window.removeEventListener('focus', onFocus)
+      window.removeEventListener('storage', onStorage)
+    }
+  }, [isAuthenticated, userId, loading, accountLoadError])
+
   // ── Reset on sign-out (authenticated → guest) ─────────────────────────────
   // When the user signs out, React state still holds the Supabase-fetched
   // tasks. We must clear them and reload from localStorage so the guest
@@ -240,7 +305,8 @@ export function useTasks(auth = null) {
       setUndoState(null)
       setDbError(null)
       setHasPendingMigration(false)
-      setLoading(false)
+      setLoadedAccountId(null)
+      setAccountLoadError(false)
       setPendingSyncCount(0)
       setSyncError(false)
     }
@@ -268,30 +334,29 @@ export function useTasks(auth = null) {
         if (cancelled) return
         if (accountCache) setDbError(null)
 
-        // Offer migration if the user has local tasks but nothing in the DB yet.
-        if (data.length === 0) {
-          const alreadyDismissed = sessionStorage.getItem('tidyline:tasks-migration-dismissed')
-          if (!alreadyDismissed) {
-            try {
-              const local = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]')
-              if (Array.isArray(local) && local.length > 0) {
-                setHasPendingMigration(true)
-              }
-            } catch { /* ignore */ }
-          }
+        // Offer a reviewed merge even when the account already has tasks.
+        const alreadyDismissed = sessionStorage.getItem(`tidyline:tasks-migration-dismissed:${userId}`)
+        if (!alreadyDismissed) {
+          try {
+            const local = validateTaskCollection(JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]'))
+            if (local.length > 0) setHasPendingMigration(true)
+          } catch { /* keep unreadable local data untouched */ }
         }
 
         const remote = data.map(normalizeTask)
-        const merged = applyAccountOperations(remote, accountCache?.operations ?? [])
+        // Another tab may have queued an edit while this network request ran.
+        const latestCache = accountCache ? readAccountSyncState(localStorage, userId) : null
+        const merged = applyAccountOperations(remote, latestCache?.operations ?? [])
         try {
-          if (accountCache) cacheAccountSnapshot(localStorage, userId, merged)
+          if (latestCache) cacheAccountSnapshot(localStorage, userId, merged)
         } catch (error) {
           console.error('[useTasks] could not cache account tasks:', error)
           setDbError('Could not save an account copy in this browser. Check available storage.')
         }
         tasksRef.current = merged
         setTasks(merged)
-        setLoading(false)
+        setAccountLoadError(false)
+        setLoadedAccountId(userId)
       })
       .catch((err) => {
         if (cancelled) return
@@ -302,12 +367,23 @@ export function useTasks(auth = null) {
         if (accountCache?.hasSnapshot) {
           tasksRef.current = accountCache.snapshot
           setTasks(accountCache.snapshot)
+          setAccountLoadError(false)
+        } else {
+          tasksRef.current = []
+          setTasks([])
+          setAccountLoadError(true)
         }
-        setLoading(false)
+        setLoadedAccountId(userId)
       })
 
     return () => { cancelled = true }
-  }, [isAuthenticated, userId])
+  }, [isAuthenticated, userId, loadGeneration])
+
+  function retryAccountLoad() {
+    setAccountLoadError(false)
+    setLoadedAccountId(null)
+    setLoadGeneration((current) => current + 1)
+  }
 
   // ── Guest localStorage persistence ────────────────────────────────────────
   // Only runs for guest users. Authenticated writes go through Supabase helpers.
@@ -803,11 +879,12 @@ export function useTasks(auth = null) {
   }
 
   /**
-   * One-time migration: copy localStorage tasks into Supabase.
-   * Offered via the MigrationBanner when DB is empty but local data exists.
+   * One-time migration: add localStorage tasks to the account without changing
+   * existing account tasks. Source data is removed only after the cloud write.
    */
   async function migrateLocalTasks() {
-    if (!isAuthenticated || !userId) return
+    if (!isAuthenticated || !userId || migrationActiveRef.current) return
+    migrationActiveRef.current = true
     try {
       const raw = localStorage.getItem(STORAGE_KEY)
       if (!raw) { setHasPendingMigration(false); return }
@@ -815,21 +892,33 @@ export function useTasks(auth = null) {
       const parsed = validateTaskCollection(JSON.parse(raw))
       if (parsed.length === 0) { setHasPendingMigration(false); return }
 
+      if (readAccountSyncState(localStorage, userId).operations.length > 0) {
+        throw new Error('Wait for pending account changes to sync before merging local tasks.')
+      }
+      const account = (await fetchTasks(userId)).map(normalizeTask)
+      if (readAccountSyncState(localStorage, userId).operations.length > 0) {
+        throw new Error('Wait for pending account changes to sync before merging local tasks.')
+      }
       const normalized = parsed.map(normalizeTask)
-      await upsertManyTasks(userId, normalized)
-      cacheAccountSnapshot(localStorage, userId, normalized)
-      tasksRef.current = normalized
-      setTasks(normalized)
+      const plan = await planLocalTaskMigration(userId, account, normalized)
+      await insertManyTasks(userId, plan.additions)
+      if (!cacheCleanAccountSnapshot(localStorage, userId, plan.merged)) {
+        throw new Error('Account changes arrived during the merge. Wait for them to sync, then retry.')
+      }
+      tasksRef.current = plan.merged
+      setTasks(plan.merged)
       localStorage.removeItem(STORAGE_KEY)
       setHasPendingMigration(false)
     } catch (err) {
       console.error('[useTasks] migrateLocalTasks failed:', err)
-      setDbError('Failed to migrate local tasks to your account. Please try again.')
+      setDbError(err instanceof Error ? err.message : 'Failed to merge local tasks. Please try again.')
+    } finally {
+      migrationActiveRef.current = false
     }
   }
 
   function dismissMigration() {
-    sessionStorage.setItem('tidyline:tasks-migration-dismissed', 'true')
+    if (userId) sessionStorage.setItem(`tidyline:tasks-migration-dismissed:${userId}`, 'true')
     setHasPendingMigration(false)
   }
 
@@ -845,6 +934,8 @@ export function useTasks(auth = null) {
 
   return {
     tasks,
+    accountLoadError,
+    retryAccountLoad,
     pendingSyncCount,
     syncing,
     syncError,
