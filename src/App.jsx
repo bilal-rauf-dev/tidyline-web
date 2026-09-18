@@ -31,6 +31,8 @@ import { DEFAULT_OVERLOAD_HOURS } from './utils/workload'
 import { QuickAddModal } from './components/QuickAddModal'
 import { toDateStr } from './utils/calendar'
 import { WelcomeDialog } from './components/WelcomeDialog'
+import { LocalDataRecovery } from './components/LocalDataRecovery'
+import { SyncStatusBanner } from './components/SyncStatusBanner'
 
 // ── Keys still kept in localStorage (guest + authenticated alike) ─────────────
 // tidyline:notificationSound is intentionally device-local (not synced to Supabase).
@@ -121,6 +123,7 @@ function App() {
   const createTask = useCallback(
     (taskData) => {
       const task = taskState.addTask(taskData)
+      if (!task) return null
       setTaskAdded({ id: task.id, title: task.title })
       return task
     },
@@ -289,6 +292,17 @@ function App() {
     return <LoadingSpinner />
   }
 
+  if (!auth.isAuthenticated && !auth.loading && taskState.localDataError) {
+    return (
+      <LocalDataRecovery
+        error={taskState.localDataError}
+        actionError={taskState.dbError}
+        onDiscard={taskState.discardBrokenLocalTasks}
+        onGoogleSignIn={auth.isConfigured ? auth.signInWithGoogle : undefined}
+      />
+    )
+  }
+
   // 2. Show WelcomeDialog for guests who haven't set up yet (after auth resolves).
   if (!profile.isSetUp && !auth.isAuthenticated && !auth.loading) {
     return (
@@ -296,6 +310,7 @@ function App() {
         onImportTasks={taskState.importTasks}
         onComplete={profile.completeSetup}
         onGoogleSignIn={auth.isConfigured ? auth.signInWithGoogle : undefined}
+        existingTaskCount={taskState.tasks.length}
       />
     )
   }
@@ -348,6 +363,15 @@ function App() {
             hasSettings={settingsState.hasPendingSettingsMigration}
             onMigrate={handleMigrateAll}
             onDismiss={handleDismissMigration}
+          />
+        )}
+
+        {auth.isAuthenticated && (
+          <SyncStatusBanner
+            count={taskState.pendingSyncCount}
+            syncing={taskState.syncing}
+            failed={taskState.syncError}
+            onRetry={taskState.retrySync}
           />
         )}
 

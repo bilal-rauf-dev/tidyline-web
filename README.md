@@ -43,7 +43,7 @@ Add a task with a deadline and TidyLine automatically places it into the right t
 
 - Smart reminder presets (5 min / 30 min / 1 hour before, tomorrow morning, every weekday, custom)
 - Recurring tasks — daily, weekly, monthly, yearly, or every N days
-- Browser notifications with sound, snooze, and mark-complete-from-notification
+- In-page browser notifications with sound and snooze while the page is open
 
 **Views**
 
@@ -66,7 +66,7 @@ Add a task with a deadline and TidyLine automatically places it into the right t
 - Command palette (`Ctrl+K`) and keyboard shortcuts for common actions
 - Light/dark mode, a selectable accent color, and compact/comfortable density
 - Export and import your tasks as JSON
-- All task data stays in your browser's local storage — no account required
+- Guest tasks stay in this browser; signed-in tasks sync through Supabase when configured
 
 <table>
 <tr><td width="60"><img src="https://img.shields.io/badge/-%23FF5A36-FF5A36?style=flat-square" alt="Coral" /></td><td>Coral <sub>(default)</sub></td>
@@ -80,7 +80,7 @@ Add a task with a deadline and TidyLine automatically places it into the right t
 *The five accent options available under Settings → Appearance. Pick one hue to carry every highlight, button, and today marker in the app.*
 
 > [!NOTE]
-> TidyLine is local-first by design: it works fully offline, no sign-up needed, with tasks living in this browser's local storage. An optional Google sign-in (via Supabase Auth) is available to give the workspace your name and picture — task data itself isn't synced to a server yet, so it still stays on this device.
+> TidyLine runs in an ordinary browser without installation. Guest tasks are saved in that browser. A configured Supabase backend enables signed-in task sync. A connection is needed to load the app initially; previously visited pages are not yet cached for offline reload. Reminders currently depend on an open page, so closed-page delivery is still on the improvement plan.
 
 ## Tech stack
 
@@ -98,14 +98,14 @@ npm run dev
 ```
 
 > [!TIP]
-> Google sign-in is optional. To enable it, copy `.env.example` to `.env` and fill in a Supabase project's `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`. Without it, TidyLine runs entirely in local/guest mode.
+> Google sign-in is optional. To enable it, copy `.env.example` to `.env`, fill in a Supabase project's `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`, and apply `supabase_migration.sql` followed by `supabase_migrations/20260918_atomic_task_replace.sql` to that project. Without those steps, TidyLine runs in local guest mode. Cloud import and undo require the atomic replacement migration.
 
 Other useful scripts:
 
 ```bash
 npm run lint    # ESLint
 npm run build   # Production build
-npm run check   # Lint + build + all smoke/parser tests
+npm run check   # Lint + task data tests + build + smoke/parser tests
 ```
 
 ## Live preview

@@ -1,8 +1,16 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { deadlineForBucket } from '../utils/buckets'
 import { toDateStr } from '../utils/calendar'
 import { nextOccurrence } from '../utils/recurrence'
 import { reminderKey } from '../utils/reminders'
+import { validateTaskCollection } from '../utils/tasksIO'
+import {
+  acknowledgeAccountOperation,
+  applyAccountOperations,
+  cacheAccountSnapshot,
+  enqueueAccountOperation,
+  readAccountSyncState,
+} from '../utils/taskSyncStore'
 import {
   applyTaskUpdates,
   isTaskUpcoming,
@@ -13,12 +21,10 @@ import {
   shiftStartDateForDeadline,
 } from '../utils/taskFields'
 import {
-  deleteTaskRow,
   deleteManyTaskRows,
   fetchTasks,
   replaceAllTasks,
   upsertManyTasks,
-  upsertTask,
 } from '../utils/supabaseStorage'
 
 const STORAGE_KEY = 'tidyline:tasks'
@@ -32,6 +38,8 @@ function normalizeReminder(entry) {
   if (typeof entry === 'string') {
     return { id: `abs:${entry}`, kind: 'absolute', at: entry }
   }
+
+  if (!entry || typeof entry !== 'object' || Array.isArray(entry)) return null
 
   const kind = entry.kind ?? 'absolute'
   const record = { ...entry, kind }
@@ -55,7 +63,7 @@ export function normalizeTask(task) {
     id: task.id,
     title: task.title,
     deadline,
-    reminders: normalizeList(task.reminders).map(normalizeReminder),
+    reminders: normalizeList(task.reminders).map(normalizeReminder).filter(Boolean),
     tags: normalizeList(task.tags),
     done: Boolean(task.done),
     completedAt: typeof task.completedAt === 'string' ? task.completedAt : null,
@@ -86,12 +94,20 @@ export function normalizeTask(task) {
 }
 
 function loadTasksFromLocalStorage() {
+  let raw = null
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    const parsed = raw ? JSON.parse(raw) : []
-    return Array.isArray(parsed) ? parsed.map(normalizeTask) : []
-  } catch {
-    return []
+    raw = localStorage.getItem(STORAGE_KEY)
+    const parsed = raw === null ? [] : JSON.parse(raw)
+    return { tasks: validateTaskCollection(parsed).map(normalizeTask), error: null }
+  } catch (error) {
+    // Keep the original value untouched. The recovery screen can export it.
+    return {
+      tasks: [],
+      error: {
+        message: error instanceof Error ? error.message : 'Could not read saved tasks',
+        raw,
+      },
+    }
   }
 }
 
@@ -129,8 +145,8 @@ function nextInstance(task, deadline) {
  *
  * When authenticated:
  *  - Tasks are fetched from Supabase on mount (loading = true until done).
- *  - Every mutation optimistically updates local state and fires a background
- *    Supabase write. Failed writes surface via `dbError`.
+ *  - Mutations are first saved in a per-account browser queue, then submitted
+ *    to Supabase. Failed writes stay queued and surface via the sync banner.
  *  - `hasPendingMigration` is true when the DB is empty but localStorage has
  *    tasks. Call `migrateLocalTasks()` to import them.
  */
@@ -140,13 +156,19 @@ export function useTasks(auth = null) {
 
   // For guests: load synchronously from localStorage.
   // For authenticated: start empty, populate from Supabase asynchronously.
-  const [tasks,               setTasks]               = useState(() =>
-    isAuthenticated ? [] : loadTasksFromLocalStorage(),
+  const [initialLocalLoad] = useState(() =>
+    isAuthenticated ? { tasks: [], error: null } : loadTasksFromLocalStorage(),
   )
+  const [tasks,               setTasks]               = useState(initialLocalLoad.tasks)
+  const [localDataError,      setLocalDataError]      = useState(initialLocalLoad.error)
   const [undoState,           setUndoState]           = useState(null)
   const [loading,             setLoading]             = useState(() => Boolean(isAuthenticated && userId))
   const [dbError,             setDbError]             = useState(null)
   const [hasPendingMigration, setHasPendingMigration] = useState(false)
+  const [pendingSyncCount,    setPendingSyncCount]    = useState(0)
+  const [syncing,             setSyncing]             = useState(false)
+  const [syncError,           setSyncError]           = useState(false)
+  const flushActiveRef = useRef(false)
 
   // Track previous auth state so we can detect sign-out transitions and
   // prevent Supabase data from leaking into the guest session.
@@ -156,6 +178,51 @@ export function useTasks(auth = null) {
   // them without stale closure issues.
   const tasksRef = useRef(tasks)
   useEffect(() => { tasksRef.current = tasks }, [tasks])
+
+  const flushSyncQueue = useCallback(async () => {
+    if (!isAuthenticated || !userId || flushActiveRef.current) return
+    flushActiveRef.current = true
+    setSyncing(true)
+    try {
+      while (true) {
+        const current = readAccountSyncState(localStorage, userId)
+        const operation = current.operations[0]
+        if (!operation) {
+          setPendingSyncCount(0)
+          setSyncError(false)
+          break
+        }
+
+        if (operation.kind === 'upsert') await upsertManyTasks(userId, operation.tasks)
+        if (operation.kind === 'delete') await deleteManyTaskRows(operation.ids)
+        if (operation.kind === 'replace') await replaceAllTasks(userId, operation.tasks)
+
+        const acknowledged = acknowledgeAccountOperation(localStorage, userId, operation.id)
+        setPendingSyncCount(acknowledged.operations.length)
+        setSyncError(false)
+      }
+    } catch (error) {
+      console.error('[useTasks] queued sync failed:', error)
+      setSyncError(true)
+      setDbError('Changes are saved in this browser but have not reached your account. Sync will retry.')
+    } finally {
+      flushActiveRef.current = false
+      setSyncing(false)
+    }
+  }, [isAuthenticated, userId])
+
+  useEffect(() => {
+    if (!isAuthenticated || !userId || loading) return undefined
+    const retry = () => flushSyncQueue()
+    const firstRetry = window.setTimeout(retry, 0)
+    const interval = window.setInterval(retry, 30_000)
+    window.addEventListener('online', retry)
+    return () => {
+      window.clearTimeout(firstRetry)
+      window.clearInterval(interval)
+      window.removeEventListener('online', retry)
+    }
+  }, [isAuthenticated, userId, loading, flushSyncQueue])
 
   // ── Reset on sign-out (authenticated → guest) ─────────────────────────────
   // When the user signs out, React state still holds the Supabase-fetched
@@ -167,11 +234,15 @@ export function useTasks(auth = null) {
 
     if (wasAuthenticated && !isAuthenticated) {
       // User just signed out — reset to local-only data.
-      setTasks(loadTasksFromLocalStorage())
+      const loaded = loadTasksFromLocalStorage()
+      setTasks(loaded.tasks)
+      setLocalDataError(loaded.error)
       setUndoState(null)
       setDbError(null)
       setHasPendingMigration(false)
       setLoading(false)
+      setPendingSyncCount(0)
+      setSyncError(false)
     }
   }, [isAuthenticated])
 
@@ -180,11 +251,22 @@ export function useTasks(auth = null) {
     if (!isAuthenticated || !userId) return
 
     let cancelled = false
+    let accountCache = null
+    try {
+      accountCache = readAccountSyncState(localStorage, userId)
+      const pending = accountCache.operations.length
+      queueMicrotask(() => { if (!cancelled) setPendingSyncCount(pending) })
+    } catch (error) {
+      console.error('[useTasks] account cache unreadable:', error)
+      queueMicrotask(() => {
+        if (!cancelled) setDbError('Saved account changes in this browser could not be read. Export your tasks before editing.')
+      })
+    }
 
     fetchTasks(userId)
       .then((data) => {
         if (cancelled) return
-        setDbError(null)
+        if (accountCache) setDbError(null)
 
         // Offer migration if the user has local tasks but nothing in the DB yet.
         if (data.length === 0) {
@@ -199,13 +281,28 @@ export function useTasks(auth = null) {
           }
         }
 
-        setTasks(data.map(normalizeTask))
+        const remote = data.map(normalizeTask)
+        const merged = applyAccountOperations(remote, accountCache?.operations ?? [])
+        try {
+          if (accountCache) cacheAccountSnapshot(localStorage, userId, merged)
+        } catch (error) {
+          console.error('[useTasks] could not cache account tasks:', error)
+          setDbError('Could not save an account copy in this browser. Check available storage.')
+        }
+        tasksRef.current = merged
+        setTasks(merged)
         setLoading(false)
       })
       .catch((err) => {
         if (cancelled) return
         console.error('[useTasks] fetch failed:', err)
-        setDbError('Could not load tasks from your account. Check your connection.')
+        setDbError(accountCache?.hasSnapshot
+          ? 'Showing tasks saved in this browser. Account sync will retry when connected.'
+          : 'Could not load tasks from your account. Check your connection.')
+        if (accountCache?.hasSnapshot) {
+          tasksRef.current = accountCache.snapshot
+          setTasks(accountCache.snapshot)
+        }
         setLoading(false)
       })
 
@@ -219,6 +316,7 @@ export function useTasks(auth = null) {
   const authStableRef = useRef(isAuthenticated)
   useEffect(() => {
     if (isAuthenticated) { authStableRef.current = true; return }
+    if (localDataError) return
 
     // If we just transitioned from authenticated → guest, the reset effect
     // above already set tasks to the correct local data. However, this
@@ -226,8 +324,15 @@ export function useTasks(auth = null) {
     // before the reset. Skip this write until the next genuine guest change.
     if (authStableRef.current) { authStableRef.current = false; return }
 
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks))
-  }, [tasks, isAuthenticated])
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks))
+    } catch {
+      const timer = window.setTimeout(() => {
+        setDbError('Could not save tasks in this browser. Export your tasks and check available storage.')
+      }, 0)
+      return () => window.clearTimeout(timer)
+    }
+  }, [tasks, isAuthenticated, localDataError])
 
   // ── Daily maintenance: clear past plannedDates, release expired waits ─────
   // Uses the tasks ref so it doesn't need tasks in its deps. This keeps the
@@ -274,35 +379,46 @@ export function useTasks(auth = null) {
 
   // ── Internal helpers ──────────────────────────────────────────────────────
 
-  function handleSyncError(label, err) {
-    console.error(`[useTasks] ${label} error:`, {
-      message: err?.message,
-      details: err?.details,
-      hint: err?.hint,
-      code: err?.code,
-      raw: err,
-    })
-    setDbError(err?.message ? `Failed to sync task: ${err.message}` : 'Failed to sync a change. Your data is safe locally — retry or refresh.')
+  function queueAccountChange(kind, payload) {
+    const operation = { id: crypto.randomUUID(), kind, ...payload }
+    const nextTasks = applyAccountOperations(tasksRef.current, [operation])
+    try {
+      const saved = isAuthenticated && userId
+        ? enqueueAccountOperation(localStorage, userId, nextTasks, operation)
+        : null
+      if (!saved) localStorage.setItem(STORAGE_KEY, JSON.stringify(nextTasks))
+      tasksRef.current = nextTasks
+      setTasks(nextTasks)
+      if (saved) {
+        setPendingSyncCount(saved.operations.length)
+        if (!loading) queueMicrotask(flushSyncQueue)
+      }
+      return true
+    } catch (error) {
+      console.error('[useTasks] could not queue task change:', error)
+      setTasks(tasksRef.current)
+      setUndoState(null)
+      setDbError('Could not save this change in the browser. Check available storage and try again.')
+      return false
+    }
   }
 
   function syncUpsert(task) {
-    if (!isAuthenticated || !userId) return
-    upsertTask(userId, task).catch((err) => handleSyncError('upsert', err))
+    return queueAccountChange('upsert', { tasks: [task] })
   }
 
   function syncUpsertMany(taskList) {
-    if (!isAuthenticated || !userId || taskList.length === 0) return
-    upsertManyTasks(userId, taskList).catch((err) => handleSyncError('upsert_many', err))
+    if (taskList.length === 0) return true
+    return queueAccountChange('upsert', { tasks: taskList })
   }
 
   function syncDelete(taskId) {
-    if (!isAuthenticated || !userId) return
-    deleteTaskRow(taskId).catch((err) => handleSyncError('delete', err))
+    return queueAccountChange('delete', { ids: [taskId] })
   }
 
   function syncDeleteMany(taskIds) {
-    if (!isAuthenticated || !userId || taskIds.length === 0) return
-    deleteManyTaskRows(taskIds).catch((err) => handleSyncError('delete_many', err))
+    if (taskIds.length === 0) return true
+    return queueAccountChange('delete', { ids: taskIds })
   }
 
   function commit(message, nextTasks) {
@@ -358,8 +474,7 @@ export function useTasks(auth = null) {
     })
 
     setTasks((current) => [task, ...current])
-    syncUpsert(task)
-    return task
+    return syncUpsert(task) ? task : null
   }
 
   function addSomedayTask({ title, notes = '', tags = [] }) {
@@ -370,8 +485,7 @@ export function useTasks(auth = null) {
     })
 
     setTasks((current) => [task, ...current])
-    syncUpsert(task)
-    return task
+    return syncUpsert(task) ? task : null
   }
 
   function updateTask(id, updates, source = 'edit') {
@@ -652,13 +766,15 @@ export function useTasks(auth = null) {
   }
 
   function importTasks(newTasks) {
-    const normalized = newTasks.map(normalizeTask)
-    setTasks(normalized)
-
+    const normalized = validateTaskCollection(newTasks).map(normalizeTask)
     if (isAuthenticated && userId) {
-      replaceAllTasks(userId, normalized).catch((err) =>
-        handleSyncError('importTasks replaceAll', err),
-      )
+      if (!queueAccountChange('replace', { tasks: normalized })) {
+        throw new Error('Could not save the imported tasks in this browser. The existing tasks were kept.')
+      }
+    } else {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized))
+      tasksRef.current = normalized
+      setTasks(normalized)
     }
   }
 
@@ -671,15 +787,19 @@ export function useTasks(auth = null) {
   function undo() {
     if (!undoState) return
     const snapshot = undoState.snapshot
-    setTasks(snapshot)
-    setUndoState(null)
-
     if (isAuthenticated && userId) {
-      // Replace all: delete current rows, re-insert the snapshot.
-      replaceAllTasks(userId, snapshot).catch((err) =>
-        handleSyncError('undo replaceAll', err),
-      )
+      if (!queueAccountChange('replace', { tasks: snapshot })) return
+    } else {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot))
+      } catch {
+        setDbError('Could not save the undo in this browser. Check available storage and try again.')
+        return
+      }
+      tasksRef.current = snapshot
+      setTasks(snapshot)
     }
+    setUndoState(null)
   }
 
   /**
@@ -692,11 +812,13 @@ export function useTasks(auth = null) {
       const raw = localStorage.getItem(STORAGE_KEY)
       if (!raw) { setHasPendingMigration(false); return }
 
-      const parsed = JSON.parse(raw)
-      if (!Array.isArray(parsed) || parsed.length === 0) { setHasPendingMigration(false); return }
+      const parsed = validateTaskCollection(JSON.parse(raw))
+      if (parsed.length === 0) { setHasPendingMigration(false); return }
 
       const normalized = parsed.map(normalizeTask)
       await upsertManyTasks(userId, normalized)
+      cacheAccountSnapshot(localStorage, userId, normalized)
+      tasksRef.current = normalized
       setTasks(normalized)
       localStorage.removeItem(STORAGE_KEY)
       setHasPendingMigration(false)
@@ -711,8 +833,24 @@ export function useTasks(auth = null) {
     setHasPendingMigration(false)
   }
 
+  function discardBrokenLocalTasks() {
+    try {
+      localStorage.removeItem(STORAGE_KEY)
+      setTasks([])
+      setLocalDataError(null)
+    } catch {
+      setDbError('Could not remove the unreadable data from this browser. Check browser storage permissions.')
+    }
+  }
+
   return {
     tasks,
+    pendingSyncCount,
+    syncing,
+    syncError,
+    retrySync: flushSyncQueue,
+    localDataError,
+    discardBrokenLocalTasks,
     loading,
     dbError,
     clearDbError: () => setDbError(null),

@@ -7,6 +7,7 @@ import { BucketConfigMenu } from '../components/BucketConfigMenu'
 import { BUCKET_ORDER } from '../utils/buckets'
 import { TemplateSettings } from '../components/TemplateSettings'
 import { ChevronDownIcon, GoogleIcon } from '../components/icons'
+import { ImportReview } from '../components/ImportReview'
 
 function SettingsSection({ title, description, initiallyOpen = false, children }) {
   const [isOpen, setIsOpen] = useState(initiallyOpen)
@@ -55,6 +56,8 @@ export function SettingsPage({
   const fileInputRef = useRef(null)
   const [soundOn, setSoundOn] = useState(isSoundEnabled)
   const [workspaceName, setWorkspaceName] = useState(profile?.name ?? '')
+  const [importPreview, setImportPreview] = useState(null)
+  const [importError, setImportError] = useState('')
   const completedCount = tasks.filter((task) => task.done).length
 
   function handleExport() {
@@ -77,13 +80,27 @@ export function SettingsPage({
     const reader = new FileReader()
     reader.onload = () => {
       try {
-        importTasks(parseImportedTasks(String(reader.result)))
-      } catch {
-        window.alert('That file is not a valid TidyLine export.')
+        setImportPreview(parseImportedTasks(String(reader.result)))
+        setImportError('')
+      } catch (error) {
+        setImportPreview(null)
+        setImportError(error instanceof Error ? error.message : 'That file is not a valid TidyLine export.')
       }
     }
+    reader.onerror = () => setImportError('Could not read that file.')
     reader.readAsText(file)
     event.target.value = ''
+  }
+
+  function confirmImport() {
+    if (!importPreview) return
+    try {
+      importTasks(importPreview)
+      setImportPreview(null)
+      setImportError('')
+    } catch (error) {
+      setImportError(error instanceof Error ? error.message : 'Could not import those tasks.')
+    }
   }
 
   function handleClearCompleted() {
@@ -375,6 +392,15 @@ export function SettingsPage({
             hidden
           />
         </div>
+        {importError && <p className="field-error" role="alert">{importError}</p>}
+        {importPreview && (
+          <ImportReview
+            tasks={importPreview}
+            existingCount={tasks.length}
+            onConfirm={confirmImport}
+            onCancel={() => setImportPreview(null)}
+          />
+        )}
 
         <div className="settings-row">
           <span>Clear completed tasks ({completedCount})</span>

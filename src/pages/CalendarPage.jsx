@@ -39,8 +39,7 @@ export function CalendarPage({
     : null
 
   function handleAddTask(taskData) {
-    addTask(taskData)
-    setSelectedDate(null)
+    if (addTask(taskData)) setSelectedDate(null)
   }
 
   // Same contract as the bucket board: the drop rewrites the real deadline.

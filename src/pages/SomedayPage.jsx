@@ -47,7 +47,7 @@ export function SomedayPage({ tasks, addSomedayTask, promoteSomeday, deleteTask,
   function submit(event) {
     event.preventDefault()
     if (!title.trim()) return
-    addSomedayTask({ title: title.trim(), notes, tags: parseTags(tags) })
+    if (!addSomedayTask({ title: title.trim(), notes, tags: parseTags(tags) })) return
     setTitle('')
     setNotes('')
     setTags('')
