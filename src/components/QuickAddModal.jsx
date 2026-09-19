@@ -193,7 +193,7 @@ export function QuickAddModal({ isOpen, onClose, onAddTask, onOpenFullForm, task
           ? { value: parsed.durationMinutes, unit: 'min' }
           : null
 
-      onAddTask({
+      const added = onAddTask({
         title: parsed.title,
         deadline: deadlineStr,
         tags: parsed.tags,
@@ -213,7 +213,7 @@ export function QuickAddModal({ isOpen, onClose, onAddTask, onOpenFullForm, task
         plannedDate: parsed.planForToday ? todayStr : null,
       })
 
-      onClose()
+      if (added) onClose()
     }
   }
 

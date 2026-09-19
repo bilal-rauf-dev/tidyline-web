@@ -85,7 +85,7 @@ export function PlannerPage({ tasks, setScheduledStart, updateTask }) {
       <header className="hero planner-hero">
         <div>
           <h1>Day planner</h1>
-          <p className="hero-copy">Drag actionable tasks onto a time and shape the day.</p>
+          <p className="hero-copy">Choose a time for each task, or drag it onto the timeline.</p>
         </div>
         <div className="planner-date-controls">
           <button type="button" className="secondary" onClick={() => setDate(addDays(date, -1))}>
@@ -104,7 +104,7 @@ export function PlannerPage({ tasks, setScheduledStart, updateTask }) {
       <section className="planner-layout" aria-label={`Plan for ${formatDate(date)}`}>
         <aside className="entry-card planner-source">
           <h2>Board tasks</h2>
-          <p className="card-note">Drag onto the timeline. Waiting tasks stay off this list.</p>
+          <p className="card-note">Choose a time or drag onto the timeline. Waiting tasks stay off this list.</p>
           {sourceTasks.length === 0 ? (
             <p className="empty">Everything actionable is scheduled.</p>
           ) : (
@@ -120,6 +120,20 @@ export function PlannerPage({ tasks, setScheduledStart, updateTask }) {
                 >
                   <strong>{task.title}</strong>
                   <span>{durationMinutes(task)} min · due {formatDate(task.deadline)}</span>
+                  <form
+                    className="planner-task-controls"
+                    onSubmit={(event) => {
+                      event.preventDefault()
+                      const time = new FormData(event.currentTarget).get('time')
+                      if (time) setScheduledStart(task.id, `${date}T${time}`)
+                    }}
+                  >
+                    <label>
+                      <span>Start time for {task.title}</span>
+                      <input type="time" name="time" defaultValue="09:00" min="06:00" max="21:45" step="900" required />
+                    </label>
+                    <button type="submit" className="secondary">Schedule</button>
+                  </form>
                 </li>
               ))}
             </ul>
@@ -128,6 +142,47 @@ export function PlannerPage({ tasks, setScheduledStart, updateTask }) {
 
         <article className="entry-card planner-day">
           <h2>{formatDate(date)}</h2>
+          {scheduled.length > 0 && (
+            <section className="planner-scheduled-controls" aria-label="Adjust scheduled tasks">
+              <h3>Scheduled tasks</h3>
+              <ul>
+                {scheduled.map((task) => (
+                  <li key={`${task.id}:${task.scheduledStart}:${durationMinutes(task)}`}>
+                    <strong>{task.title}</strong>
+                    <form
+                      className="planner-task-controls"
+                      onSubmit={(event) => {
+                        event.preventDefault()
+                        const form = new FormData(event.currentTarget)
+                        const time = form.get('time')
+                        const minutes = Number(form.get('duration'))
+                        if (!time || !Number.isFinite(minutes) || minutes < 15) return
+                        if (time !== task.scheduledStart.slice(11, 16)) {
+                          setScheduledStart(task.id, `${date}T${time}`)
+                        }
+                        if (minutes !== durationMinutes(task)) {
+                          updateTask(task.id, { duration: { value: minutes, unit: 'min' } })
+                        }
+                      }}
+                    >
+                      <label>
+                        <span>Start time</span>
+                        <input type="time" name="time" defaultValue={task.scheduledStart.slice(11, 16)} min="06:00" max="21:45" step="900" required />
+                      </label>
+                      <label>
+                        <span>Minutes</span>
+                        <input type="number" name="duration" defaultValue={durationMinutes(task)} min="15" step="15" required />
+                      </label>
+                      <button type="submit" className="secondary">Save</button>
+                      <button type="button" className="secondary" onClick={() => setScheduledStart(task.id, null)}>
+                        Remove
+                      </button>
+                    </form>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
           <div
             ref={timelineRef}
             className="planner-timeline"
@@ -183,11 +238,10 @@ export function PlannerPage({ tasks, setScheduledStart, updateTask }) {
                   >
                     <CloseIcon />
                   </button>
-                  <button
-                    type="button"
+                  <div
                     className="planner-resize"
-                    aria-label={`Resize ${task.title}`}
                     title="Drag to resize"
+                    aria-hidden="true"
                     onPointerDown={(event) => beginResize(event, task)}
                   />
                 </div>

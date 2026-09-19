@@ -3,13 +3,17 @@ const SOUND_KEY = 'tidyline:notificationSound'
 let workerRegistration = null
 let audioContext = null
 
-export function ensureNotificationPermission() {
-  if (typeof Notification === 'undefined') {
-    return
-  }
+export function getNotificationPermission() {
+  return typeof Notification === 'undefined' ? 'unsupported' : Notification.permission
+}
 
-  if (Notification.permission === 'default') {
-    Notification.requestPermission()
+export async function ensureNotificationPermission() {
+  if (getNotificationPermission() !== 'default') return getNotificationPermission()
+  try {
+    return await Notification.requestPermission()
+  } catch (error) {
+    console.warn('[TidyLine] Notification permission request failed:', error)
+    return getNotificationPermission()
   }
 }
 
@@ -22,18 +26,21 @@ export function setSoundEnabled(enabled) {
 }
 
 /**
- * Register the notification worker. Only needed so notifications can carry
- * action buttons; failure is non-fatal and falls back to plain notifications.
+ * Register the worker for notification actions and production offline assets.
+ * Failure is non-fatal; notifications fall back to the plain API.
  */
 export async function registerNotificationWorker() {
   if (!('serviceWorker' in navigator)) {
     return null
   }
 
+  // Vite's development worker has no asset cache; production injects one.
+
   try {
     workerRegistration = await navigator.serviceWorker.register('/sw.js')
     return workerRegistration
-  } catch {
+  } catch (error) {
+    console.warn('[TidyLine] Service worker registration failed:', error)
     workerRegistration = null
     return null
   }
@@ -99,9 +106,15 @@ export function notifyReminder({ title, body, taskId, reminderId }) {
         { action: 'complete', title: 'Complete' },
         { action: 'snooze', title: 'Snooze 10m' },
       ],
+    }).catch((error) => {
+      console.warn('[TidyLine] Could not display reminder:', error)
     })
     return
   }
 
-  new Notification(title, payload)
+  try {
+    new Notification(title, payload)
+  } catch (error) {
+    console.warn('[TidyLine] Could not display reminder:', error)
+  }
 }

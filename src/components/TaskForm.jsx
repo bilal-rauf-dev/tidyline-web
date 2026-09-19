@@ -173,7 +173,7 @@ export function TaskForm({
       return
     }
 
-    onAddTask({
+    const added = onAddTask({
       title: title.trim(),
       deadline,
       reminders: remindersDraft,
@@ -195,6 +195,8 @@ export function TaskForm({
       waitingFor: details.status === 'waiting' ? details.waitingFor.trim() : '',
       followUpDate: details.status === 'waiting' ? details.followUpDate : null,
     })
+
+    if (!added) return
 
     setTitle('')
     setDeadline('')

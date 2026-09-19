@@ -151,18 +151,20 @@ export async function deleteManyTaskRows(taskIds) {
   if (error) throw error
 }
 
-/**
- * Replace all of a user's tasks atomically (used for undo and importTasks).
- * Deletes all existing rows first, then batch-inserts the new set.
- */
+/** Replace tasks in one database transaction; requires the companion SQL migration. */
 export async function replaceAllTasks(userId, tasks) {
-  const { error: deleteError } = await supabase
-    .from('tasks')
-    .delete()
-    .eq('user_id', userId)
+  const { error } = await supabase.rpc('replace_user_tasks', {
+    p_rows: tasks.map((task) => taskToRow(userId, task)),
+  })
+  if (error) throw error
+}
 
-  if (deleteError) throw deleteError
-  if (tasks.length > 0) await upsertManyTasks(userId, tasks)
+export async function insertManyTasks(userId, tasks) {
+  if (tasks.length === 0) return
+  const { error } = await supabase
+    .from('tasks')
+    .insert(tasks.map((task) => taskToRow(userId, task)))
+  if (error) throw error
 }
 
 // ── Settings CRUD ─────────────────────────────────────────────────────────────
