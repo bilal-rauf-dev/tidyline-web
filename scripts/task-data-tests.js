@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
 import { parseImportedTasks, validateTaskCollection } from '../src/utils/tasksIO.js'
 import { planLocalTaskMigration } from '../src/utils/taskMigration.js'
+import { assertSafeSupabaseBrowserKey, isUnsafeSupabaseBrowserKey } from '../src/utils/supabaseKey.js'
+import { classifyBackendErrors } from '../src/utils/supabaseHealth.js'
 import {
   acknowledgeAccountOperation,
   applyAccountOperations,
@@ -103,3 +105,13 @@ const additive = await planLocalTaskMigration('account-a', [accountTask], [newLo
 assert.deepEqual(additive.additions, [newLocalTask])
 assert.deepEqual(additive.merged, [newLocalTask, accountTask])
 console.log('ok    Local task migration preserves account tasks and retries safely')
+
+assert.equal(isUnsafeSupabaseBrowserKey('sb_publishable_example'), false)
+assert.equal(isUnsafeSupabaseBrowserKey('sb_secret_example'), true)
+const serviceRolePayload = Buffer.from(JSON.stringify({ role: 'service_role' })).toString('base64url')
+assert.equal(isUnsafeSupabaseBrowserKey(`eyJ.${serviceRolePayload}.signature`), true)
+assert.throws(() => assertSafeSupabaseBrowserKey('sb_secret_example'), /server key/)
+assert.equal(classifyBackendErrors([]), 'ready')
+assert.equal(classifyBackendErrors([{ code: 'PGRST205' }]), 'incomplete')
+assert.equal(classifyBackendErrors([{ code: 'NETWORK_ERROR' }]), 'unavailable')
+console.log('ok    Browser configuration rejects server keys and identifies missing schema')

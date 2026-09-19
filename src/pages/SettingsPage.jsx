@@ -175,9 +175,15 @@ export function SettingsPage({
           description={
             auth.isAuthenticated
               ? 'Signed in with Google (Supabase Auth)'
-              : auth.isConfigured
-                ? 'Sign in with Google'
-                : 'Local mode (no backend configured)'
+              : auth.backendStatus === 'checking'
+                ? 'Checking cloud sync'
+                : auth.backendStatus === 'incomplete'
+                  ? 'Cloud database setup required'
+                  : auth.backendStatus === 'unavailable'
+                    ? 'Cloud sync unavailable'
+                    : auth.canSignIn
+                      ? 'Sign in with Google'
+                      : 'Local mode (no backend configured)'
           }
           initiallyOpen
         >
@@ -207,7 +213,7 @@ export function SettingsPage({
                 Sign out
               </button>
             </div>
-          ) : auth.isConfigured ? (
+          ) : auth.canSignIn ? (
             <div className="settings-row">
               <span>
                 Supabase Authentication
@@ -224,13 +230,32 @@ export function SettingsPage({
                 <span>Sign in with Google</span>
               </button>
             </div>
+          ) : auth.backendStatus === 'incomplete' ? (
+            <div className="settings-row">
+              <span>
+                Cloud database setup required
+                <small className="settings-note">
+                  The connection works, but TidyLine's database tables are missing. Apply the supplied Supabase migrations before signing in.
+                </small>
+              </span>
+            </div>
+          ) : auth.backendStatus === 'unavailable' ? (
+            <div className="settings-row">
+              <span>
+                Cloud sync unavailable
+                <small className="settings-note">
+                  TidyLine could not verify the cloud database. Your local workspace remains available.
+                </small>
+              </span>
+            </div>
+          ) : auth.backendStatus === 'checking' ? (
+            <div className="settings-row"><span>Checking cloud sync…</span></div>
           ) : (
             <div className="settings-row">
               <span>
                 Local mode
                 <small className="settings-note">
-                  No Supabase backend is configured, so tasks stay in this browser. Set
-                  VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to enable Google sign-in.
+                  No cloud backend is configured, so tasks stay in this browser.
                 </small>
               </span>
             </div>

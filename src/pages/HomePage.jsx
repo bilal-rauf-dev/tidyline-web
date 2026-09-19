@@ -161,7 +161,7 @@ export function HomePage({
                 Add a task
               </Link>
 
-              {!auth.isAuthenticated ? (
+              {!auth.isAuthenticated && auth.canSignIn ? (
                 <button
                   type="button"
                   className="home-google-auth-btn"
@@ -171,7 +171,7 @@ export function HomePage({
                   <GoogleIcon size={18} />
                   <span>Sign in with Google</span>
                 </button>
-              ) : (
+              ) : auth.isAuthenticated ? (
                 <div className="home-user-badge">
                   <div className="home-user-avatar-wrap">
                     {auth.avatarUrl ? (
@@ -202,7 +202,7 @@ export function HomePage({
                     <span>Sign out</span>
                   </button>
                 </div>
-              )}
+              ) : null}
             </div>
           </header>
 

@@ -98,7 +98,7 @@ npm run dev
 ```
 
 > [!TIP]
-> Google sign-in is optional. To enable it, copy `.env.example` to `.env`, fill in a Supabase project's `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`, and apply `supabase_migration.sql` followed by `supabase_migrations/20260918_atomic_task_replace.sql` to that project. Without those steps, TidyLine runs in local guest mode. Cloud import and undo require the atomic replacement migration.
+> Google sign-in is optional. To enable it, copy `.env.example` to `.env`, fill in a Supabase project's `VITE_SUPABASE_URL` and browser-safe `VITE_SUPABASE_PUBLISHABLE_KEY`, and apply `supabase_migration.sql` followed by `supabase_migrations/20260918_atomic_task_replace.sql` to that project. A legacy anon JWT is also accepted through `VITE_SUPABASE_ANON_KEY`. Never place an `sb_secret_` or service-role key in a `VITE_` variable. Without the public configuration, TidyLine runs in local guest mode. Cloud import and undo require the atomic replacement migration.
 
 Other useful scripts:
 

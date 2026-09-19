@@ -8,7 +8,7 @@
     "dev": "vite",
     "build": "vite build && node scripts/build-service-worker.js && node --check dist/sw.js",
     "lint": "eslint .",
-    "smoke": "vite build --ssr scripts/smoke.jsx --outDir .smoke --logLevel warn && node .smoke/smoke.js",
+    "smoke": "vite build --mode test --ssr scripts/smoke.jsx --outDir .smoke --logLevel warn && node .smoke/smoke.js",
     "check": "npm run lint && npm run task-data-tests && npm run build && npm run service-worker-tests && npm run smoke && npm run phase1-smoke && npm run phase2-smoke && npm run phase3-smoke && npm run parser-tests",
     "task-data-tests": "node scripts/task-data-tests.js",
     "service-worker-tests": "node scripts/service-worker-tests.js",

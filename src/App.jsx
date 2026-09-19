@@ -366,8 +366,8 @@ function App() {
   }
 
   // ── Loading gates ─────────────────────────────────────────────────────────
-  // 1. Show spinner while Supabase data is loading for authenticated users.
-  if (taskState.loading || (auth.isAuthenticated && settingsState.settingsLoading)) {
+  // Keep guest data out of view until a persisted account session is resolved.
+  if (auth.loading || taskState.loading || (auth.isAuthenticated && settingsState.settingsLoading)) {
     return <LoadingSpinner />
   }
 
@@ -386,7 +386,7 @@ function App() {
         error={taskState.localDataError}
         actionError={taskState.dbError}
         onDiscard={taskState.discardBrokenLocalTasks}
-        onGoogleSignIn={auth.isConfigured ? auth.signInWithGoogle : undefined}
+        onGoogleSignIn={auth.canSignIn ? auth.signInWithGoogle : undefined}
       />
     )
   }
@@ -397,7 +397,7 @@ function App() {
       <WelcomeDialog
         onImportTasks={taskState.importTasks}
         onComplete={profile.completeSetup}
-        onGoogleSignIn={auth.isConfigured ? auth.signInWithGoogle : undefined}
+        onGoogleSignIn={auth.canSignIn ? auth.signInWithGoogle : undefined}
         existingTaskCount={taskState.tasks.length}
       />
     )
