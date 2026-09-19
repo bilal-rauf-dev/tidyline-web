@@ -5,7 +5,7 @@ Updated: 2026-09-19. The audit covered the tracked project files, including sour
 ## Browser access and reminders
 
 - Guest mode runs in a browser, but task data is local to that browser. Cross-device planning requires a configured Supabase backend and sign-in (`src/hooks/useAuth.js`, `src/hooks/useTasks.js`).
-- Public browser configuration now rejects Supabase secret and service-role keys. A startup schema check prevents sign-in when the connection exists but the required task tables are missing. The configured backend now exposes both tables and the guarded atomic replacement function; signed-in persistence still needs a user-authenticated device test.
+- Public browser configuration now rejects Supabase secret and service-role keys. A startup schema check prevents sign-in when the connection exists but the required task tables are missing. The configured backend exposes both tables and the guarded atomic replacement function. A user-authenticated browser test confirmed sign-in, the migration prompt, reload persistence, logout isolation, and data restoration after signing back in.
 - Current reminder scheduling runs in page JavaScript (`src/hooks/useReminderNotifications.js`). A closed page cannot deliver the promised reminder. Background push needs a service worker, server-side scheduling, subscriptions, retry handling, and device testing.
 - iOS and iPadOS Web Push requires a Home Screen web app. A regular Safari tab must still offer useful planning and truthful reminder guidance.
 - The original audit found no offline asset cache. WEB-02 now precaches the production shell and assets, but a real in-app browser reload still failed while the preview server was stopped. Do not claim offline reload works until ordinary browser tests pass.

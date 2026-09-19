@@ -36,4 +36,6 @@ For each work item, note the implementation reference, automated check results, 
 
 2026-09-19, Codex in-app browser on Windows, production preview with Supabase configured before migration: Settings changed from “Checking cloud sync” to “Cloud database setup required” after the public schema check. Sign-in was not offered while the required tables were absent.
 
-2026-09-19, Codex in-app browser on Windows, production preview after migration: the public Auth and table checks succeeded, the atomic replacement RPC was present and rejected anonymous access, and Settings changed from “Checking cloud sync” to “Sign in with Google.” Google opened its account sign-in page. The account login itself is left to the user, so signed-in task persistence and cross-device sync remain open.
+2026-09-19, Codex in-app browser on Windows, production preview after migration: the public Auth and table checks succeeded, the atomic replacement RPC was present and rejected anonymous access, and Settings changed from “Checking cloud sync” to “Sign in with Google.” Google opened its account sign-in page.
+
+2026-09-19, user-verified Google account on the production preview: sign-in returned to TidyLine and displayed the local-task migration option. A new account task survived a page reload, disappeared after sign-out, and returned after signing back in. This passes the single-browser account persistence and account-isolation check. A second browser or physical device, offline replay, and concurrent-edit checks remain open.
