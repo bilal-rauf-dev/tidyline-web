@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState, useMemo } from 'react'
+import { useRef, useState, useMemo } from 'react'
+import { useModalFocus } from '../hooks/useModalFocus'
 import { parseNaturalTask } from '../utils/parseNaturalTask'
 import { toDateStr } from '../utils/calendar'
 import { formatDate, deadlineMoment } from '../utils/dates'
@@ -68,6 +69,7 @@ function getValidationWarnings(parsed) {
 
 export function QuickAddModal({ isOpen, onClose, onAddTask, onOpenFullForm, tasks = [] }) {
   const inputRef = useRef(null)
+  const dialogRef = useRef(null)
   const [rawInput, setRawInput] = useState('')
   const [submitError, setSubmitError] = useState('')
   const [activeHintIndex, setActiveHintIndex] = useState(-1)
@@ -91,9 +93,7 @@ export function QuickAddModal({ isOpen, onClose, onAddTask, onOpenFullForm, task
     return []
   }, [rawInput, tasks])
 
-  useEffect(() => {
-    setTimeout(() => inputRef.current?.focus(), 80)
-  }, [])
+  useModalFocus(dialogRef, { active: isOpen, initialFocusRef: inputRef, onClose })
 
   if (!isOpen) return null
 
@@ -144,12 +144,6 @@ export function QuickAddModal({ isOpen, onClose, onAddTask, onOpenFullForm, task
         applySuggestion(suggestions[0])
         return
       }
-    }
-
-    if (event.key === 'Escape') {
-      event.preventDefault()
-      onClose()
-      return
     }
 
     if (event.key === 'Enter') {
@@ -241,9 +235,9 @@ export function QuickAddModal({ isOpen, onClose, onAddTask, onOpenFullForm, task
   const todayStr = toDateStr(new Date())
 
   return (
-    <div className="palette-layer" role="dialog" aria-modal="true" aria-label="Quick Add Task">
+    <div className="palette-layer">
       <button type="button" className="palette-scrim" aria-label="Close" onClick={onClose} />
-      <div className="palette quick-add-palette">
+      <div ref={dialogRef} className="palette quick-add-palette" role="dialog" aria-modal="true" aria-label="Quick Add Task" tabIndex={-1}>
         <div className="palette-search">
           <PlusIcon />
           <input

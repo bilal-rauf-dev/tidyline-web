@@ -38,11 +38,14 @@ self.addEventListener('fetch', (event) => {
 
   if (event.request.mode === 'navigate') {
     event.respondWith((async () => {
+      const cache = await caches.open(CACHE_NAME)
+      const cachedShell = await cache.match('/')
+
       try {
-        return await fetch(event.request)
+        const response = await fetch(event.request)
+        return response.ok ? response : cachedShell || response
       } catch {
-        const cache = await caches.open(CACHE_NAME)
-        return (await cache.match('/')) || Response.error()
+        return cachedShell || Response.error()
       }
     })())
     return

@@ -7,6 +7,7 @@ const stores = new Map()
 const shownNotifications = []
 const openedWindows = []
 let offline = false
+let networkStatus = 200
 
 function cacheFor(name) {
   if (!stores.has(name)) stores.set(name, new Map())
@@ -44,7 +45,7 @@ const context = {
   },
   fetch: async (request) => {
     if (offline) throw new Error('network unavailable')
-    return new Response(`network:${request.url}`)
+    return new Response(`network:${request.url}`, { status: networkStatus })
   },
   Response,
   URL,
@@ -86,6 +87,14 @@ async function fetchThroughWorker(path, mode = 'navigate') {
 
 const route = await fetchThroughWorker('/board')
 assert.equal(await route.text(), 'cached:/')
+
+offline = false
+networkStatus = 503
+const unavailableRoute = await fetchThroughWorker('/settings')
+assert.equal(await unavailableRoute.text(), 'cached:/')
+
+offline = true
+networkStatus = 200
 const assetPath = [...entries.keys()].find((url) => url.endsWith('.js'))
 const asset = await fetchThroughWorker(assetPath, 'same-origin')
 assert.equal(await asset.text(), `cached:${assetPath}`)

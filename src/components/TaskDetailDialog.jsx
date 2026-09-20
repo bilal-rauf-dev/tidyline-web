@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { useModalFocus } from '../hooks/useModalFocus'
 import { formatDate } from '../utils/dates'
 import { CloseIcon } from './icons'
 import { TaskDetails } from './TaskDetails'
@@ -9,6 +10,7 @@ const EXIT_MS = 160
 export function TaskDetailDialog({ task, handlers, onClose }) {
   const titleId = useId()
   const closeRef = useRef(null)
+  const dialogRef = useRef(null)
   const timerRef = useRef(null)
   const closingRef = useRef(false)
   const onCloseRef = useRef(onClose)
@@ -28,32 +30,13 @@ export function TaskDetailDialog({ task, handlers, onClose }) {
     timerRef.current = window.setTimeout(() => onCloseRef.current(), EXIT_MS)
   }, [])
 
-  useEffect(() => {
-    closeRef.current?.focus()
+  useModalFocus(dialogRef, { initialFocusRef: closeRef, onClose: requestClose })
 
-    const previousOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-
-    function handleKeyDown(event) {
-      if (event.key === 'Escape') {
-        requestClose()
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    return () => {
-      window.clearTimeout(timerRef.current)
-      window.removeEventListener('keydown', handleKeyDown)
-      document.body.style.overflow = previousOverflow
-    }
-  }, [requestClose])
+  useEffect(() => () => window.clearTimeout(timerRef.current), [])
 
   return createPortal(
     <div
       className={isClosing ? 'task-detail-layer closing' : 'task-detail-layer'}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby={titleId}
     >
       <button
         type="button"
@@ -62,7 +45,7 @@ export function TaskDetailDialog({ task, handlers, onClose }) {
         onClick={requestClose}
       />
 
-      <article className="task-detail-dialog">
+      <article ref={dialogRef} className="task-detail-dialog" role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1}>
         <header className="task-detail-heading">
           <div>
             <h2 id={titleId}>{task.title}</h2>

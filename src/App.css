@@ -4614,6 +4614,7 @@ button {
 .quick-add-palette {
   display: flex;
   flex-direction: column;
+  max-height: calc(100dvh - 2rem);
 }
 
 .quick-add-body {
@@ -4622,6 +4623,8 @@ button {
   flex-direction: column;
   gap: 0.8rem;
   background: var(--surface);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .quick-add-chips-container {
