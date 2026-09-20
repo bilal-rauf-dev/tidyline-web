@@ -9,6 +9,12 @@ export function toDateStr(date) {
   return `${year}-${month}-${day}`
 }
 
+/** Convert a stored timestamp to the calendar date on this device. */
+export function timestampToLocalDateStr(value) {
+  const date = value instanceof Date ? value : new Date(value)
+  return Number.isNaN(date.getTime()) ? null : toDateStr(date)
+}
+
 export function getMonthWeeks(viewDate) {
   const year = viewDate.getFullYear()
   const month = viewDate.getMonth()

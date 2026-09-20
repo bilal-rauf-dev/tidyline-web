@@ -1,9 +1,20 @@
 import { useState } from 'react'
+import { normalizeRecurrence } from '../utils/recurrence'
 
 const STORAGE_KEY = 'tidyline:task-templates'
 
 function list(value) {
   return Array.isArray(value) ? value : []
+}
+
+function normalizeTemplateRecurrence(value) {
+  const recurrence = normalizeRecurrence(value)
+  if (!recurrence) return null
+
+  // Calendar anchors belong to a task's due date, not to a reusable template.
+  return recurrence.freq === 'monthly' || recurrence.freq === 'yearly'
+    ? { freq: recurrence.freq }
+    : recurrence
 }
 
 function normalizeTemplate(template) {
@@ -21,7 +32,7 @@ function normalizeTemplate(template) {
     duration:   template.duration ?? null,
     priority:   ['high', 'medium', 'low'].includes(template.priority) ? template.priority : null,
     reminders:  list(template.reminders),
-    recurrence: template.recurrence ?? null,
+    recurrence: normalizeTemplateRecurrence(template.recurrence),
   }
 }
 

@@ -1,5 +1,6 @@
 import { toDateStr } from './calendar'
 import { daysUntil } from './dates'
+import { normalizeRecurrence } from './recurrence'
 
 export const ENERGY_LEVEL_OPTIONS = [
   { value: '', label: 'Unset' },
@@ -79,6 +80,10 @@ export function applyTaskUpdates(task, updates, source = 'edit', at = new Date()
     deadlineTime: deadline ? deadlineTime : null,
     priority:
       updates.priority === undefined ? task.priority : normalizePriority(updates.priority),
+    recurrence:
+      updates.recurrence === undefined
+        ? task.recurrence
+        : normalizeRecurrence(updates.recurrence, deadline),
     startDate,
     energyLevel:
       updates.energyLevel === undefined

@@ -70,6 +70,34 @@ assert.equal(dueReminderInstances(
   'Asia/Karachi',
 ).length, 0)
 
+const monthEndTask = {
+  ...task,
+  id: 'month-end',
+  created_at: '2026-01-31T12:00:00.000Z',
+}
+const monthEndReminder = dueReminderInstances(
+  monthEndTask,
+  { id: 'monthly', kind: 'recurring', rule: { freq: 'monthly' }, time: '09:00' },
+  at('2026-02-28T08:59:00.000Z'),
+  at('2026-02-28T09:00:00.000Z'),
+  'UTC',
+)
+assert.equal(monthEndReminder.length, 1)
+
+const localAnchorTask = {
+  ...task,
+  id: 'local-anchor',
+  created_at: '2026-01-31T21:00:00.000Z',
+}
+const localAnchorReminder = dueReminderInstances(
+  localAnchorTask,
+  { id: 'monthly-local', kind: 'recurring', rule: { freq: 'monthly' }, time: '09:00' },
+  at('2026-03-01T03:59:00.000Z'),
+  at('2026-03-01T04:00:00.000Z'),
+  'Asia/Karachi',
+)
+assert.equal(localAnchorReminder.length, 1)
+
 assert.deepEqual(deliveryPayload(task, relative[0]), {
   title: 'Submit report',
   body: 'Due 2026-09-20',
@@ -81,4 +109,4 @@ assert.deepEqual(deliveryPayload(task, relative[0]), {
 
 assert.equal(deliveryPayload(timedTask, timedRelative[0]).body, 'Due 2026-09-20 at 17:45')
 
-console.log('ok    Background reminder times respect the subscribed device time zone')
+console.log('ok    Background reminders respect device time zones and month-end recurrence')

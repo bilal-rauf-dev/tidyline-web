@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { deadlineForBucket } from '../utils/buckets'
 import { toDateStr } from '../utils/calendar'
-import { nextOccurrence } from '../utils/recurrence'
+import { nextOccurrence, normalizeRecurrence } from '../utils/recurrence'
 import { reminderKey } from '../utils/reminders'
 import { validateTaskCollection } from '../utils/tasksIO'
 import { planLocalTaskMigration } from '../utils/taskMigration'
@@ -88,7 +88,7 @@ export function normalizeTask(task) {
     completedAt: typeof task.completedAt === 'string' ? task.completedAt : null,
     pinned: Boolean(task.pinned),
     archived: Boolean(task.archived),
-    recurrence: task.recurrence ?? null,
+    recurrence: normalizeRecurrence(task.recurrence, deadline),
     notes: typeof task.notes === 'string' ? task.notes : '',
     location: typeof task.location === 'string' ? task.location : '',
     duration: task.duration ?? null,
@@ -599,14 +599,19 @@ export function useTasks(auth = null) {
     const target = getTask(id)
     if (!target || target.done) return
 
-    const completed = { ...target, done: true, completedAt: new Date().toISOString() }
+    const completedAt = new Date()
+    const completed = { ...target, done: true, completedAt: completedAt.toISOString() }
     let next = tasks.map((t) => (t.id === id ? completed : t))
     let createdNext = false
     let newInstance = null
 
     // Recurring tasks materialise their next instance on completion.
     if (target.recurrence && target.deadline) {
-      const upcoming = nextOccurrence(target.recurrence, target.deadline)
+      const upcoming = nextOccurrence(
+        target.recurrence,
+        target.deadline,
+        toDateStr(completedAt),
+      )
       if (upcoming) {
         newInstance = nextInstance(target, upcoming)
         next = [newInstance, ...next]
@@ -804,20 +809,34 @@ export function useTasks(auth = null) {
 
   function bulkComplete(ids) {
     const set = new Set(ids)
-    const stamp = new Date().toISOString()
+    const completedAt = new Date()
+    const stamp = completedAt.toISOString()
+    const completionDate = toDateStr(completedAt)
     const updatedList = []
+    const nextInstances = []
 
-    const next = tasks.map((task) => {
+    const completedTasks = tasks.map((task) => {
       if (set.has(task.id) && !task.done) {
         const updated = { ...task, done: true, completedAt: stamp }
         updatedList.push(updated)
+        if (task.recurrence && task.deadline) {
+          const upcoming = nextOccurrence(task.recurrence, task.deadline, completionDate)
+          if (upcoming) nextInstances.push(nextInstance(task, upcoming))
+        }
         return updated
       }
       return task
     })
 
-    commit(`${ids.length} task${ids.length === 1 ? '' : 's'} completed`, next)
-    syncUpsertMany(updatedList)
+    const count = updatedList.length
+    if (count === 0) return
+    commit(
+      nextInstances.length > 0
+        ? `${count} task${count === 1 ? '' : 's'} completed — next scheduled`
+        : `${count} task${count === 1 ? '' : 's'} completed`,
+      [...nextInstances, ...completedTasks],
+    )
+    syncUpsertMany([...updatedList, ...nextInstances])
   }
 
   function bulkArchive(ids) {

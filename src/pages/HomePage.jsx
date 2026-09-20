@@ -16,7 +16,7 @@ import { TagList } from '../components/TagList'
 import { HomeDaybreak } from '../components/HomeDaybreak'
 import { PlusIcon, GoogleIcon, LogOutIcon } from '../components/icons'
 import { isOverdue } from '../utils/overdue'
-import { toDateStr } from '../utils/calendar'
+import { timestampToLocalDateStr, toDateStr } from '../utils/calendar'
 import { isTaskPlannedForToday, isTaskUpcoming } from '../utils/taskFields'
 import { useAuth } from '../hooks/useAuth'
 
@@ -123,7 +123,7 @@ export function HomePage({
     )
     const overdueCount = tasks.filter((task) => isOverdue(task)).length
     const completedToday = tasks.filter(
-      (task) => task.done && task.completedAt?.slice(0, 10) === today,
+      (task) => task.done && timestampToLocalDateStr(task.completedAt) === today,
     ).length
     const done = dueToday.filter((task) => task.done).length
 

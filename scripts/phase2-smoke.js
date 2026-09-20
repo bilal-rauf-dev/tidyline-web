@@ -105,6 +105,7 @@ const template = taskToTemplate(
     title: 'Do not copy title',
     deadline: '2099-01-10',
     priority: 'medium',
+    recurrence: { freq: 'monthly' },
     notes: 'Reusable notes',
     tags: ['study'],
     checklist: [{ id: 'one', text: 'Read', done: true }],
@@ -115,5 +116,9 @@ const template = taskToTemplate(
 assert(!('title' in template) && !('deadline' in template), 'Template copied task-specific fields')
 assert(template.notes === 'Reusable notes' && template.checklist.length === 1, 'Template lost details')
 assert(template.priority === 'medium', 'Template lost task priority')
+assert(
+  template.recurrence.freq === 'monthly' && !('anchorDay' in template.recurrence),
+  'Template retained a task-specific recurrence anchor',
+)
 
 console.log('ok    Phase 2 scheduling, waiting, someday, template, and filter rules')

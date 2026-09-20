@@ -90,11 +90,26 @@ function weekdayFor(dateKey) {
   return parts ? new Date(Date.UTC(parts.year, parts.month - 1, parts.day)).getUTCDay() : -1
 }
 
+function lastDayOfMonth(year, month) {
+  return new Date(Date.UTC(year, month, 0)).getUTCDate()
+}
+
 function matchesRule(dateKey, rule, anchorDateKey) {
   if (!rule) return false
   const current = dateParts(dateKey)
   const anchor = dateParts(anchorDateKey)
   if (!current) return false
+  if (anchor && dateKey < anchorDateKey) return false
+
+  const configuredDay = Number(rule.anchorDay)
+  const configuredMonth = Number(rule.anchorMonth)
+  const anchorDay = Number.isInteger(configuredDay) && configuredDay >= 1 && configuredDay <= 31
+    ? configuredDay
+    : anchor?.day
+  const anchorMonth =
+    Number.isInteger(configuredMonth) && configuredMonth >= 1 && configuredMonth <= 12
+      ? configuredMonth
+      : anchor?.month
 
   switch (rule.freq) {
     case 'daily':
@@ -106,9 +121,17 @@ function matchesRule(dateKey, rule, anchorDateKey) {
     case 'weekly':
       return weekdayFor(dateKey) === (rule.weekday ?? 1)
     case 'monthly':
-      return Boolean(anchor && current.day === anchor.day)
+      return Boolean(
+        anchorDay &&
+        current.day === Math.min(anchorDay, lastDayOfMonth(current.year, current.month)),
+      )
     case 'yearly':
-      return Boolean(anchor && current.day === anchor.day && current.month === anchor.month)
+      return Boolean(
+        anchorDay &&
+        anchorMonth &&
+        current.month === anchorMonth &&
+        current.day === Math.min(anchorDay, lastDayOfMonth(current.year, current.month)),
+      )
     case 'everyNDays': {
       if (!anchor) return false
       const currentUtc = Date.UTC(current.year, current.month - 1, current.day)
@@ -145,7 +168,10 @@ function recurringTimestamps(task, reminder, windowStart, windowEnd, timeZone) {
 
   const firstDate = addDateDays(dateKeyFromTimestamp(windowStart, timeZone), -1)
   const lastDate = addDateDays(dateKeyFromTimestamp(windowEnd, timeZone), 1)
-  const anchorDate = typeof task.created_at === 'string' ? task.created_at.slice(0, 10) : null
+  const createdAt = Date.parse(task.created_at)
+  const anchorDate = Number.isFinite(createdAt)
+    ? dateKeyFromTimestamp(createdAt, timeZone)
+    : null
   const results = []
 
   for (let dateKey = firstDate, guard = 0; dateKey && dateKey <= lastDate && guard < 5; guard += 1) {

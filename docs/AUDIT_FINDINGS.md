@@ -24,7 +24,8 @@ Updated: 2026-09-20. The audit covered the tracked project files, including sour
 - Dialogs now share focus containment, focus return, Escape handling, and background-scroll locking; browser-level accessibility checks remain.
 - Explicit Quick Add due times now survive creation and sync, appear in the preview and task surfaces, and drive relative reminders. The database migration, Edge Function redeployment, and a live timed reminder still need verification.
 - Calendar workload redistribution now applies confirmed moves through the durable task update and sync path. A browser confirmation check remains.
-- Quick Add priority now has an end-to-end task field, including forms, display, filters, sorting, templates, local persistence, and cloud mapping. The full-form handoff now preserves `plan today`, exposes it for review, and prevents plans that are waiting or start in the future. The priority database migration and live browser checks remain. Analytics and recurrence calculations still need local-date and month-end checks.
+- Quick Add priority now has an end-to-end task field, including forms, display, filters, sorting, templates, local persistence, and cloud mapping. The full-form handoff now preserves `plan today`, exposes it for review, and prevents plans that are waiting or start in the future. The priority database migration and live browser checks remain.
+- Completion analytics now convert timestamps to the user's local calendar day and use the actual completion date in the activity heatmap. Recurring tasks now skip missed overdue instances without drifting after short months or leap years; the rules and automated edge-case evidence are recorded in `RECURRENCE_RULES.md`.
 
 ## Repository health
 

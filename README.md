@@ -42,7 +42,7 @@ Add a task with a deadline and TidyLine automatically places it into the right t
 **Reminders & recurrence**
 
 - Smart reminder presets (5 min / 30 min / 1 hour before, tomorrow morning, every weekday, custom)
-- Recurring tasks — daily, weekly, monthly, yearly, or every N days
+- Recurring tasks — daily, weekly, monthly, yearly, or every N days, with documented [catch-up and month-end behavior](docs/RECURRENCE_RULES.md)
 - In-page browser notifications with sound while the page is open
 - Optional background Web Push for signed-in accounts after server setup
 
