@@ -16,6 +16,7 @@ const example = {
   title: 'Pay rent',
   deadline: '2026-10-01',
   deadlineTime: '17:30',
+  priority: 'high',
   reminders: [{ id: 'rel:60', kind: 'relative', minutesBefore: 60 }],
   tags: ['home'],
   checklist: [{ id: 'item-1', text: 'Check amount', done: false }],
@@ -38,6 +39,10 @@ assert.throws(
 assert.throws(
   () => parseImportedTasks(JSON.stringify([{ ...example, deadlineTime: '25:00' }])),
   /invalid deadline time/,
+)
+assert.throws(
+  () => parseImportedTasks(JSON.stringify([{ ...example, priority: 'urgent' }])),
+  /invalid priority/,
 )
 assert.throws(
   () => parseImportedTasks(JSON.stringify([example, { ...example, title: 'Duplicate' }])),

@@ -17,6 +17,7 @@ create table if not exists public.tasks (
   notes             text        not null default '',
   location          text        not null default '',
   duration          jsonb,
+  priority          text        constraint tasks_priority_valid check (priority is null or priority in ('high', 'medium', 'low')),
   energy_level      text,
   status            text        not null default 'active',
   waiting_for       text        not null default '',

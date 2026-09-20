@@ -70,6 +70,9 @@ export function BoardPage({
       details.energyLevel = energy === 'deep' ? 'deep-focus' : energy
     }
 
+    const priority = localParams.get('priority')
+    if (priority) details.priority = priority
+
     const planForToday = localParams.get('planForToday')
     if (planForToday === 'true') {
       details.plannedDate = toDateStr(new Date())
@@ -84,6 +87,7 @@ export function BoardPage({
     if (minutes) {
       return [{ id: `rel:${minutes}`, kind: 'relative', minutesBefore: Number(minutes) }]
     }
+
     return null
   }, [search])
 
@@ -282,7 +286,15 @@ export function BoardPage({
 
       <div className="board-entry-layout">
         <TaskForm
-          key={`${focusForm}:${prefilledTitle}:${prefilledDeadline}:${prefilledDeadlineTime}:${prefilledTags}`}
+          key={[
+            focusForm,
+            prefilledTitle,
+            prefilledDeadline,
+            prefilledDeadlineTime,
+            prefilledTags,
+            JSON.stringify(prefilledDetails),
+            JSON.stringify(prefilledReminders),
+          ].join(':')}
           onAddTask={addTask}
           allTasks={tasks}
           focusOnMount={focusForm}

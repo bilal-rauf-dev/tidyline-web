@@ -19,6 +19,7 @@ function normalizeTemplate(template) {
       .filter((item) => item && typeof item.text === 'string')
       .map((item) => ({ text: item.text })),
     duration:   template.duration ?? null,
+    priority:   ['high', 'medium', 'low'].includes(template.priority) ? template.priority : null,
     reminders:  list(template.reminders),
     recurrence: template.recurrence ?? null,
   }
@@ -41,6 +42,7 @@ export function taskToTemplate(task, name) {
     tags:       task.tags,
     checklist:  task.checklist,
     duration:   task.duration,
+    priority:   task.priority,
     reminders:  task.reminders,
     recurrence: task.recurrence,
   })

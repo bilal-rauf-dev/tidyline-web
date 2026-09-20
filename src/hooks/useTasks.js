@@ -20,6 +20,7 @@ import {
   isTaskUpcoming,
   normalizeEnergyLevel,
   normalizeDeadlineTime,
+  normalizePriority,
   normalizePlannedDate,
   normalizePostponeHistory,
   normalizeStartDate,
@@ -64,6 +65,17 @@ export function normalizeTask(task) {
     normalizePlannedDate(task.originalDeadline) ?? postponeHistory[0]?.from ?? deadline
   const followUpDate = normalizePlannedDate(task.followUpDate)
   const waitingExpired = followUpDate && followUpDate <= toDateStr(new Date())
+  const startDate = normalizeStartDate(task.startDate, deadline)
+  const status = task.status === 'waiting' && !waitingExpired ? 'waiting' : 'active'
+  const today = toDateStr(new Date())
+  const actionablePlannedDate =
+    deadline &&
+    plannedDate &&
+    plannedDate >= today &&
+    status === 'active' &&
+    (!startDate || startDate <= plannedDate)
+      ? plannedDate
+      : null
 
   return {
     id: task.id,
@@ -80,17 +92,17 @@ export function normalizeTask(task) {
     notes: typeof task.notes === 'string' ? task.notes : '',
     location: typeof task.location === 'string' ? task.location : '',
     duration: task.duration ?? null,
+    priority: normalizePriority(task.priority),
     checklist: normalizeList(task.checklist),
     links: normalizeList(task.links),
     attachments: normalizeList(task.attachments),
-    startDate: normalizeStartDate(task.startDate, deadline),
+    startDate,
     energyLevel: normalizeEnergyLevel(task.energyLevel),
-    plannedDate:
-      deadline && plannedDate && plannedDate >= toDateStr(new Date()) ? plannedDate : null,
+    plannedDate: actionablePlannedDate,
     originalDeadline,
     postponeHistory,
     scheduledStart: typeof task.scheduledStart === 'string' ? task.scheduledStart : null,
-    status: task.status === 'waiting' && !waitingExpired ? 'waiting' : 'active',
+    status,
     waitingFor:
       task.status === 'waiting' && !waitingExpired && typeof task.waitingFor === 'string'
         ? task.waitingFor
@@ -539,14 +551,14 @@ export function useTasks(auth = null) {
   function addTask({
     title, deadline, deadlineTime = null, reminders, tags = [], recurrence = null,
     notes = '', checklist = [], links = [], attachments = [],
-    location = '', duration = null, startDate = null, energyLevel = null,
+    location = '', duration = null, startDate = null, energyLevel = null, priority = null,
     scheduledStart = null, archived = false, status = 'active',
     waitingFor = '', followUpDate = null, plannedDate = null,
   }) {
     const task = normalizeTask({
       id: crypto.randomUUID(),
       title, deadline, deadlineTime, reminders, tags, recurrence, notes, checklist, links,
-      attachments, location, duration, startDate, energyLevel, scheduledStart,
+      attachments, location, duration, startDate, energyLevel, priority, scheduledStart,
       archived, status, waitingFor, followUpDate, plannedDate,
       originalDeadline: deadline, postponeHistory: [],
       createdAt: new Date().toISOString(),

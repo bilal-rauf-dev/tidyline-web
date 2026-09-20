@@ -26,6 +26,7 @@ import {
   getPostponeSummary,
   isTaskPlannedForToday,
   isTaskUpcoming,
+  priorityLabel,
   validateStartDate,
 } from '../utils/taskFields'
 import { getDeadlineRisk } from '../utils/risk'
@@ -236,6 +237,12 @@ export function TaskCard({
 
               {task.deadlineTime && (
                 <span className="task-context">Due at {formatTime(task.deadlineTime)}</span>
+              )}
+
+              {task.priority && (
+                <span className={`priority-mark priority-${task.priority}`}>
+                  {priorityLabel(task.priority)}
+                </span>
               )}
 
               {contextLabel && <span className="task-context">{contextLabel}</span>}

@@ -1183,7 +1183,8 @@ button {
 }
 
 .task-context,
-.energy-mark {
+.energy-mark,
+.priority-mark {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
@@ -1206,6 +1207,15 @@ button {
   border-left-color: var(--accent);
 }
 
+.priority-mark.priority-high {
+  border-left-color: var(--accent);
+  color: var(--accent);
+}
+
+.priority-mark.priority-medium {
+  border-left-color: var(--accent-soft);
+}
+
 .energy-dot {
   width: 0.42rem;
   height: 0.42rem;
@@ -1226,14 +1236,20 @@ button {
 }
 
 .bucket-column.dark .task-context,
-.bucket-column.dark .energy-mark {
+.bucket-column.dark .energy-mark,
+.bucket-column.dark .priority-mark {
   border-left-color: var(--line-on-dark);
   color: var(--text-on-dark-soft);
 }
 
 .bucket-column.dark .task-context.planned,
-.bucket-column.dark .energy-mark.energy-deep-focus {
+.bucket-column.dark .energy-mark.energy-deep-focus,
+.bucket-column.dark .priority-mark.priority-high {
   border-left-color: var(--accent);
+}
+
+.bucket-column.dark .priority-mark.priority-high {
+  color: var(--accent);
 }
 
 /* Overdue severity — weight and intensity rise with age */
@@ -5832,6 +5848,7 @@ textarea,
 
 .task-context,
 .energy-mark,
+.priority-mark,
 .risk-mark {
   padding-left: 0;
   border-left: 0;

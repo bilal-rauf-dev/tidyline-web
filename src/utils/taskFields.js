@@ -8,12 +8,28 @@ export const ENERGY_LEVEL_OPTIONS = [
   { value: 'deep-focus', label: 'Deep focus' },
 ]
 
+export const PRIORITY_OPTIONS = [
+  { value: '', label: 'No priority' },
+  { value: 'high', label: 'High priority' },
+  { value: 'medium', label: 'Medium priority' },
+  { value: 'low', label: 'Low priority' },
+]
+
 const ENERGY_LEVELS = new Set(ENERGY_LEVEL_OPTIONS.map((option) => option.value).filter(Boolean))
+const PRIORITIES = new Set(PRIORITY_OPTIONS.map((option) => option.value).filter(Boolean))
 const DATE_VALUE = /^\d{4}-\d{2}-\d{2}$/
 const TIME_VALUE = /^([01]\d|2[0-3]):([0-5]\d)(?::[0-5]\d(?:\.\d{1,6})?)?$/
 
 export function normalizeEnergyLevel(value) {
   return ENERGY_LEVELS.has(value) ? value : null
+}
+
+export function normalizePriority(value) {
+  return PRIORITIES.has(value) ? value : null
+}
+
+export function priorityLabel(value) {
+  return PRIORITY_OPTIONS.find((option) => option.value === value)?.label ?? 'No priority'
 }
 
 export function normalizeStartDate(value, deadline) {
@@ -61,6 +77,8 @@ export function applyTaskUpdates(task, updates, source = 'edit', at = new Date()
     ...task,
     ...updates,
     deadlineTime: deadline ? deadlineTime : null,
+    priority:
+      updates.priority === undefined ? task.priority : normalizePriority(updates.priority),
     startDate,
     energyLevel:
       updates.energyLevel === undefined

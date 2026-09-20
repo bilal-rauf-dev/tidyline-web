@@ -17,6 +17,7 @@ import { mapsSearchUrl } from '../utils/maps'
 import { Checkbox } from './Checkbox'
 import { SelectMenu } from './SelectMenu'
 import { EnergyLevelControl } from './EnergyLevelControl'
+import { PriorityControl } from './PriorityControl'
 import { formatDate } from '../utils/dates'
 import { getPostponeSummary, validateStartDate } from '../utils/taskFields'
 import { toDateStr } from '../utils/calendar'
@@ -83,7 +84,11 @@ export function TaskDetails({ task, handlers }) {
               setStartDateDraft(value)
 
               if (!validateStartDate(value, task.deadline)) {
-                handlers.onUpdate(task.id, { startDate: value || null })
+                handlers.onUpdate(task.id, {
+                  startDate: value || null,
+                  plannedDate:
+                    value && value > toDateStr(new Date()) ? null : task.plannedDate,
+                })
               }
             }}
           />
@@ -95,6 +100,11 @@ export function TaskDetails({ task, handlers }) {
           onChange={(energyLevel) =>
             handlers.onUpdate(task.id, { energyLevel: energyLevel || null })
           }
+        />
+
+        <PriorityControl
+          value={task.priority ?? ''}
+          onChange={(priority) => handlers.onUpdate(task.id, { priority: priority || null })}
         />
       </div>
 
@@ -116,7 +126,7 @@ export function TaskDetails({ task, handlers }) {
           <button
             type="button"
             className={task.status === 'waiting' ? 'segment active' : 'segment'}
-            onClick={() => handlers.onUpdate(task.id, { status: 'waiting' })}
+            onClick={() => handlers.onUpdate(task.id, { status: 'waiting', plannedDate: null })}
           >
             Waiting
           </button>

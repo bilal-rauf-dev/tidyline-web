@@ -79,6 +79,9 @@ export function validateTaskCollection(tasks) {
         !['min', 'hr'].includes(task.duration.unit))) {
       throw new Error(`${label} has an invalid duration`)
     }
+    if (task.priority != null && !['high', 'medium', 'low'].includes(task.priority)) {
+      throw new Error(`${label} has an invalid priority`)
+    }
   })
 
   const ids = new Set(tasks.map((task) => task.id))

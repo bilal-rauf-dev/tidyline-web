@@ -47,7 +47,8 @@ export function isFlexibleTask(task) {
     !task.recurrence &&
     !task.scheduledStart &&
     !task.plannedDate &&
-    !task.deadlineTime
+    !task.deadlineTime &&
+    task.priority !== 'high'
   )
 }
 
