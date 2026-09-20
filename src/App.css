@@ -2229,6 +2229,11 @@ button {
   color: var(--text-soft);
 }
 
+.settings-note-error {
+  color: var(--accent);
+  margin-top: 0.25rem;
+}
+
 .accent-choices {
   display: flex;
   gap: 0.4rem;

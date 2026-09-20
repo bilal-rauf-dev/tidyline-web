@@ -4,6 +4,8 @@ import vm from 'node:vm'
 
 const listeners = new Map()
 const stores = new Map()
+const shownNotifications = []
+const openedWindows = []
 let offline = false
 
 function cacheFor(name) {
@@ -26,7 +28,14 @@ const context = {
     location: { origin: 'http://localhost' },
     addEventListener: (name, handler) => listeners.set(name, handler),
     skipWaiting: async () => {},
-    clients: { claim: async () => {} },
+    registration: {
+      showNotification: async (title, options) => shownNotifications.push({ title, options }),
+    },
+    clients: {
+      claim: async () => {},
+      matchAll: async () => [],
+      openWindow: async (url) => { openedWindows.push(url) },
+    },
   },
   caches: {
     open: async (name) => cacheFor(name),
@@ -44,6 +53,7 @@ const context = {
 vm.runInNewContext(await readFile('dist/sw.js', 'utf8'), context)
 assert.equal(listeners.has('install'), true)
 assert.equal(listeners.has('fetch'), true)
+assert.equal(listeners.has('push'), true)
 
 let installWork
 listeners.get('install')({ waitUntil: (promise) => { installWork = promise } })
@@ -81,4 +91,29 @@ const asset = await fetchThroughWorker(assetPath, 'same-origin')
 assert.equal(await asset.text(), `cached:${assetPath}`)
 assert.equal(await fetchThroughWorker('/api/tasks', 'same-origin'), null)
 
-console.log('ok    Production worker reports a complete cache and restores a route and asset offline')
+let pushWork
+listeners.get('push')({
+  data: { json: () => ({
+    title: 'Submit report', body: 'Due today', taskId: 'task-1',
+    reminderId: 'rel:60', url: '/board?expand=task-1',
+  }) },
+  waitUntil: (promise) => { pushWork = promise },
+})
+await pushWork
+assert.equal(shownNotifications.length, 1)
+assert.equal(shownNotifications[0].title, 'Submit report')
+assert.equal(shownNotifications[0].options.data.url, '/board?expand=task-1')
+
+let clickWork
+listeners.get('notificationclick')({
+  action: '',
+  notification: {
+    data: shownNotifications[0].options.data,
+    close: () => {},
+  },
+  waitUntil: (promise) => { clickWork = promise },
+})
+await clickWork
+assert.deepEqual(openedWindows, ['http://localhost/board?expand=task-1'])
+
+console.log('ok    Production worker restores cached routes and handles background reminders')

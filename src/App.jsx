@@ -36,6 +36,7 @@ import { SyncStatusBanner } from './components/SyncStatusBanner'
 import { AccountLoadError } from './components/AccountLoadError'
 import { OfflineBanner } from './components/OfflineBanner'
 import { registerNotificationWorker } from './utils/notifications'
+import { usePushNotifications } from './hooks/usePushNotifications'
 
 // ── Keys still kept in localStorage (guest + authenticated alike) ─────────────
 // tidyline:notificationSound is intentionally device-local (not synced to Supabase).
@@ -60,6 +61,7 @@ function activeTaskId() {
 
 function App() {
   const auth          = useAuth()
+  const pushNotifications = usePushNotifications(auth)
   const settingsState = useUserSettings(auth)
 
   // Build the settingsCtx object passed to settings-aware hooks.
@@ -254,7 +256,10 @@ function App() {
     [completeTask],
   )
 
-  useReminderNotifications(taskState.tasks, { onComplete: onNotificationComplete })
+  useReminderNotifications(taskState.tasks, {
+    onComplete: onNotificationComplete,
+    enabled: !['checking', 'subscribed'].includes(pushNotifications.status),
+  })
 
   // Keyboard: close drawer on Escape.
   useEffect(() => {
@@ -472,7 +477,7 @@ function App() {
               <HomePage
                 tasks={taskState.tasks}
                 workspaceName={profile.name}
-                auth={auth}
+                auth={{ ...auth, signOut: pushNotifications.signOut }}
               />
             </Route>
             <Route path="/board">
@@ -530,7 +535,8 @@ function App() {
                 overloadHours={overloadHours}
                 onOverloadHoursChange={setOverloadHours}
                 profile={profile}
-                auth={auth}
+                auth={{ ...auth, signOut: pushNotifications.signOut }}
+                pushNotifications={pushNotifications}
                 offlineReady={offlineReady}
                 offlineSupported={offlineSupported}
                 offlineFailed={offlineFailed}

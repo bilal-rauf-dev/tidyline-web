@@ -95,18 +95,11 @@ export function notifyReminder({ title, body, taskId, reminderId }) {
   const payload = {
     body,
     tag: `${taskId}:${reminderId}`,
-    data: { taskId, reminderId },
+    data: { taskId, reminderId, url: `/board?expand=${encodeURIComponent(taskId)}` },
   }
 
-  // Action buttons require the service worker path.
   if (workerRegistration?.showNotification) {
-    workerRegistration.showNotification(title, {
-      ...payload,
-      actions: [
-        { action: 'complete', title: 'Complete' },
-        { action: 'snooze', title: 'Snooze 10m' },
-      ],
-    }).catch((error) => {
+    workerRegistration.showNotification(title, payload).catch((error) => {
       console.warn('[TidyLine] Could not display reminder:', error)
     })
     return

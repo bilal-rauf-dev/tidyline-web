@@ -8,6 +8,7 @@ import { BUCKET_ORDER } from '../utils/buckets'
 import { TemplateSettings } from '../components/TemplateSettings'
 import { ChevronDownIcon, GoogleIcon } from '../components/icons'
 import { ImportReview } from '../components/ImportReview'
+import { formatDateTime } from '../utils/dates'
 
 function SettingsSection({ title, description, initiallyOpen = false, children }) {
   const [isOpen, setIsOpen] = useState(initiallyOpen)
@@ -52,6 +53,7 @@ export function SettingsPage({
   onOverloadHoursChange = () => {},
   profile = null,
   auth = null,
+  pushNotifications = null,
   offlineReady = false,
   offlineSupported = false,
   offlineFailed = false,
@@ -137,6 +139,52 @@ export function SettingsPage({
     profile?.resetProfile?.()
     await auth?.signOut?.()
   }
+
+  async function toggleBackgroundReminders() {
+    if (!pushNotifications) return
+    if (pushNotifications.enabled) await pushNotifications.disable()
+    else await pushNotifications.enable()
+    setNotificationPermission(getNotificationPermission())
+  }
+
+  const pushStatus = pushNotifications?.status ?? 'unconfigured'
+  const pushStatusLabel = {
+    checking: 'Checking…',
+    subscribed: 'Ready on this device',
+    off: 'Off',
+    blocked: 'Blocked in browser settings',
+    'signed-out': 'Sign-in required',
+    'install-required': 'Add to Home Screen first',
+    unconfigured: 'Server setup required',
+    insecure: 'Secure connection required',
+    unsupported: 'Unavailable in this browser',
+    'key-changed': 'Enable again',
+    error: 'Needs attention',
+  }[pushStatus] ?? 'Unavailable'
+
+  const pushDescription = pushStatus === 'subscribed'
+    ? pushNotifications.lastSuccessAt
+      ? `Last delivered ${formatDateTime(pushNotifications.lastSuccessAt)}. Reminders can arrive after TidyLine is closed.`
+      : 'This device is subscribed. Reminders can arrive after TidyLine is closed.'
+    : pushStatus === 'signed-out'
+      ? 'Sign in to connect reminders to your account tasks.'
+      : pushStatus === 'install-required'
+        ? 'On iPhone and iPad, add TidyLine to the Home Screen before enabling background reminders.'
+        : pushStatus === 'unconfigured'
+          ? 'Background delivery is not configured for this deployment. Open-page reminders remain available.'
+          : pushStatus === 'blocked'
+            ? 'Allow notifications in the browser or device settings, then return here.'
+            : pushStatus === 'insecure'
+              ? 'Background reminders require HTTPS.'
+              : pushStatus === 'unsupported'
+                ? 'This browser does not provide background push notifications.'
+                : pushStatus === 'key-changed'
+                  ? 'The notification setup changed. Enable background reminders again for this device.'
+                  : 'Enable this device to receive account reminders while TidyLine is closed.'
+
+  const canTogglePush = auth?.isAuthenticated &&
+    pushNotifications?.capability === 'supported' &&
+    ['off', 'subscribed', 'error', 'key-changed'].includes(pushStatus)
 
   return (
     <main className="app-shell settings-shell">
@@ -330,10 +378,9 @@ export function SettingsPage({
 
         <div className="settings-row">
           <span>
-            Browser notifications
+            Open-page notifications
             <small className="settings-note">
-              Scheduled reminders can appear while this page is open. Closed-page delivery is not available yet.
-              Browsers may delay timers in background tabs.
+              The browser can show reminders while TidyLine is open. Background tabs may delay them.
             </small>
           </span>
           {notificationPermission === 'default' ? (
@@ -346,6 +393,34 @@ export function SettingsPage({
             </button>
           ) : (
             <strong>{notificationPermission === 'granted' ? 'Allowed' : notificationPermission === 'denied' ? 'Blocked in browser settings' : 'Unavailable in this browser'}</strong>
+          )}
+        </div>
+
+        <div className="settings-row">
+          <span>
+            Background reminders
+            <small className="settings-note">{pushDescription}</small>
+            {(pushNotifications?.error || pushNotifications?.lastError) && (
+              <small className="settings-note settings-note-error" role="alert">
+                {pushNotifications.error || 'The last background delivery failed. TidyLine will retry automatically.'}
+              </small>
+            )}
+          </span>
+          {canTogglePush ? (
+            <button
+              type="button"
+              className="secondary"
+              disabled={pushNotifications.busy}
+              onClick={toggleBackgroundReminders}
+            >
+              {pushNotifications.busy
+                ? 'Updating…'
+                : pushNotifications.enabled
+                  ? 'Turn off'
+                  : 'Enable'}
+            </button>
+          ) : (
+            <strong>{pushStatusLabel}</strong>
           )}
         </div>
 

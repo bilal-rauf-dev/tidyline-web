@@ -6,7 +6,7 @@ import { reminderInstances } from '../utils/reminders'
 const CHECK_INTERVAL_MS = 15000
 export const SNOOZE_MINUTES = 10
 
-export function useReminderNotifications(tasks, { onComplete } = {}) {
+export function useReminderNotifications(tasks, { onComplete, enabled = true } = {}) {
   const firedRef = useRef(new Set())
   const snoozedRef = useRef(new Map())
   const startedAtRef = useRef(null)
@@ -49,9 +49,11 @@ export function useReminderNotifications(tasks, { onComplete } = {}) {
   }, [onComplete])
 
   useEffect(() => {
-    if (startedAtRef.current === null) {
-      startedAtRef.current = Date.now()
+    if (!enabled) {
+      startedAtRef.current = null
+      return undefined
     }
+    startedAtRef.current = Date.now()
 
     function checkReminders() {
       const now = Date.now()
@@ -121,5 +123,5 @@ export function useReminderNotifications(tasks, { onComplete } = {}) {
     checkReminders()
     const id = setInterval(checkReminders, CHECK_INTERVAL_MS)
     return () => clearInterval(id)
-  }, [])
+  }, [enabled])
 }

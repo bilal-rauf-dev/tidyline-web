@@ -43,7 +43,8 @@ Add a task with a deadline and TidyLine automatically places it into the right t
 
 - Smart reminder presets (5 min / 30 min / 1 hour before, tomorrow morning, every weekday, custom)
 - Recurring tasks — daily, weekly, monthly, yearly, or every N days
-- In-page browser notifications with sound and snooze while the page is open
+- In-page browser notifications with sound while the page is open
+- Optional background Web Push for signed-in accounts after server setup
 
 **Views**
 
@@ -80,7 +81,7 @@ Add a task with a deadline and TidyLine automatically places it into the right t
 *The five accent options available under Settings → Appearance. Pick one hue to carry every highlight, button, and today marker in the app.*
 
 > [!NOTE]
-> TidyLine runs in an ordinary browser without installation. Guest tasks are saved in that browser. A configured Supabase backend enables signed-in task sync. Production builds save core files for offline use, but offline reload still needs verification in ordinary browsers and devices. Reminders currently depend on an open page, so closed-page delivery is still on the improvement plan.
+> TidyLine runs in an ordinary browser without installation. Guest tasks are saved in that browser. A configured Supabase backend enables signed-in task sync. Production builds save core files for offline use, but offline reload still needs verification in ordinary browsers and devices. Open-page reminders work without installation. Optional background delivery requires the Web Push server setup; on iPhone and iPad, Web Push also requires adding the app to the Home Screen.
 
 ## Tech stack
 
@@ -98,7 +99,7 @@ npm run dev
 ```
 
 > [!TIP]
-> Google sign-in is optional. To enable it, copy `.env.example` to `.env`, fill in a Supabase project's `VITE_SUPABASE_URL` and browser-safe `VITE_SUPABASE_PUBLISHABLE_KEY`, and apply `supabase_migration.sql` followed by `supabase_migrations/20260918_atomic_task_replace.sql` to that project. A legacy anon JWT is also accepted through `VITE_SUPABASE_ANON_KEY`. Never place an `sb_secret_` or service-role key in a `VITE_` variable. Without the public configuration, TidyLine runs in local guest mode. Cloud import and undo require the atomic replacement migration.
+> Google sign-in is optional. To enable it, copy `.env.example` to `.env`, fill in a Supabase project's `VITE_SUPABASE_URL` and browser-safe `VITE_SUPABASE_PUBLISHABLE_KEY`, and apply `supabase_migration.sql` followed by `supabase_migrations/20260918_atomic_task_replace.sql` to that project. A legacy anon JWT is also accepted through `VITE_SUPABASE_ANON_KEY`. Never place an `sb_secret_` or service-role key in a `VITE_` variable. Without the public configuration, TidyLine runs in local guest mode. Cloud import and undo require the atomic replacement migration. Closed-page reminders have additional deployment steps in [`docs/WEB_PUSH_SETUP.md`](docs/WEB_PUSH_SETUP.md).
 
 Other useful scripts:
 
