@@ -1,6 +1,8 @@
 import { groupTasksByBucket } from '../src/utils/buckets'
 import { filterTasks, DEFAULT_FILTERS } from '../src/utils/filters'
 import { isOverdue } from '../src/utils/overdue'
+import { deadlineMoment } from '../src/utils/dates'
+import { reminderInstances } from '../src/utils/reminders'
 import {
   applyTaskUpdates,
   getPostponeSummary,
@@ -104,5 +106,18 @@ assert(
   shiftStartDateForDeadline('2026-08-02', '2026-08-05', '2026-08-12') === '2026-08-09',
   'Recurring instance did not preserve its start-to-deadline lead time',
 )
+
+const timedDeadline = deadlineMoment('2026-08-05', '17:45')
+assert(
+  timedDeadline.getHours() === 17 && timedDeadline.getMinutes() === 45,
+  'A stored due time did not become the task deadline moment',
+)
+const timedReminder = reminderInstances(
+  { id: 'timed', deadline: '2026-08-05', deadlineTime: '17:45' },
+  { id: 'rel:60', kind: 'relative', minutesBefore: 60 },
+  new Date(2026, 7, 5, 16, 44).getTime(),
+  new Date(2026, 7, 5, 16, 45).getTime(),
+)
+assert(timedReminder.length === 1, 'Relative reminder ignored the stored due time')
 
 console.log('ok    Phase 1 task date, energy, planning, and postponement rules')

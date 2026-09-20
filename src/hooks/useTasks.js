@@ -18,6 +18,7 @@ import {
   applyTaskUpdates,
   isTaskUpcoming,
   normalizeEnergyLevel,
+  normalizeDeadlineTime,
   normalizePlannedDate,
   normalizePostponeHistory,
   normalizeStartDate,
@@ -67,6 +68,7 @@ export function normalizeTask(task) {
     id: task.id,
     title: task.title,
     deadline,
+    deadlineTime: deadline ? normalizeDeadlineTime(task.deadlineTime) : null,
     reminders: normalizeList(task.reminders).map(normalizeReminder).filter(Boolean),
     tags: normalizeList(task.tags),
     done: Boolean(task.done),
@@ -534,7 +536,7 @@ export function useTasks(auth = null) {
   // ── Mutations ─────────────────────────────────────────────────────────────
 
   function addTask({
-    title, deadline, reminders, tags = [], recurrence = null,
+    title, deadline, deadlineTime = null, reminders, tags = [], recurrence = null,
     notes = '', checklist = [], links = [], attachments = [],
     location = '', duration = null, startDate = null, energyLevel = null,
     scheduledStart = null, archived = false, status = 'active',
@@ -542,7 +544,7 @@ export function useTasks(auth = null) {
   }) {
     const task = normalizeTask({
       id: crypto.randomUUID(),
-      title, deadline, reminders, tags, recurrence, notes, checklist, links,
+      title, deadline, deadlineTime, reminders, tags, recurrence, notes, checklist, links,
       attachments, location, duration, startDate, energyLevel, scheduledStart,
       archived, status, waitingFor, followUpDate, plannedDate,
       originalDeadline: deadline, postponeHistory: [],

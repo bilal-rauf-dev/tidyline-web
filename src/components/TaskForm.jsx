@@ -7,6 +7,7 @@ import {
   BellIcon,
   CalendarIcon,
   ChevronDownIcon,
+  ClockIcon,
   CloseIcon,
   PlusIcon,
   SaveIcon,
@@ -46,6 +47,7 @@ export function TaskForm({
   onAddTask,
   allTasks = [],
   initialDeadline = '',
+  initialDeadlineTime = '',
   heading = 'Add task',
   focusOnMount = false,
   templates = [],
@@ -57,6 +59,7 @@ export function TaskForm({
   const titleInputRef = useRef(null)
   const [title, setTitle] = useState(initialTitle)
   const [deadline, setDeadline] = useState(initialDeadline)
+  const [deadlineTime, setDeadlineTime] = useState(initialDeadlineTime)
   const [reminderInput, setReminderInput] = useState('')
   const [remindersDraft, setRemindersDraft] = useState(initialReminders || [])
   const [tagInput, setTagInput] = useState(initialTags)
@@ -80,6 +83,7 @@ export function TaskForm({
     const keysToDelete = [
       'title',
       'deadline',
+      'deadlineTime',
       'tags',
       'startDate',
       'reminderMinutes',
@@ -124,7 +128,7 @@ export function TaskForm({
   function reminderDescription(reminder) {
     return typeof reminder === 'string'
       ? formatDateTime(reminder)
-      : describeReminder(reminder, { deadline })
+      : describeReminder(reminder, { deadline, deadlineTime })
   }
 
   function removeReminder(reminder) {
@@ -176,6 +180,7 @@ export function TaskForm({
     const added = onAddTask({
       title: title.trim(),
       deadline,
+      deadlineTime: deadlineTime || null,
       reminders: remindersDraft,
       tags: parseTags(tagInput),
       recurrence: details.recurrence,
@@ -200,6 +205,7 @@ export function TaskForm({
 
     setTitle('')
     setDeadline('')
+    setDeadlineTime('')
     setRemindersDraft([])
     setReminderInput('')
     setTagInput('')
@@ -258,7 +264,7 @@ export function TaskForm({
           />
         </div>
 
-        <div className="field-group">
+        <div className="field-group deadline-reminder-group">
           <label className="field-icon">
             <span className="field-icon-head">
               <CalendarIcon />
@@ -269,6 +275,19 @@ export function TaskForm({
               value={deadline}
               onChange={(event) => setDeadline(event.target.value)}
               required
+            />
+          </label>
+
+          <label className="field-icon">
+            <span className="field-icon-head">
+              <ClockIcon />
+              Due time <span aria-hidden="true">(optional)</span>
+            </span>
+            <input
+              type="time"
+              value={deadlineTime}
+              aria-label="Due time, optional"
+              onChange={(event) => setDeadlineTime(event.target.value)}
             />
           </label>
 

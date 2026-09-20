@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useModalFocus } from '../hooks/useModalFocus'
-import { formatDate } from '../utils/dates'
+import { formatDate, formatDeadline } from '../utils/dates'
 import { CloseIcon } from './icons'
 import { TaskDetails } from './TaskDetails'
 
@@ -49,7 +49,7 @@ export function TaskDetailDialog({ task, handlers, onClose }) {
         <header className="task-detail-heading">
           <div>
             <h2 id={titleId}>{task.title}</h2>
-            <span>Due {formatDate(task.deadline)}</span>
+            <span>Due {formatDeadline(task.deadline, task.deadlineTime)}</span>
             {task.startDate && <span>Starts {formatDate(task.startDate)}</span>}
           </div>
           <button

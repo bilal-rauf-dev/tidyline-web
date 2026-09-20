@@ -10,6 +10,7 @@ export const ENERGY_LEVEL_OPTIONS = [
 
 const ENERGY_LEVELS = new Set(ENERGY_LEVEL_OPTIONS.map((option) => option.value).filter(Boolean))
 const DATE_VALUE = /^\d{4}-\d{2}-\d{2}$/
+const TIME_VALUE = /^([01]\d|2[0-3]):([0-5]\d)(?::[0-5]\d(?:\.\d{1,6})?)?$/
 
 export function normalizeEnergyLevel(value) {
   return ENERGY_LEVELS.has(value) ? value : null
@@ -25,6 +26,10 @@ export function normalizeStartDate(value, deadline) {
 
 export function normalizePlannedDate(value) {
   return DATE_VALUE.test(value ?? '') ? value : null
+}
+
+export function normalizeDeadlineTime(value) {
+  return TIME_VALUE.test(value ?? '') ? value.slice(0, 5) : null
 }
 
 export function validateStartDate(startDate, deadline) {
@@ -44,6 +49,9 @@ export function validateStartDate(startDate, deadline) {
 export function applyTaskUpdates(task, updates, source = 'edit', at = new Date().toISOString()) {
   const deadline = updates.deadline ?? task.deadline
   const startDate = updates.startDate === undefined ? task.startDate : updates.startDate || null
+  const deadlineTime = updates.deadlineTime === undefined
+    ? task.deadlineTime
+    : normalizeDeadlineTime(updates.deadlineTime)
 
   if (validateStartDate(startDate, deadline)) {
     return task
@@ -52,6 +60,7 @@ export function applyTaskUpdates(task, updates, source = 'edit', at = new Date()
   const next = {
     ...task,
     ...updates,
+    deadlineTime: deadline ? deadlineTime : null,
     startDate,
     energyLevel:
       updates.energyLevel === undefined

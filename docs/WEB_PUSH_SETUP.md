@@ -8,9 +8,10 @@ Apply these files in order:
 
 1. `supabase_migration.sql`
 2. `supabase_migrations/20260918_atomic_task_replace.sql`
-3. `supabase_migrations/20260920_web_push.sql`
+3. `supabase_migrations/20260920_deadline_times.sql`
+4. `supabase_migrations/20260920_web_push.sql`
 
-The push migration stores one endpoint per browser, moves an endpoint safely when a shared browser changes accounts, records delivery and retry state, and keeps all browser reads behind row-level security.
+The deadline-time migration lets relative reminders use the time the user entered. The push migration stores one endpoint per browser, moves an endpoint safely when a shared browser changes accounts, records delivery and retry state, and keeps all browser reads behind row-level security.
 
 ## 2. Create VAPID credentials
 

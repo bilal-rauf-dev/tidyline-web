@@ -87,7 +87,7 @@ export function describeReminder(reminder, task) {
 }
 
 function resolveRelative(reminder, task) {
-  const due = deadlineMoment(task.deadline)
+  const due = deadlineMoment(task.deadline, task.deadlineTime)
   return new Date(due.getTime() - reminder.minutesBefore * 60000)
 }
 

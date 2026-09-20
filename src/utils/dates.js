@@ -24,10 +24,11 @@ export function daysUntil(deadline, referenceDate = new Date()) {
   return Math.round((to - from) / DAY_MS)
 }
 
-/** Concrete instant a date-only deadline is considered due. */
-export function deadlineMoment(deadline) {
+/** Concrete local instant a deadline is due, with a 09:00 fallback for date-only tasks. */
+export function deadlineMoment(deadline, deadlineTime = null) {
   const at = new Date(`${deadline}T00:00:00`)
-  at.setHours(DEADLINE_HOUR, 0, 0, 0)
+  const match = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(deadlineTime ?? '')
+  at.setHours(match ? Number(match[1]) : DEADLINE_HOUR, match ? Number(match[2]) : 0, 0, 0)
   return at
 }
 
@@ -38,6 +39,22 @@ export function formatDate(value) {
     day: 'numeric',
     year: 'numeric',
   }).format(date)
+}
+
+export function formatTime(value) {
+  const match = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(value ?? '')
+  if (!match) return ''
+  const date = new Date(2000, 0, 1, Number(match[1]), Number(match[2]))
+  return new Intl.DateTimeFormat('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(date)
+}
+
+export function formatDeadline(deadline, deadlineTime = null) {
+  const date = formatDate(deadline)
+  const time = formatTime(deadlineTime)
+  return time ? `${date} at ${time}` : date
 }
 
 export function getDeadlineParts(value) {

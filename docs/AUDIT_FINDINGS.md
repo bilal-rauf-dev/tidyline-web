@@ -8,7 +8,7 @@ Updated: 2026-09-20. The audit covered the tracked project files, including sour
 - Public browser configuration now rejects Supabase secret and service-role keys. A startup schema check prevents sign-in when the connection exists but the required task tables are missing. The configured backend exposes both tables and the guarded atomic replacement function. A user-authenticated browser test confirmed sign-in, the migration prompt, reload persistence, logout isolation, and data restoration after signing back in.
 - Open-page reminder scheduling remains in `src/hooks/useReminderNotifications.js`. WEB-01 now adds the closed-page Web Push path, including subscriptions, server scheduling, deduplication, retries, delivery state, and service-worker handling. Deployment configuration and real-device delivery tests remain.
 - iOS and iPadOS Web Push requires a Home Screen web app. A regular Safari tab must still offer useful planning and truthful reminder guidance.
-- The original audit found no offline asset cache. WEB-02 now precaches the production shell and assets, but a real in-app browser reload still failed while the preview server was stopped. Do not claim offline reload works until ordinary browser tests pass.
+- The original audit found no offline asset cache. WEB-02 now precaches the production shell and assets and falls back to it for network exceptions and HTTP errors. A real in-app browser reload previously failed while the preview server was stopped, so ordinary browser retesting remains.
 
 ## Data safety and sync
 
@@ -21,8 +21,8 @@ Updated: 2026-09-20. The audit covered the tracked project files, including sour
 ## Interaction and planner quality
 
 - Several task moves and duration changes originally relied on drag interactions. WEB-03 added explicit Day planner and Calendar controls; touch and keyboard equivalents still need a full device pass.
-- Dialog focus containment and focus return need browser-level checks.
-- Quick Add parses due times, but downstream task creation can reduce them to dates. Relative reminders then use a default deadline hour instead of the user's intended time.
+- Dialogs now share focus containment, focus return, Escape handling, and background-scroll locking; browser-level accessibility checks remain.
+- Explicit Quick Add due times now survive creation and sync, appear in the preview and task surfaces, and drive relative reminders. The database migration, Edge Function redeployment, and a live timed reminder still need verification.
 - Calendar workload redistribution describes proposed moves that do not yet change the tasks.
 - Quick Add priority and the full-form plan-today path need end-to-end verification. Analytics and recurrence calculations need local-date and month-end checks.
 

@@ -217,6 +217,7 @@ function App() {
       params.set('add', '1')
       if (parsed.title)            params.set('title', parsed.title)
       if (parsed.deadline)         params.set('deadline', toDateStr(parsed.deadline))
+      if (parsed.deadlineTime)     params.set('deadlineTime', parsed.deadlineTime)
       if (parsed.tags?.length > 0) params.set('tags', parsed.tags.join(', '))
       if (parsed.startDate)        params.set('startDate', toDateStr(parsed.startDate))
       if (parsed.reminderMinutes)  params.set('reminderMinutes', String(parsed.reminderMinutes))

@@ -344,8 +344,12 @@
   padding: 0.7rem;
 }
 
-.task-entry :is(input[type="text"]:not(.input-underline), input[type="date"], input[type="datetime-local"], input[type="url"], input[type="number"]) {
+.task-entry :is(input[type="text"]:not(.input-underline), input[type="date"], input[type="time"], input[type="datetime-local"], input[type="url"], input[type="number"]) {
   padding: 0.55rem 0.65rem;
+}
+
+.task-entry .deadline-reminder-group {
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
 }
 
 .task-entry .form-footer {

@@ -6,7 +6,7 @@ import {
   getCompletionStat,
   summarizeHeatmap,
 } from '../utils/analytics'
-import { formatDate, getCountdownLabel, getDeadlineParts } from '../utils/dates'
+import { formatDate, formatDeadline, getCountdownLabel, getDeadlineParts } from '../utils/dates'
 import { TIMELINE_TICKS, getTodayTimeline } from '../utils/timeline'
 import { RingStat } from '../components/RingStat'
 import { MilestoneBar } from '../components/MilestoneBar'
@@ -383,8 +383,8 @@ export function HomePage({
                         <span className="upcoming-title">{task.title}</span>
                         <span className="upcoming-date">
                           {isTaskUpcoming(task)
-                            ? `Starts ${formatDate(task.startDate)} · due ${formatDate(task.deadline)}`
-                            : `${formatDate(task.deadline)} · ${getCountdownLabel(task.deadline)}`}
+                            ? `Starts ${formatDate(task.startDate)} · due ${formatDeadline(task.deadline, task.deadlineTime)}`
+                            : `${formatDeadline(task.deadline, task.deadlineTime)} · ${getCountdownLabel(task.deadline)}`}
                         </span>
                         <TagList tags={task.tags} />
                       </div>

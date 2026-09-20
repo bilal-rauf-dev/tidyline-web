@@ -11,6 +11,10 @@ function validDate(value) {
     date.getDate() === Number(value.slice(8, 10))
 }
 
+function validTime(value) {
+  return typeof value === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(value)
+}
+
 function validReminder(reminder) {
   if (typeof reminder === 'string') return !Number.isNaN(new Date(reminder).getTime())
   if (!reminder || typeof reminder !== 'object' || Array.isArray(reminder)) return false
@@ -48,6 +52,9 @@ export function validateTaskCollection(tasks) {
     }
     if (task.deadline !== null && !validDate(task.deadline)) {
       throw new Error(`${label} has an invalid deadline`)
+    }
+    if (task.deadlineTime != null && (!task.deadline || !validTime(task.deadlineTime))) {
+      throw new Error(`${label} has an invalid deadline time`)
     }
     if (task.reminders !== undefined &&
       (!Array.isArray(task.reminders) || !task.reminders.every(validReminder))) {

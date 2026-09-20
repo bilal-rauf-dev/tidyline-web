@@ -3,6 +3,7 @@ create table if not exists public.tasks (
   user_id           uuid        not null references auth.users(id) on delete cascade,
   title             text        not null default '',
   deadline          date,
+  deadline_time     time,
   start_date        date,
   planned_date      date,
   original_deadline date,

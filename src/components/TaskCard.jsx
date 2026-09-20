@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
-import { formatDate, getCountdownLabel, getDeadlineParts } from '../utils/dates'
+import { formatDate, formatDeadline, formatTime, getCountdownLabel, getDeadlineParts } from '../utils/dates'
 import { parseTags } from '../utils/tags'
 import { overdueSeverity } from '../utils/overdue'
 import { describeRecurrence } from '../utils/recurrence'
 import {
   ArchiveIcon,
   CalendarIcon,
+  ClockIcon,
   CopyIcon,
   EditIcon,
   GripIcon,
@@ -58,6 +59,7 @@ export function TaskCard({
   const [isExpanded, setIsExpanded] = useState(false)
   const [editTitle, setEditTitle] = useState(task.title)
   const [editDeadline, setEditDeadline] = useState(task.deadline)
+  const [editDeadlineTime, setEditDeadlineTime] = useState(task.deadlineTime ?? '')
   const [editTags, setEditTags] = useState((task.tags ?? []).join(', '))
 
   useEffect(() => {
@@ -77,6 +79,7 @@ export function TaskCard({
   function startEditing() {
     setEditTitle(task.title)
     setEditDeadline(task.deadline)
+    setEditDeadlineTime(task.deadlineTime ?? '')
     setEditTags((task.tags ?? []).join(', '))
     setIsEditing(true)
   }
@@ -91,6 +94,7 @@ export function TaskCard({
     onUpdate(task.id, {
       title: editTitle.trim(),
       deadline: editDeadline,
+      deadlineTime: editDeadlineTime || null,
       tags: parseTags(editTags),
     })
     setIsEditing(false)
@@ -174,6 +178,19 @@ export function TaskCard({
             />
           </label>
 
+          <label className="field-icon">
+            <span className="field-icon-head">
+              <ClockIcon />
+              Due time <span aria-hidden="true">(optional)</span>
+            </span>
+            <input
+              type="time"
+              value={editDeadlineTime}
+              aria-label="Due time, optional"
+              onChange={(event) => setEditDeadlineTime(event.target.value)}
+            />
+          </label>
+
           <DayContext mode="deadline" tasks={allTasks} value={editDeadline} excludeId={task.id} />
 
           {validateStartDate(task.startDate, editDeadline) && (
@@ -217,6 +234,10 @@ export function TaskCard({
                 {getCountdownLabel(task.deadline)}
               </span>
 
+              {task.deadlineTime && (
+                <span className="task-context">Due at {formatTime(task.deadlineTime)}</span>
+              )}
+
               {contextLabel && <span className="task-context">{contextLabel}</span>}
               {task.status === 'waiting' && (
                 <span className="task-context waiting-label">
@@ -231,7 +252,7 @@ export function TaskCard({
               )}
               {plannedForToday && (
                 <span className="task-context planned">
-                  Planned today · due {formatDate(task.deadline)}
+                  Planned today · due {formatDeadline(task.deadline, task.deadlineTime)}
                 </span>
               )}
               {task.energyLevel && (

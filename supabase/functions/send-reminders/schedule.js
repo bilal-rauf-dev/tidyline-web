@@ -132,7 +132,10 @@ function absoluteTimestamp(value, timeZone) {
 function relativeTimestamp(task, reminder, timeZone) {
   const due = dateParts(task.deadline)
   if (!due) return Number.NaN
-  const deadline = zonedDateTimeToTimestamp({ ...due, hour: DEADLINE_HOUR, minute: 0, second: 0 }, timeZone)
+  const timeMatch = /^([01]\d|2[0-3]):([0-5]\d)/.exec(String(task.deadline_time ?? ''))
+  const hour = timeMatch ? Number(timeMatch[1]) : DEADLINE_HOUR
+  const minute = timeMatch ? Number(timeMatch[2]) : 0
+  const deadline = zonedDateTimeToTimestamp({ ...due, hour, minute, second: 0 }, timeZone)
   return deadline - Number(reminder.minutesBefore) * 60000
 }
 
@@ -181,9 +184,14 @@ export function dueReminderInstances(task, reminder, windowStart, windowEnd, tim
 }
 
 export function deliveryPayload(task, instance) {
+  const timeMatch = /^([01]\d|2[0-3]):([0-5]\d)/.exec(String(task.deadline_time ?? ''))
+  const dueLabel = task.deadline
+    ? `Due ${task.deadline}${timeMatch ? ` at ${timeMatch[1]}:${timeMatch[2]}` : ''}`
+    : 'A task reminder is due'
+
   return {
     title: task.title || 'TidyLine reminder',
-    body: task.deadline ? `Due ${task.deadline}` : 'A task reminder is due',
+    body: dueLabel,
     taskId: task.id,
     reminderId: instance.reminderId,
     scheduledFor: instance.scheduledFor,

@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react'
 import { toDateStr } from '../utils/calendar'
-import { formatDate } from '../utils/dates'
+import { formatDate, formatDeadline } from '../utils/dates'
 import { CloseIcon } from '../components/icons'
 
 const DAY_START = 6 * 60
@@ -119,7 +119,7 @@ export function PlannerPage({ tasks, setScheduledStart, updateTask }) {
                   }}
                 >
                   <strong>{task.title}</strong>
-                  <span>{durationMinutes(task)} min · due {formatDate(task.deadline)}</span>
+                  <span>{durationMinutes(task)} min · due {formatDeadline(task.deadline, task.deadlineTime)}</span>
                   <form
                     className="planner-task-controls"
                     onSubmit={(event) => {

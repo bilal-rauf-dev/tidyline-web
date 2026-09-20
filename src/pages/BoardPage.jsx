@@ -41,6 +41,7 @@ export function BoardPage({
 
   const prefilledTitle = params.get('title') || ''
   const prefilledDeadline = params.get('deadline') || ''
+  const prefilledDeadlineTime = params.get('deadlineTime') || ''
   const prefilledTags = params.get('tags') || ''
 
   const prefilledDetails = useMemo(() => {
@@ -81,7 +82,7 @@ export function BoardPage({
     const localParams = new URLSearchParams(search)
     const minutes = localParams.get('reminderMinutes')
     if (minutes) {
-      return [{ kind: 'relative', minutesBefore: Number(minutes) }]
+      return [{ id: `rel:${minutes}`, kind: 'relative', minutesBefore: Number(minutes) }]
     }
     return null
   }, [search])
@@ -281,13 +282,14 @@ export function BoardPage({
 
       <div className="board-entry-layout">
         <TaskForm
-          key={`${focusForm}:${prefilledTitle}:${prefilledDeadline}:${prefilledTags}`}
+          key={`${focusForm}:${prefilledTitle}:${prefilledDeadline}:${prefilledDeadlineTime}:${prefilledTags}`}
           onAddTask={addTask}
           allTasks={tasks}
           focusOnMount={focusForm}
           templates={templates}
           initialTitle={prefilledTitle}
           initialDeadline={prefilledDeadline}
+          initialDeadlineTime={prefilledDeadlineTime}
           initialTags={prefilledTags}
           initialDetails={prefilledDetails}
           initialReminders={prefilledReminders}

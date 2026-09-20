@@ -33,6 +33,16 @@ const relative = dueReminderInstances(
 )
 assert.deepEqual(relative, [{ reminderId: 'rel:60', scheduledFor: '2026-09-20T03:00:00.000Z' }])
 
+const timedTask = { ...task, deadline_time: '17:45:00' }
+const timedRelative = dueReminderInstances(
+  timedTask,
+  { id: 'rel:60', kind: 'relative', minutesBefore: 60 },
+  at('2026-09-20T11:44:00.000Z'),
+  at('2026-09-20T11:45:00.000Z'),
+  'Asia/Karachi',
+)
+assert.deepEqual(timedRelative, [{ reminderId: 'rel:60', scheduledFor: '2026-09-20T11:45:00.000Z' }])
+
 const absolute = dueReminderInstances(
   task,
   { id: 'abs:local', kind: 'absolute', at: '2026-09-20T09:30' },
@@ -68,5 +78,7 @@ assert.deepEqual(deliveryPayload(task, relative[0]), {
   scheduledFor: '2026-09-20T03:00:00.000Z',
   url: '/board?expand=task-1',
 })
+
+assert.equal(deliveryPayload(timedTask, timedRelative[0]).body, 'Due 2026-09-20 at 17:45')
 
 console.log('ok    Background reminder times respect the subscribed device time zone')

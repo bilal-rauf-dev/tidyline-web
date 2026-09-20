@@ -60,7 +60,7 @@ async function fetchTasks(client: ReturnType<typeof createClient>, userIds: stri
     for (let from = 0; ; from += PAGE_SIZE) {
       const { data, error } = await client
         .from('tasks')
-        .select('id,user_id,title,deadline,created_at,reminders,done,archived')
+        .select('id,user_id,title,deadline,deadline_time,created_at,reminders,done,archived')
         .in('user_id', userBatch)
         .eq('done', false)
         .eq('archived', false)

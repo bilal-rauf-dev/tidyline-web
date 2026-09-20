@@ -2,7 +2,7 @@ import { useRef, useState, useMemo } from 'react'
 import { useModalFocus } from '../hooks/useModalFocus'
 import { parseNaturalTask } from '../utils/parseNaturalTask'
 import { toDateStr } from '../utils/calendar'
-import { formatDate, deadlineMoment } from '../utils/dates'
+import { formatDate, formatDeadline, deadlineMoment } from '../utils/dates'
 import { tagTone, collectTags } from '../utils/tags'
 import { describeRecurrence } from '../utils/recurrence'
 import { PlusIcon } from './icons'
@@ -49,7 +49,7 @@ function getValidationWarnings(parsed) {
   const warnings = []
 
   if (parsed.reminderMinutes !== null && parsed.deadline) {
-    const deadlineMs = deadlineMoment(toDateStr(parsed.deadline)).getTime()
+    const deadlineMs = deadlineMoment(toDateStr(parsed.deadline), parsed.deadlineTime).getTime()
     const reminderMs = deadlineMs - parsed.reminderMinutes * 60 * 1000
     if (reminderMs >= deadlineMs) {
       warnings.push({ field: 'reminder', message: 'Reminder must be before the deadline.' })
@@ -190,6 +190,7 @@ export function QuickAddModal({ isOpen, onClose, onAddTask, onOpenFullForm, task
       const added = onAddTask({
         title: parsed.title,
         deadline: deadlineStr,
+        deadlineTime: parsed.deadlineTime,
         tags: parsed.tags,
         reminders: reminderRecord,
         recurrence: parsed.recurrence,
@@ -295,7 +296,7 @@ export function QuickAddModal({ isOpen, onClose, onAddTask, onOpenFullForm, task
                     onClick={() => handleEditToken(deadlineToken)}
                     title="Click to edit deadline"
                   >
-                    <span>{formatDate(toLocalYMD(deadlineToken.value))}</span>
+                    <span>{formatDeadline(toLocalYMD(deadlineToken.value), parsed.deadlineTime)}</span>
                     <button type="button" onClick={(e) => handleRemoveToken(deadlineToken, e)} aria-label="Remove deadline">&times;</button>
                   </li>
                 )}
@@ -404,11 +405,7 @@ export function QuickAddModal({ isOpen, onClose, onAddTask, onOpenFullForm, task
             <div className="quick-add-interpretation">
               <span className="interpretation-text">
                 Deadline:{' '}
-                <strong>
-                  {new Intl.DateTimeFormat('en-US', {
-                    weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
-                  }).format(parsed.deadline)}
-                </strong>
+                <strong>{formatDeadline(toLocalYMD(parsed.deadline), parsed.deadlineTime)}</strong>
                 {toLocalYMD(parsed.deadline) === todayStr && <span className="interp-badge">today</span>}
               </span>
             </div>
