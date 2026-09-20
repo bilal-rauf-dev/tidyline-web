@@ -52,7 +52,7 @@ self.addEventListener('fetch', (event) => {
   }
 
   const staticAsset = url.pathname.startsWith('/assets/') ||
-    ['/manifest.webmanifest', '/logo.svg', '/logo.png', '/icons.svg', '/preview.png', '/future_banner.png'].includes(url.pathname)
+    ['/manifest.webmanifest', '/logo.svg', '/logo.png', '/icons.svg', '/future_banner.png'].includes(url.pathname)
   if (!staticAsset) return
 
   event.respondWith((async () => {

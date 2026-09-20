@@ -29,6 +29,6 @@ Updated: 2026-09-20. The audit covered the tracked project files, including sour
 
 ## Repository health
 
-- The repository includes tracked generated test output. It caused repository-wide lint to inspect bundles until ESLint exclusions were added; removing tracked output remains useful cleanup.
-- The README and page title were stale. They were corrected in this pass; the preview image still needs review.
-- Unit and smoke scripts cover several planner rules, but browser tests for offline, sync, notification delivery, touch, and accessibility are still needed.
+- Tracked generated test output was removed, and test-output folders are ignored so repository-wide lint and reviews stay focused on source files.
+- The README and page title now describe the current product. The stale interface screenshot and unused starter assets were removed instead of continuing to publish misleading product imagery.
+- Unit and smoke scripts cover recovery, durable sync behavior, offline fallback, reminder rules, and planner logic. An isolated browser pass also covers guest persistence and Command Palette keyboard containment. Physical-device tests for offline recovery, two-device sync, notification delivery, touch, zoom, and screen readers are still needed.

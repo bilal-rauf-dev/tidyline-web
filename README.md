@@ -25,8 +25,6 @@ A deadline-focused task manager that organizes your work by how soon it's due �
 
 Add a task with a deadline and TidyLine automatically places it into the right time bucket — Today, This Week, This Month, and beyond — and moves it forward as the deadline approaches. No manual sorting, no projects to set up first. Type a task in plain English ("renew passport next Friday !high #admin remind 1 day before") and TidyLine's quick-add parser pulls out the deadline, priority, tags, and reminder for you.
 
-<img src="public/preview.png" alt="TidyLine Home screen" width="100%" />
-
 ## Features
 
 **Task management**
