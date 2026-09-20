@@ -499,6 +499,7 @@ function App() {
                 tasks={taskState.tasks}
                 addTask={createTask}
                 setDeadline={taskState.setDeadline}
+                rescheduleTasks={taskState.rescheduleTasks}
                 templates={templateState.templates}
                 overloadHours={overloadHours}
               />

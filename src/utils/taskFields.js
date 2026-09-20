@@ -78,6 +78,26 @@ export function applyTaskUpdates(task, updates, source = 'edit', at = new Date()
   return next
 }
 
+export function applyTaskRescheduleMoves(
+  tasks,
+  moves,
+  source = 'calendar',
+  at = new Date().toISOString(),
+) {
+  const deadlinesById = new Map(moves.map((move) => [move.id, move.deadline]))
+  const updatedTasks = []
+  const nextTasks = tasks.map((task) => {
+    const deadline = deadlinesById.get(task.id)
+    if (!deadline || deadline === task.deadline) return task
+
+    const updated = applyTaskUpdates(task, { deadline }, source, at)
+    if (updated !== task) updatedTasks.push(updated)
+    return updated
+  })
+
+  return { tasks: nextTasks, updatedTasks }
+}
+
 export function isTaskUpcoming(task, referenceDate = new Date()) {
   return Boolean(task.startDate && task.startDate > toDateStr(referenceDate))
 }

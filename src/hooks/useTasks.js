@@ -16,6 +16,7 @@ import {
 } from '../utils/taskSyncStore'
 import {
   applyTaskUpdates,
+  applyTaskRescheduleMoves,
   isTaskUpcoming,
   normalizeEnergyLevel,
   normalizeDeadlineTime,
@@ -697,22 +698,12 @@ export function useTasks(auth = null) {
   }
 
   function rescheduleTasks(moves, source = 'calendar') {
-    const byId = new Map(moves.map((move) => [move.id, move.deadline]))
-    let changed = false
-    const updatedList = []
+    const result = applyTaskRescheduleMoves(tasks, moves, source)
+    if (result.updatedTasks.length === 0) return
 
-    const next = tasks.map((task) => {
-      const deadline = byId.get(task.id)
-      if (!deadline || deadline === task.deadline) return task
-      const updated = applyTaskUpdates(task, { deadline }, source)
-      if (updated !== task) { changed = true; updatedList.push(updated) }
-      return updated
-    })
-
-    if (changed) {
-      commit(`${moves.length} tasks rescheduled`, next)
-      syncUpsertMany(updatedList)
-    }
+    const count = result.updatedTasks.length
+    commit(`${count} task${count === 1 ? '' : 's'} rescheduled`, result.tasks)
+    syncUpsertMany(result.updatedTasks)
   }
 
   function togglePlanForToday(id) {

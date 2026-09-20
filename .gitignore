@@ -31,6 +31,9 @@ dist-ssr
 .parser-tests
 .logic-tests
 
+# Local Supabase CLI state
+supabase/.temp/
+
 # Environment variables
 .env
 .env.*

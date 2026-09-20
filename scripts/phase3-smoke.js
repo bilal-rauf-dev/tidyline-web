@@ -2,6 +2,7 @@ import { getDeadlineRisk } from '../src/utils/risk'
 import { buildRedistributionPlan, getDayWorkload } from '../src/utils/workload'
 import { getPostponeAnalytics } from '../src/utils/analytics'
 import { getDailyShutdown } from '../src/utils/shutdown'
+import { applyTaskRescheduleMoves } from '../src/utils/taskFields'
 
 function assert(condition, message) {
   if (!condition) throw new Error(message)
@@ -36,6 +37,36 @@ const workloadTasks = [
 assert(getDayWorkload(workloadTasks, 6).overloaded, 'Eight-hour day was not flagged overloaded')
 const plan = buildRedistributionPlan(workloadTasks, '2026-08-05', 6)
 assert(plan.proposals.length === 1 && plan.proposals[0].task.id === 'move', 'Redistribution moved a constrained task or missed a flexible one')
+const appliedPlan = applyTaskRescheduleMoves(
+  workloadTasks.map((task) => ({ ...task, deadlineTime: task.id === 'move' ? null : '17:00' })),
+  plan.proposals.map((proposal) => ({ id: proposal.task.id, deadline: proposal.to })),
+  'calendar',
+  '2026-08-04T12:00:00.000Z',
+)
+const movedTask = appliedPlan.tasks.find((task) => task.id === 'move')
+assert(movedTask.deadline === plan.proposals[0].to, 'Confirmed redistribution did not change the proposed deadline')
+assert(movedTask.postponeHistory.at(-1)?.source === 'calendar', 'Redistribution did not record calendar history')
+assert(appliedPlan.updatedTasks.length === 1, 'Redistribution did not return the changed task for sync')
+assert(appliedPlan.tasks.find((task) => task.id === 'fixed').deadlineTime === '17:00', 'Batch rescheduling altered an untouched due time')
+
+const protectedTasks = [
+  { ...workloadTasks[0], id: 'planned', plannedDate: '2026-08-05' },
+  { ...workloadTasks[0], id: 'timed', deadlineTime: '17:00' },
+  workloadTasks[1],
+]
+assert(buildRedistributionPlan(protectedTasks, '2026-08-05', 6).proposals.length === 0, 'Redistribution moved a planned or timed task')
+
+const fullTargets = [
+  ...workloadTasks,
+  ...['2026-08-06', '2026-08-07', '2026-08-08'].map((deadline, index) => ({
+    ...base,
+    id: `full-${index}`,
+    deadline,
+    duration: { value: 6, unit: 'hr' },
+    pinned: true,
+  })),
+]
+assert(buildRedistributionPlan(fullTargets, '2026-08-05', 6).proposals.length === 0, 'Redistribution overloaded a target day')
 
 const delayed = [
   { ...base, id: 'a', title: 'A', tags: ['study'], postponeHistory: [{}, {}] },
