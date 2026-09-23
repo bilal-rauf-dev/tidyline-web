@@ -11,8 +11,9 @@ import {
   applyAccountOperations,
   cacheAccountSnapshot,
   cacheCleanAccountSnapshot,
-  enqueueAccountOperation,
+  enqueueAccountOperations,
   readAccountSyncState,
+  resolveAccountTaskConflict,
 } from '../utils/taskSyncStore'
 import {
   applyTaskUpdates,
@@ -27,11 +28,12 @@ import {
   shiftStartDateForDeadline,
 } from '../utils/taskFields'
 import {
-  deleteManyTaskRows,
+  deleteTaskVersioned,
   fetchTasks,
   insertManyTasks,
   replaceAllTasks,
-  upsertManyTasks,
+  saveTaskVersioned,
+  TaskVersionConflictError,
 } from '../utils/supabaseStorage'
 
 const STORAGE_KEY = 'tidyline:tasks'
@@ -109,6 +111,10 @@ export function normalizeTask(task) {
         : '',
     followUpDate: task.status === 'waiting' && !waitingExpired ? followUpDate : null,
     createdAt: typeof task.createdAt === 'string' ? task.createdAt : BOOT_TIME,
+    _syncRevision:
+      Number.isInteger(task._syncRevision) && task._syncRevision >= 0
+        ? task._syncRevision
+        : 0,
   }
 }
 
@@ -189,6 +195,7 @@ export function useTasks(auth = null) {
   const [pendingSyncCount,    setPendingSyncCount]    = useState(0)
   const [syncing,             setSyncing]             = useState(false)
   const [syncError,           setSyncError]           = useState(false)
+  const [syncConflicts,       setSyncConflicts]       = useState([])
   const flushActiveRef = useRef(false)
   const migrationActiveRef = useRef(false)
   const loading = Boolean(
@@ -219,9 +226,54 @@ export function useTasks(auth = null) {
           break
         }
 
-        if (operation.kind === 'upsert') await upsertManyTasks(userId, operation.tasks)
-        if (operation.kind === 'delete') await deleteManyTaskRows(operation.ids)
-        if (operation.kind === 'replace') await replaceAllTasks(userId, operation.tasks)
+        try {
+          if (operation.kind === 'upsert') {
+            for (const task of operation.tasks) {
+              const expectedRevision = operation.expectedRevisions?.[task.id] ?? 0
+              await saveTaskVersioned(userId, task, expectedRevision)
+            }
+          }
+          if (operation.kind === 'delete') {
+            for (const taskId of operation.ids) {
+              const expectedRevision = operation.expectedRevisions?.[taskId] ?? 0
+              await deleteTaskVersioned(userId, taskId, expectedRevision)
+            }
+          }
+          if (operation.kind === 'replace') await replaceAllTasks(userId, operation.tasks)
+        } catch (error) {
+          if (!(error instanceof TaskVersionConflictError)) throw error
+
+          const localTask = current.snapshot.find((task) => task.id === error.taskId)
+          const conflictCopy = error.action === 'edit' && localTask
+            ? normalizeTask({
+                ...localTask,
+                id: crypto.randomUUID(),
+                title: localTask.title.endsWith(' (conflict copy)')
+                  ? localTask.title
+                  : `${localTask.title} (conflict copy)`,
+                _syncRevision: 1,
+              })
+            : null
+          const resolved = resolveAccountTaskConflict(localStorage, userId, {
+            operationId: operation.id,
+            taskId: error.taskId,
+            remoteTask: error.remoteTask,
+            conflictCopy,
+          })
+          tasksRef.current = resolved.snapshot
+          setTasks(resolved.snapshot)
+          setPendingSyncCount(resolved.operations.length)
+          setSyncConflicts((items) => [
+            ...items,
+            {
+              id: crypto.randomUUID(),
+              action: error.action,
+              title: localTask?.title ?? error.remoteTask?.title ?? 'Task',
+            },
+          ])
+          setSyncError(false)
+          continue
+        }
 
         const acknowledged = acknowledgeAccountOperation(localStorage, userId, operation.id)
         setPendingSyncCount(acknowledged.operations.length)
@@ -324,6 +376,7 @@ export function useTasks(auth = null) {
       setAccountLoadError(false)
       setPendingSyncCount(0)
       setSyncError(false)
+      setSyncConflicts([])
     }
   }, [isAuthenticated])
 
@@ -470,12 +523,11 @@ export function useTasks(auth = null) {
 
   // ── Internal helpers ──────────────────────────────────────────────────────
 
-  function queueAccountChange(kind, payload) {
-    const operation = { id: crypto.randomUUID(), kind, ...payload }
-    const nextTasks = applyAccountOperations(tasksRef.current, [operation])
+  function queueAccountChanges(operations) {
+    const nextTasks = applyAccountOperations(tasksRef.current, operations)
     try {
       const saved = isAuthenticated && userId
-        ? enqueueAccountOperation(localStorage, userId, nextTasks, operation)
+        ? enqueueAccountOperations(localStorage, userId, nextTasks, operations)
         : null
       if (!saved) localStorage.setItem(STORAGE_KEY, JSON.stringify(nextTasks))
       tasksRef.current = nextTasks
@@ -494,22 +546,66 @@ export function useTasks(auth = null) {
     }
   }
 
+  function queueAccountChange(kind, payload) {
+    let prepared = payload
+    if (kind === 'replace' && isAuthenticated && userId) {
+      prepared = {
+        ...payload,
+        tasks: payload.tasks.map((task) => ({
+          ...task,
+          _syncRevision: Math.max(1, task._syncRevision ?? 0),
+        })),
+      }
+    }
+    return queueAccountChanges([{ id: crypto.randomUUID(), kind, ...prepared }])
+  }
+
+  function versionedUpsertOperation(task) {
+    const expectedRevision = Number.isInteger(task._syncRevision) ? task._syncRevision : 0
+    const queuedTask = { ...task, _syncRevision: expectedRevision + 1 }
+    return {
+      id: crypto.randomUUID(),
+      kind: 'upsert',
+      tasks: [queuedTask],
+      expectedRevisions: { [task.id]: expectedRevision },
+    }
+  }
+
   function syncUpsert(task) {
-    return queueAccountChange('upsert', { tasks: [task] })
+    if (!isAuthenticated || !userId) {
+      return queueAccountChange('upsert', { tasks: [task] })
+    }
+    return queueAccountChanges([versionedUpsertOperation(task)])
   }
 
   function syncUpsertMany(taskList) {
     if (taskList.length === 0) return true
-    return queueAccountChange('upsert', { tasks: taskList })
+    if (!isAuthenticated || !userId) {
+      return queueAccountChange('upsert', { tasks: taskList })
+    }
+    return queueAccountChanges(taskList.map(versionedUpsertOperation))
   }
 
   function syncDelete(taskId) {
-    return queueAccountChange('delete', { ids: [taskId] })
+    return syncDeleteMany([taskId])
   }
 
   function syncDeleteMany(taskIds) {
     if (taskIds.length === 0) return true
-    return queueAccountChange('delete', { ids: taskIds })
+    if (!isAuthenticated || !userId) {
+      return queueAccountChange('delete', { ids: taskIds })
+    }
+    const byId = new Map(tasksRef.current.map((task) => [task.id, task]))
+    return queueAccountChanges(taskIds.map((taskId) => ({
+      id: crypto.randomUUID(),
+      kind: 'delete',
+      ids: [taskId],
+      expectedRevisions: {
+        [taskId]: Number.isInteger(byId.get(taskId)?._syncRevision)
+          ? byId.get(taskId)._syncRevision
+          : 0,
+      },
+    })))
   }
 
   function commit(message, nextTasks) {
@@ -926,11 +1022,15 @@ export function useTasks(auth = null) {
       const normalized = parsed.map(normalizeTask)
       const plan = await planLocalTaskMigration(userId, account, normalized)
       await insertManyTasks(userId, plan.additions)
-      if (!cacheCleanAccountSnapshot(localStorage, userId, plan.merged)) {
+      const addedIds = new Set(plan.additions.map((task) => task.id))
+      const merged = plan.merged.map((task) =>
+        addedIds.has(task.id) ? { ...task, _syncRevision: 1 } : task,
+      )
+      if (!cacheCleanAccountSnapshot(localStorage, userId, merged)) {
         throw new Error('Account changes arrived during the merge. Wait for them to sync, then retry.')
       }
-      tasksRef.current = plan.merged
-      setTasks(plan.merged)
+      tasksRef.current = merged
+      setTasks(merged)
       localStorage.removeItem(STORAGE_KEY)
       setHasPendingMigration(false)
     } catch (err) {
@@ -963,6 +1063,8 @@ export function useTasks(auth = null) {
     pendingSyncCount,
     syncing,
     syncError,
+    syncConflicts,
+    dismissSyncConflicts: () => setSyncConflicts([]),
     retrySync: flushSyncQueue,
     localDataError,
     discardBrokenLocalTasks,

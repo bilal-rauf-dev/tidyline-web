@@ -27,7 +27,8 @@ create table if not exists public.tasks (
   checklist         jsonb       not null default '[]'::jsonb,
   links             jsonb       not null default '[]'::jsonb,
   attachments       jsonb       not null default '[]'::jsonb,
-  postpone_history  jsonb       not null default '[]'::jsonb
+  postpone_history  jsonb       not null default '[]'::jsonb,
+  revision           bigint      not null default 1 constraint tasks_revision_positive check (revision >= 1)
 );
 
 alter table public.tasks enable row level security;

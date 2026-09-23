@@ -17,10 +17,26 @@ function validateOperation(operation) {
   }
   if (operation.kind === 'upsert' || operation.kind === 'replace') {
     validateTaskCollection(operation.tasks)
+    if (operation.kind === 'upsert' && operation.expectedRevisions !== undefined) {
+      const revisions = operation.expectedRevisions
+      if (!revisions || typeof revisions !== 'object' || Array.isArray(revisions) ||
+          operation.tasks.some((task) =>
+            !Number.isInteger(revisions[task.id]) || revisions[task.id] < 0)) {
+        throw new Error('The saved sync queue contains invalid task revisions')
+      }
+    }
   } else if (operation.kind === 'delete') {
     if (!Array.isArray(operation.ids) ||
         !operation.ids.every((id) => typeof id === 'string' && id.length > 0)) {
       throw new Error('The saved sync queue contains invalid task IDs')
+    }
+    if (operation.expectedRevisions !== undefined) {
+      const revisions = operation.expectedRevisions
+      if (!revisions || typeof revisions !== 'object' || Array.isArray(revisions) ||
+          operation.ids.some((id) =>
+            !Number.isInteger(revisions[id]) || revisions[id] < 0)) {
+        throw new Error('The saved sync queue contains invalid task revisions')
+      }
     }
   } else {
     throw new Error('The saved sync queue contains an unknown operation')
@@ -49,15 +65,75 @@ function writeAccountSyncState(storage, userId, state) {
 }
 
 export function enqueueAccountOperation(storage, userId, snapshot, operation) {
+  return enqueueAccountOperations(storage, userId, snapshot, [operation])
+}
+
+export function enqueueAccountOperations(storage, userId, snapshot, operations) {
   validateTaskCollection(snapshot)
-  validateOperation(operation)
+  operations.forEach(validateOperation)
   const current = readAccountSyncState(storage, userId)
   const next = {
     version: VERSION,
     snapshot,
-    operations: [...current.operations, operation],
+    operations: [...current.operations, ...operations],
     hasSnapshot: true,
   }
+  writeAccountSyncState(storage, userId, next)
+  return next
+}
+
+function withoutTask(operation, taskId) {
+  if (operation.kind === 'replace') return operation
+  if (operation.kind === 'upsert') {
+    const tasks = operation.tasks.filter((task) => task.id !== taskId)
+    if (tasks.length === 0) return null
+    const expectedRevisions = Object.fromEntries(
+      Object.entries(operation.expectedRevisions ?? {}).filter(([id]) => id !== taskId),
+    )
+    return { ...operation, tasks, expectedRevisions }
+  }
+  const ids = operation.ids.filter((id) => id !== taskId)
+  if (ids.length === 0) return null
+  const expectedRevisions = Object.fromEntries(
+    Object.entries(operation.expectedRevisions ?? {}).filter(([id]) => id !== taskId),
+  )
+  return { ...operation, ids, expectedRevisions }
+}
+
+/**
+ * Resolve a stale write without losing either device's content. The current
+ * server row keeps the original ID. A stale local edit becomes a visibly
+ * labelled copy with a fresh ID; a stale delete simply restores the newer
+ * server row. Later queued writes for the stale ID are removed because the
+ * copy already contains the newest local snapshot.
+ */
+export function resolveAccountTaskConflict(
+  storage,
+  userId,
+  { operationId, taskId, remoteTask, conflictCopy = null },
+) {
+  const current = readAccountSyncState(storage, userId)
+  if (current.operations[0]?.id !== operationId) {
+    throw new Error('The saved sync queue changed while a conflict was being resolved')
+  }
+
+  const remaining = current.operations
+    .map((operation) => withoutTask(operation, taskId))
+    .filter(Boolean)
+  const snapshot = current.snapshot.filter((task) => task.id !== taskId)
+  if (remoteTask) snapshot.push(remoteTask)
+
+  if (conflictCopy) {
+    snapshot.unshift(conflictCopy)
+    remaining.unshift({
+      id: crypto.randomUUID(),
+      kind: 'upsert',
+      tasks: [conflictCopy],
+      expectedRevisions: { [conflictCopy.id]: 0 },
+    })
+  }
+
+  const next = { ...current, snapshot, operations: remaining, hasSnapshot: true }
   writeAccountSyncState(storage, userId, next)
   return next
 }

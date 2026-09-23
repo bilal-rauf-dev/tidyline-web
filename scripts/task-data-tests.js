@@ -8,7 +8,9 @@ import {
   applyAccountOperations,
   cacheCleanAccountSnapshot,
   enqueueAccountOperation,
+  enqueueAccountOperations,
   readAccountSyncState,
+  resolveAccountTaskConflict,
 } from '../src/utils/taskSyncStore.js'
 
 const example = {
@@ -95,6 +97,48 @@ assert.equal(readAccountSyncState(storage, 'account-a').operations.length, 1)
 assert.equal(cacheCleanAccountSnapshot(storage, 'account-a', [example]), null)
 assert.deepEqual(readAccountSyncState(storage, 'account-a').snapshot, [])
 console.log('ok    Account changes persist before submission and replay after refresh')
+
+const conflictValues = new Map()
+const conflictStorage = {
+  getItem: (key) => conflictValues.get(key) ?? null,
+  setItem: (key, value) => conflictValues.set(key, value),
+}
+const staleLocal = { ...example, title: 'Local edit', _syncRevision: 2 }
+const latestLocal = { ...staleLocal, notes: 'A later offline change', _syncRevision: 3 }
+enqueueAccountOperations(conflictStorage, 'account-a', [latestLocal], [
+  {
+    id: 'stale-edit',
+    kind: 'upsert',
+    tasks: [staleLocal],
+    expectedRevisions: { [example.id]: 1 },
+  },
+  {
+    id: 'later-edit',
+    kind: 'upsert',
+    tasks: [latestLocal],
+    expectedRevisions: { [example.id]: 2 },
+  },
+])
+const remoteEdit = { ...example, title: 'Remote edit', _syncRevision: 2 }
+const conflictCopy = {
+  ...latestLocal,
+  id: 'task-conflict-copy',
+  title: 'Local edit (conflict copy)',
+  _syncRevision: 1,
+}
+const resolvedConflict = resolveAccountTaskConflict(conflictStorage, 'account-a', {
+  operationId: 'stale-edit',
+  taskId: example.id,
+  remoteTask: remoteEdit,
+  conflictCopy,
+})
+assert.deepEqual(resolvedConflict.snapshot, [conflictCopy, remoteEdit])
+assert.equal(resolvedConflict.operations.length, 1)
+assert.equal(resolvedConflict.operations[0].tasks[0].id, conflictCopy.id)
+assert.equal(resolvedConflict.operations[0].expectedRevisions[conflictCopy.id], 0)
+assert.equal(resolvedConflict.operations.some((operation) =>
+  operation.tasks?.some((task) => task.id === example.id)), false)
+console.log('ok    Concurrent task edits preserve both versions for review')
 
 const accountTask = { ...example, createdAt: '2026-09-01T00:00:00+00:00' }
 const sameLocalTask = { ...example, createdAt: '2026-09-01T00:00:00.000Z' }

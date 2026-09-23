@@ -15,7 +15,7 @@ Updated: 2026-09-20. The audit covered the tracked project files, including sour
 - Invalid local task data and malformed imports previously risked silently presenting an empty workspace or dropping records (`src/hooks/useTasks.js`, `src/utils/tasksIO.js`). REL-01 added recovery and review.
 - Signed-in writes previously ran in the background with no durable retry queue. REL-02 now has a browser-stored operation queue, but needs a live interruption and multi-device test.
 - Cloud replacement previously deleted every account task before inserting the replacement (`src/utils/supabaseStorage.js`). REL-03 adds a transactional database function; the backend migration must be applied and tested.
-- Clean account views now refetch on focus and every minute, but simultaneous edits to the same task still have no version check. REL-04 needs a server conflict policy and a live two-device test.
+- Clean account views refetch on focus and every minute. Task edits and deletes now carry the database revision last seen by that browser, so a stale device cannot silently overwrite a newer row. Conflicting local edits are preserved as labelled copies while stale deletes retain the newer account version. The revision migration and a live two-device test remain.
 - Local-to-account migration now offers an additive merge when the remote account already has tasks. Same-ID divergent local tasks become separate copies; device and backend tests remain.
 
 ## Interaction and planner quality

@@ -14,7 +14,7 @@ Use this matrix for WEB-01 through WEB-04 and the cross-device REL items. Record
 ## Core journey checks
 
 1. A guest creates tasks and returns after closing and reopening the browser. Existing data remains present.
-2. A signed-in user edits the same task on two devices. The UI exposes any unresolved conflict and does not silently overwrite a newer edit.
+2. A signed-in user opens the same task on two devices, saves different edits on each, and brings both online. The newer account version keeps the original task ID, the stale edit appears as a labelled `conflict copy`, and the sync banner explains what happened. Repeat with a stale delete; the newer account version must remain.
 3. A signed-in user edits while offline, refreshes, reconnects, and sees the edit reach the second device.
 4. A malformed import shows rejected records and preserves the current task list. A valid import shows a preview before replacement.
 5. A reminder due while the app is closed is delivered on supported platforms, opens the relevant task, and does not complete or snooze twice when multiple tabs are open.

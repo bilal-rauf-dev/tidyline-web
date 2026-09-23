@@ -468,7 +468,9 @@ function App() {
             count={taskState.pendingSyncCount}
             syncing={taskState.syncing}
             failed={taskState.syncError}
+            conflictCount={taskState.syncConflicts.length}
             onRetry={taskState.retrySync}
+            onDismissConflicts={taskState.dismissSyncConflicts}
           />
         )}
 
