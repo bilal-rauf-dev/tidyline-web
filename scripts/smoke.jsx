@@ -69,8 +69,7 @@ const { PlannerPage } = await import('../src/pages/PlannerPage.jsx')
 const { SomedayPage } = await import('../src/pages/SomedayPage.jsx')
 const { normalizeTask } = await import('../src/hooks/useTasks.js')
 
-// Set up a pre-configured profile for App shell tests
-globalThis.localStorage.setItem('tidyline:profile', JSON.stringify({ isSetUp: true, name: 'Guest', isGuest: true }))
+// A fresh visitor sees onboarding; a returning guest goes to the app shell.
 
 const today = new Date()
 const iso = (offsetDays) => {
@@ -136,7 +135,7 @@ const appearance = {
 // Each case asserts markers that prove the feature actually rendered, not
 // just that the component returned something.
 const cases = [
-  ['App shell', <App />, ['Open navigation', 'TidyLine', 'app-layout']],
+  ['Guest entry', <App />, ['Make this space yours', 'Start as guest']],
   [
     'WelcomeDialog',
     <WelcomeDialog
@@ -235,6 +234,37 @@ for (const [name, element, markers = []] of cases) {
     failures += 1
   }
 }
+
+globalThis.localStorage.setItem('tidyline:profile', JSON.stringify({ isSetUp: true, name: 'Guest', isGuest: true }))
+try {
+  const html = renderToString(<App />)
+  if (!html.includes('Open navigation') || !html.includes('app-layout')) {
+    console.error('FAIL  Returning guest — app shell did not render')
+    failures += 1
+  } else {
+    console.log('ok    Returning guest — app shell rendered')
+  }
+} catch (error) {
+  console.error(`FAIL  Returning guest — ${error.message}`)
+  failures += 1
+}
+
+// A malformed local snapshot must show recovery rather than an empty workspace.
+globalThis.localStorage.setItem('tidyline:tasks', '{broken json')
+try {
+  const html = renderToString(<App />)
+  if (!html.includes('Your saved tasks need attention.') ||
+      !html.includes('Download original data')) {
+    console.error('FAIL  Local task recovery — recovery controls did not render')
+    failures += 1
+  } else {
+    console.log('ok    Local task recovery — original data remains available')
+  }
+} catch (error) {
+  console.error(`FAIL  Local task recovery — ${error.message}`)
+  failures += 1
+}
+globalThis.localStorage.removeItem('tidyline:tasks')
 
 if (failures > 0) {
   console.error(`\n${failures} smoke failure(s)`)

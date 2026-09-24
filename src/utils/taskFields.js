@@ -1,5 +1,6 @@
 import { toDateStr } from './calendar'
 import { daysUntil } from './dates'
+import { normalizeRecurrence } from './recurrence'
 
 export const ENERGY_LEVEL_OPTIONS = [
   { value: '', label: 'Unset' },
@@ -8,11 +9,28 @@ export const ENERGY_LEVEL_OPTIONS = [
   { value: 'deep-focus', label: 'Deep focus' },
 ]
 
+export const PRIORITY_OPTIONS = [
+  { value: '', label: 'No priority' },
+  { value: 'high', label: 'High priority' },
+  { value: 'medium', label: 'Medium priority' },
+  { value: 'low', label: 'Low priority' },
+]
+
 const ENERGY_LEVELS = new Set(ENERGY_LEVEL_OPTIONS.map((option) => option.value).filter(Boolean))
+const PRIORITIES = new Set(PRIORITY_OPTIONS.map((option) => option.value).filter(Boolean))
 const DATE_VALUE = /^\d{4}-\d{2}-\d{2}$/
+const TIME_VALUE = /^([01]\d|2[0-3]):([0-5]\d)(?::[0-5]\d(?:\.\d{1,6})?)?$/
 
 export function normalizeEnergyLevel(value) {
   return ENERGY_LEVELS.has(value) ? value : null
+}
+
+export function normalizePriority(value) {
+  return PRIORITIES.has(value) ? value : null
+}
+
+export function priorityLabel(value) {
+  return PRIORITY_OPTIONS.find((option) => option.value === value)?.label ?? 'No priority'
 }
 
 export function normalizeStartDate(value, deadline) {
@@ -25,6 +43,10 @@ export function normalizeStartDate(value, deadline) {
 
 export function normalizePlannedDate(value) {
   return DATE_VALUE.test(value ?? '') ? value : null
+}
+
+export function normalizeDeadlineTime(value) {
+  return TIME_VALUE.test(value ?? '') ? value.slice(0, 5) : null
 }
 
 export function validateStartDate(startDate, deadline) {
@@ -44,6 +66,9 @@ export function validateStartDate(startDate, deadline) {
 export function applyTaskUpdates(task, updates, source = 'edit', at = new Date().toISOString()) {
   const deadline = updates.deadline ?? task.deadline
   const startDate = updates.startDate === undefined ? task.startDate : updates.startDate || null
+  const deadlineTime = updates.deadlineTime === undefined
+    ? task.deadlineTime
+    : normalizeDeadlineTime(updates.deadlineTime)
 
   if (validateStartDate(startDate, deadline)) {
     return task
@@ -52,6 +77,13 @@ export function applyTaskUpdates(task, updates, source = 'edit', at = new Date()
   const next = {
     ...task,
     ...updates,
+    deadlineTime: deadline ? deadlineTime : null,
+    priority:
+      updates.priority === undefined ? task.priority : normalizePriority(updates.priority),
+    recurrence:
+      updates.recurrence === undefined
+        ? task.recurrence
+        : normalizeRecurrence(updates.recurrence, deadline),
     startDate,
     energyLevel:
       updates.energyLevel === undefined
@@ -67,6 +99,26 @@ export function applyTaskUpdates(task, updates, source = 'edit', at = new Date()
   }
 
   return next
+}
+
+export function applyTaskRescheduleMoves(
+  tasks,
+  moves,
+  source = 'calendar',
+  at = new Date().toISOString(),
+) {
+  const deadlinesById = new Map(moves.map((move) => [move.id, move.deadline]))
+  const updatedTasks = []
+  const nextTasks = tasks.map((task) => {
+    const deadline = deadlinesById.get(task.id)
+    if (!deadline || deadline === task.deadline) return task
+
+    const updated = applyTaskUpdates(task, { deadline }, source, at)
+    if (updated !== task) updatedTasks.push(updated)
+    return updated
+  })
+
+  return { tasks: nextTasks, updatedTasks }
 }
 
 export function isTaskUpcoming(task, referenceDate = new Date()) {

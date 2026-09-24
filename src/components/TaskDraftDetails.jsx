@@ -11,6 +11,8 @@ import {
 import { RecurrencePicker } from './RecurrencePicker'
 import { SelectMenu } from './SelectMenu'
 import { EnergyLevelControl } from './EnergyLevelControl'
+import { PriorityControl } from './PriorityControl'
+import { Checkbox } from './Checkbox'
 import { toDateStr } from '../utils/calendar'
 
 function addNamedUrl(draft, onChange, type) {
@@ -86,6 +88,13 @@ function UrlDraft({ draft, onChange, type, label, urlLabel }) {
 }
 
 export function TaskDraftDetails({ draft, deadline, onChange }) {
+  const today = toDateStr(new Date())
+  const plannedForToday = draft.plannedDate === today
+  const canPlanToday =
+    Boolean(deadline) &&
+    draft.status !== 'waiting' &&
+    (!draft.startDate || draft.startDate <= today)
+
   function addChecklistItem() {
     const text = draft.checklistDraft.trim()
 
@@ -120,7 +129,24 @@ export function TaskDraftDetails({ draft, deadline, onChange }) {
           value={draft.energyLevel}
           onChange={(energyLevel) => onChange({ ...draft, energyLevel })}
         />
+
+        <PriorityControl
+          value={draft.priority}
+          onChange={(priority) => onChange({ ...draft, priority })}
+        />
       </div>
+
+      <label className="detail-plan-today settings-check">
+        <Checkbox
+          checked={plannedForToday}
+          disabled={!canPlanToday && !plannedForToday}
+          onChange={(event) => onChange({
+            ...draft,
+            plannedDate: event.target.checked ? today : '',
+          })}
+        />
+        <span>Plan for today</span>
+      </label>
 
       <div className="waiting-control">
         <div className="segmented" role="group" aria-label="Task status">
@@ -134,7 +160,7 @@ export function TaskDraftDetails({ draft, deadline, onChange }) {
           <button
             type="button"
             className={draft.status === 'waiting' ? 'segment active' : 'segment'}
-            onClick={() => onChange({ ...draft, status: 'waiting' })}
+            onClick={() => onChange({ ...draft, status: 'waiting', plannedDate: '' })}
           >
             Waiting
           </button>

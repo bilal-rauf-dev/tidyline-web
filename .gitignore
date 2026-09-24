@@ -30,9 +30,14 @@ dist-ssr
 .phase3-smoke
 .parser-tests
 .logic-tests
+_to_delete/
+
+# Local Supabase CLI state
+supabase/.temp/
 
 # Environment variables
 .env
 .env.*
 .env.local
 !.env.example
+!.env.test

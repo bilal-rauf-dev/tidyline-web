@@ -25,8 +25,6 @@ A deadline-focused task manager that organizes your work by how soon it's due �
 
 Add a task with a deadline and TidyLine automatically places it into the right time bucket — Today, This Week, This Month, and beyond — and moves it forward as the deadline approaches. No manual sorting, no projects to set up first. Type a task in plain English ("renew passport next Friday !high #admin remind 1 day before") and TidyLine's quick-add parser pulls out the deadline, priority, tags, and reminder for you.
 
-<img src="public/preview.png" alt="TidyLine Home screen" width="100%" />
-
 ## Features
 
 **Task management**
@@ -42,15 +40,16 @@ Add a task with a deadline and TidyLine automatically places it into the right t
 **Reminders & recurrence**
 
 - Smart reminder presets (5 min / 30 min / 1 hour before, tomorrow morning, every weekday, custom)
-- Recurring tasks — daily, weekly, monthly, yearly, or every N days
-- Browser notifications with sound, snooze, and mark-complete-from-notification
+- Recurring tasks — daily, weekly, monthly, yearly, or every N days, with documented [catch-up and month-end behavior](docs/RECURRENCE_RULES.md)
+- In-page browser notifications with sound while the page is open
+- Optional background Web Push for signed-in accounts after server setup
 
 **Views**
 
 - Home — a daily-at-a-glance dashboard with today's progress and activity
 - Board — the core bucketed task list, grouped Today through Later, with configurable buckets
-- Calendar — month view with drag-to-reschedule
-- Day planner — drag actionable tasks onto an hour-by-hour timeline and resize blocks to set duration
+- Calendar — month view with date controls or drag to reschedule
+- Day planner — choose a start time and duration with controls, or drag tasks onto an hour-by-hour timeline
 - Someday / Maybe — a holding area for undated ideas you can promote to the board once they're ready
 - Analytics — completion trends, streaks, workload, and bucket breakdowns
 
@@ -66,7 +65,7 @@ Add a task with a deadline and TidyLine automatically places it into the right t
 - Command palette (`Ctrl+K`) and keyboard shortcuts for common actions
 - Light/dark mode, a selectable accent color, and compact/comfortable density
 - Export and import your tasks as JSON
-- All task data stays in your browser's local storage — no account required
+- Guest tasks stay in this browser; signed-in tasks sync through Supabase when configured
 
 <table>
 <tr><td width="60"><img src="https://img.shields.io/badge/-%23FF5A36-FF5A36?style=flat-square" alt="Coral" /></td><td>Coral <sub>(default)</sub></td>
@@ -80,7 +79,7 @@ Add a task with a deadline and TidyLine automatically places it into the right t
 *The five accent options available under Settings → Appearance. Pick one hue to carry every highlight, button, and today marker in the app.*
 
 > [!NOTE]
-> TidyLine is local-first by design: it works fully offline, no sign-up needed, with tasks living in this browser's local storage. An optional Google sign-in (via Supabase Auth) is available to give the workspace your name and picture — task data itself isn't synced to a server yet, so it still stays on this device.
+> TidyLine runs in an ordinary browser without installation. Guest tasks are saved in that browser. A configured Supabase backend enables signed-in task sync. Production builds save core files for offline use, but offline reload still needs verification in ordinary browsers and devices. Open-page reminders work without installation. Optional background delivery requires the Web Push server setup; on iPhone and iPad, Web Push also requires adding the app to the Home Screen.
 
 ## Tech stack
 
@@ -98,14 +97,14 @@ npm run dev
 ```
 
 > [!TIP]
-> Google sign-in is optional. To enable it, copy `.env.example` to `.env` and fill in a Supabase project's `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`. Without it, TidyLine runs entirely in local/guest mode.
+> Google sign-in is optional. To enable it, copy `.env.example` to `.env`, fill in a Supabase project's `VITE_SUPABASE_URL` and browser-safe `VITE_SUPABASE_PUBLISHABLE_KEY`, and apply `supabase_migration.sql`, `supabase_migrations/20260918_atomic_task_replace.sql`, `supabase_migrations/20260920_deadline_times.sql`, `supabase_migrations/20260920_task_priority.sql`, and `supabase_migrations/20260923_task_revisions.sql` to that project. A legacy anon JWT is also accepted through `VITE_SUPABASE_ANON_KEY`. Never place an `sb_secret_` or service-role key in a `VITE_` variable. Without the public configuration, TidyLine runs in local guest mode. Cloud import and undo require the atomic replacement migration. Closed-page reminders have additional deployment steps in [`docs/WEB_PUSH_SETUP.md`](docs/WEB_PUSH_SETUP.md).
 
 Other useful scripts:
 
 ```bash
 npm run lint    # ESLint
 npm run build   # Production build
-npm run check   # Lint + build + all smoke/parser tests
+npm run check   # Lint + task data tests + build + smoke/parser tests
 ```
 
 ## Live preview

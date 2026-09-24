@@ -8,17 +8,16 @@ function normalizeName(value) {
 }
 
 /**
- * Load the saved workspace name from localStorage (so it can pre-fill the
- * WelcomeDialog for returning guests), but do NOT restore isSetUp — guests
- * must explicitly choose "Start as guest" every session.
+ * Restore a guest workspace on reload so browser-only users return directly
+ * to their planner. Signing out explicitly clears this profile.
  */
 function loadProfile() {
   try {
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? 'null')
     return {
-      isSetUp:  false,                                       // always start fresh
+      isSetUp:  stored?.isSetUp === true,
       name:     normalizeName(stored?.name) || '',           // recall previous name
-      isGuest:  false,
+      isGuest:  stored?.isGuest === true,
     }
   } catch {
     return { isSetUp: false, name: '', isGuest: false }

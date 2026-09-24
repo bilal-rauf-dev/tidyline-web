@@ -1,5 +1,6 @@
 import { DEADLINE_HOUR, deadlineMoment, formatDateTime, startOfDay } from './dates'
 import { describeRecurrence, matchesRecurrence } from './recurrence'
+import { timestampToLocalDateStr } from './calendar'
 
 /**
  * Reminder kinds:
@@ -87,7 +88,7 @@ export function describeReminder(reminder, task) {
 }
 
 function resolveRelative(reminder, task) {
-  const due = deadlineMoment(task.deadline)
+  const due = deadlineMoment(task.deadline, task.deadlineTime)
   return new Date(due.getTime() - reminder.minutesBefore * 60000)
 }
 
@@ -115,7 +116,11 @@ export function reminderInstances(task, reminder, windowStart, windowEnd) {
 
     // Windows are seconds-to-minutes wide, so this loop stays tiny.
     for (let guard = 0; guard < 400 && cursor <= limit; guard += 1) {
-      if (matchesRecurrence(cursor, reminder.rule, task.createdAt?.slice(0, 10))) {
+      if (matchesRecurrence(
+        cursor,
+        reminder.rule,
+        timestampToLocalDateStr(task.createdAt),
+      )) {
         const at = new Date(cursor)
         at.setHours(hour || 0, minute || 0, 0, 0)
         results.push({ key: `${task.id}:${reminder.id}:${at.getTime()}`, at: at.getTime() })

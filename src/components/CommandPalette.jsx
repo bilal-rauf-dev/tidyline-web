@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
+import { useModalFocus } from '../hooks/useModalFocus'
 import { fuzzyFilter } from '../utils/fuzzy'
 import { SearchIcon } from './icons'
 
 export function CommandPalette({ commands, onClose }) {
   const inputRef = useRef(null)
+  const dialogRef = useRef(null)
   const [query, setQuery] = useState('')
   const [activeIndex, setActiveIndex] = useState(0)
 
@@ -12,9 +14,7 @@ export function CommandPalette({ commands, onClose }) {
     [commands, query],
   )
 
-  useEffect(() => {
-    inputRef.current?.focus()
-  }, [])
+  useModalFocus(dialogRef, { initialFocusRef: inputRef, onClose })
 
   function updateQuery(value) {
     setQuery(value)
@@ -44,10 +44,10 @@ export function CommandPalette({ commands, onClose }) {
   }
 
   return (
-    <div className="palette-layer" role="dialog" aria-modal="true" aria-label="Command palette">
+    <div className="palette-layer">
       <button type="button" className="palette-scrim" aria-label="Close command palette" onClick={onClose} />
 
-      <div className="palette">
+      <div ref={dialogRef} className="palette" role="dialog" aria-modal="true" aria-label="Command palette" tabIndex={-1}>
         <div className="palette-search">
           <SearchIcon />
           <input

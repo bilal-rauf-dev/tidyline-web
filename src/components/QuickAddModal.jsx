@@ -1,21 +1,17 @@
-import { useEffect, useRef, useState, useMemo } from 'react'
+import { useRef, useState, useMemo } from 'react'
+import { useModalFocus } from '../hooks/useModalFocus'
 import { parseNaturalTask } from '../utils/parseNaturalTask'
 import { toDateStr } from '../utils/calendar'
-import { formatDate, deadlineMoment } from '../utils/dates'
+import { formatDate, formatDeadline, deadlineMoment } from '../utils/dates'
 import { tagTone, collectTags } from '../utils/tags'
 import { describeRecurrence } from '../utils/recurrence'
+import { priorityLabel } from '../utils/taskFields'
 import { PlusIcon } from './icons'
 
 const ENERGY_LABELS = {
   low: 'Low energy',
   normal: 'Normal energy',
   'deep-focus': 'Deep focus',
-}
-
-const PRIORITY_LABELS = {
-  high: 'High priority',
-  medium: 'Medium priority',
-  low: 'Low priority',
 }
 
 const EXAMPLE_HINTS = [
@@ -48,7 +44,7 @@ function getValidationWarnings(parsed) {
   const warnings = []
 
   if (parsed.reminderMinutes !== null && parsed.deadline) {
-    const deadlineMs = deadlineMoment(toDateStr(parsed.deadline)).getTime()
+    const deadlineMs = deadlineMoment(toDateStr(parsed.deadline), parsed.deadlineTime).getTime()
     const reminderMs = deadlineMs - parsed.reminderMinutes * 60 * 1000
     if (reminderMs >= deadlineMs) {
       warnings.push({ field: 'reminder', message: 'Reminder must be before the deadline.' })
@@ -63,11 +59,16 @@ function getValidationWarnings(parsed) {
     warnings.push({ field: 'duration', message: 'Duration must be greater than zero.' })
   }
 
+  if (parsed.planForToday && parsed.startDate && toLocalYMD(parsed.startDate) > toDateStr(new Date())) {
+    warnings.push({ field: 'planForToday', message: 'A task planned for today cannot start in the future.' })
+  }
+
   return warnings
 }
 
 export function QuickAddModal({ isOpen, onClose, onAddTask, onOpenFullForm, tasks = [] }) {
   const inputRef = useRef(null)
+  const dialogRef = useRef(null)
   const [rawInput, setRawInput] = useState('')
   const [submitError, setSubmitError] = useState('')
   const [activeHintIndex, setActiveHintIndex] = useState(-1)
@@ -91,9 +92,7 @@ export function QuickAddModal({ isOpen, onClose, onAddTask, onOpenFullForm, task
     return []
   }, [rawInput, tasks])
 
-  useEffect(() => {
-    setTimeout(() => inputRef.current?.focus(), 80)
-  }, [])
+  useModalFocus(dialogRef, { active: isOpen, initialFocusRef: inputRef, onClose })
 
   if (!isOpen) return null
 
@@ -146,12 +145,6 @@ export function QuickAddModal({ isOpen, onClose, onAddTask, onOpenFullForm, task
       }
     }
 
-    if (event.key === 'Escape') {
-      event.preventDefault()
-      onClose()
-      return
-    }
-
     if (event.key === 'Enter') {
       event.preventDefault()
 
@@ -193,9 +186,10 @@ export function QuickAddModal({ isOpen, onClose, onAddTask, onOpenFullForm, task
           ? { value: parsed.durationMinutes, unit: 'min' }
           : null
 
-      onAddTask({
+      const added = onAddTask({
         title: parsed.title,
         deadline: deadlineStr,
+        deadlineTime: parsed.deadlineTime,
         tags: parsed.tags,
         reminders: reminderRecord,
         recurrence: parsed.recurrence,
@@ -207,13 +201,14 @@ export function QuickAddModal({ isOpen, onClose, onAddTask, onOpenFullForm, task
         duration,
         startDate: parsed.startDate ? toLocalYMD(parsed.startDate) : null,
         energyLevel: parsed.energy ?? null,
+        priority: parsed.priority,
         status: 'active',
         waitingFor: '',
         followUpDate: null,
         plannedDate: parsed.planForToday ? todayStr : null,
       })
 
-      onClose()
+      if (added) onClose()
     }
   }
 
@@ -241,9 +236,9 @@ export function QuickAddModal({ isOpen, onClose, onAddTask, onOpenFullForm, task
   const todayStr = toDateStr(new Date())
 
   return (
-    <div className="palette-layer" role="dialog" aria-modal="true" aria-label="Quick Add Task">
+    <div className="palette-layer">
       <button type="button" className="palette-scrim" aria-label="Close" onClick={onClose} />
-      <div className="palette quick-add-palette">
+      <div ref={dialogRef} className="palette quick-add-palette" role="dialog" aria-modal="true" aria-label="Quick Add Task" tabIndex={-1}>
         <div className="palette-search">
           <PlusIcon />
           <input
@@ -301,7 +296,7 @@ export function QuickAddModal({ isOpen, onClose, onAddTask, onOpenFullForm, task
                     onClick={() => handleEditToken(deadlineToken)}
                     title="Click to edit deadline"
                   >
-                    <span>{formatDate(toLocalYMD(deadlineToken.value))}</span>
+                    <span>{formatDeadline(toLocalYMD(deadlineToken.value), parsed.deadlineTime)}</span>
                     <button type="button" onClick={(e) => handleRemoveToken(deadlineToken, e)} aria-label="Remove deadline">&times;</button>
                   </li>
                 )}
@@ -356,7 +351,7 @@ export function QuickAddModal({ isOpen, onClose, onAddTask, onOpenFullForm, task
                     onClick={() => handleEditToken(priorityToken)}
                     title="Click to edit priority"
                   >
-                    <span>{PRIORITY_LABELS[parsed.priority] ?? parsed.priority}</span>
+                    <span>{priorityLabel(parsed.priority)}</span>
                     <button type="button" onClick={(e) => handleRemoveToken(priorityToken, e)} aria-label="Remove priority">&times;</button>
                   </li>
                 )}
@@ -410,11 +405,7 @@ export function QuickAddModal({ isOpen, onClose, onAddTask, onOpenFullForm, task
             <div className="quick-add-interpretation">
               <span className="interpretation-text">
                 Deadline:{' '}
-                <strong>
-                  {new Intl.DateTimeFormat('en-US', {
-                    weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
-                  }).format(parsed.deadline)}
-                </strong>
+                <strong>{formatDeadline(toLocalYMD(parsed.deadline), parsed.deadlineTime)}</strong>
                 {toLocalYMD(parsed.deadline) === todayStr && <span className="interp-badge">today</span>}
               </span>
             </div>

@@ -24,6 +24,7 @@ import * as chrono from 'chrono-node'
 export function parseNaturalTask(input, referenceDate = new Date()) {
   const matchedTokens = []
   let workingText = input
+  let deadlineTime = null
 
   function registerMatch(type, value, startIdx, length, text) {
     matchedTokens.push({ type, value, text })
@@ -197,8 +198,13 @@ export function parseNaturalTask(input, referenceDate = new Date()) {
   const parsedDates = chrono.parse(workingText, referenceDate, { forwardDate: true })
   if (parsedDates.length > 0) {
     const dateMatch = parsedDates[0]
+    const parsedDeadline = dateMatch.start.date()
     let startIdx = dateMatch.index
     let text = dateMatch.text
+
+    if (dateMatch.start.isCertain('hour')) {
+      deadlineTime = `${String(parsedDeadline.getHours()).padStart(2, '0')}:${String(parsedDeadline.getMinutes()).padStart(2, '0')}`
+    }
 
     // Absorb immediately-preceding deadline prepositions so they are stripped
     // along with the date phrase and don't leave a dangling word in the title.
@@ -221,7 +227,7 @@ export function parseNaturalTask(input, referenceDate = new Date()) {
       text = workingText.slice(startIdx, startIdx + prepLen + text.length)
     }
 
-    registerMatch('deadline', dateMatch.start.date(), startIdx, text.length, text)
+    registerMatch('deadline', parsedDeadline, startIdx, text.length, text)
   }
 
   // ── 10. Clean title ────────────────────────────────────────────────────────
@@ -230,6 +236,7 @@ export function parseNaturalTask(input, referenceDate = new Date()) {
   return {
     title,
     deadline: matchedTokens.find((t) => t.type === 'deadline')?.value ?? null,
+    deadlineTime,
     startDate: matchedTokens.find((t) => t.type === 'startDate')?.value ?? null,
     reminderMinutes: matchedTokens.find((t) => t.type === 'reminder')?.value ?? null,
     durationMinutes: matchedTokens.find((t) => t.type === 'duration')?.value ?? null,

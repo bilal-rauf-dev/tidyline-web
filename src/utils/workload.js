@@ -45,7 +45,10 @@ export function isFlexibleTask(task) {
     !task.pinned &&
     task.status !== 'waiting' &&
     !task.recurrence &&
-    !task.scheduledStart
+    !task.scheduledStart &&
+    !task.plannedDate &&
+    !task.deadlineTime &&
+    task.priority !== 'high'
   )
 }
 
@@ -69,15 +72,19 @@ export function buildRedistributionPlan(
     .filter((task) => task.deadline === sourceDate && isFlexibleTask(task))
     .sort((a, b) => durationToMinutes(b.duration) - durationToMinutes(a.duration))
   const proposals = []
+  const capacity = overloadHours * 60
 
   for (const task of flexible) {
-    if (sourceMinutes <= overloadHours * 60) break
+    if (sourceMinutes <= capacity) break
+    const minutes = durationToMinutes(task.duration)
+    if (minutes <= 0) continue
+
     const allowedDates = candidates.filter((date) => !task.startDate || task.startDate <= date)
-    const target = allowedDates.sort((a, b) => loads.get(a) - loads.get(b))[0]
+    const target = allowedDates
+      .sort((a, b) => loads.get(a) - loads.get(b))
+      .find((date) => loads.get(date) + minutes <= capacity)
     if (!target) continue
 
-    const minutes = durationToMinutes(task.duration)
-    if (minutes <= 0 || loads.get(target) >= sourceMinutes) continue
     proposals.push({ task, from: sourceDate, to: target, minutes })
     sourceMinutes -= minutes
     loads.set(target, loads.get(target) + minutes)

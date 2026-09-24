@@ -3,6 +3,7 @@ create table if not exists public.tasks (
   user_id           uuid        not null references auth.users(id) on delete cascade,
   title             text        not null default '',
   deadline          date,
+  deadline_time     time,
   start_date        date,
   planned_date      date,
   original_deadline date,
@@ -16,6 +17,7 @@ create table if not exists public.tasks (
   notes             text        not null default '',
   location          text        not null default '',
   duration          jsonb,
+  priority          text        constraint tasks_priority_valid check (priority is null or priority in ('high', 'medium', 'low')),
   energy_level      text,
   status            text        not null default 'active',
   waiting_for       text        not null default '',
@@ -25,7 +27,8 @@ create table if not exists public.tasks (
   checklist         jsonb       not null default '[]'::jsonb,
   links             jsonb       not null default '[]'::jsonb,
   attachments       jsonb       not null default '[]'::jsonb,
-  postpone_history  jsonb       not null default '[]'::jsonb
+  postpone_history  jsonb       not null default '[]'::jsonb,
+  revision           bigint      not null default 1 constraint tasks_revision_positive check (revision >= 1)
 );
 
 alter table public.tasks enable row level security;

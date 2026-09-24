@@ -10,12 +10,19 @@ import { supabase } from '../supabaseClient'
 
 // ── Field mapping: JS → DB row ────────────────────────────────────────────────
 
-function taskToRow(userId, task) {
+function taskRevision(task) {
+  return Number.isInteger(task._syncRevision) && task._syncRevision > 0
+    ? task._syncRevision
+    : 1
+}
+
+function taskToRow(userId, task, revision = taskRevision(task)) {
   return {
     id:                task.id,
     user_id:           userId,
     title:             task.title,
     deadline:          task.deadline ?? null,
+    deadline_time:     task.deadlineTime ?? null,
     start_date:        task.startDate ?? null,
     planned_date:      task.plannedDate ?? null,
     original_deadline: task.originalDeadline ?? null,
@@ -29,6 +36,7 @@ function taskToRow(userId, task) {
     notes:             task.notes,
     location:          task.location,
     duration:          task.duration ?? null,
+    priority:          task.priority ?? null,
     energy_level:      task.energyLevel ?? null,
     status:            task.status,
     waiting_for:       task.waitingFor,
@@ -39,6 +47,7 @@ function taskToRow(userId, task) {
     links:             task.links,
     attachments:       task.attachments,
     postpone_history:  task.postponeHistory,
+    revision,
   }
 }
 
@@ -49,6 +58,7 @@ export function rowToTask(row) {
     id:              row.id,
     title:           row.title,
     deadline:        row.deadline ?? null,
+    deadlineTime:    row.deadline_time ?? null,
     startDate:       row.start_date ?? null,
     plannedDate:     row.planned_date ?? null,
     originalDeadline:row.original_deadline ?? null,
@@ -62,6 +72,7 @@ export function rowToTask(row) {
     notes:           row.notes,
     location:        row.location,
     duration:        row.duration ?? null,
+    priority:        row.priority ?? null,
     energyLevel:     row.energy_level ?? null,
     status:          row.status,
     waitingFor:      row.waiting_for,
@@ -72,6 +83,7 @@ export function rowToTask(row) {
     links:           Array.isArray(row.links)            ? row.links            : [],
     attachments:     Array.isArray(row.attachments)      ? row.attachments      : [],
     postponeHistory: Array.isArray(row.postpone_history) ? row.postpone_history : [],
+    _syncRevision:   Number.isInteger(row.revision) && row.revision > 0 ? row.revision : 1,
   }
 }
 
@@ -123,46 +135,82 @@ export async function fetchTasks(userId) {
   return data.map(rowToTask)
 }
 
-export async function upsertTask(userId, task) {
-  const { error } = await supabase
+export class TaskVersionConflictError extends Error {
+  constructor(taskId, remoteTask, action) {
+    super(`Task ${action} conflicted with a newer account version`)
+    this.name = 'TaskVersionConflictError'
+    this.taskId = taskId
+    this.remoteTask = remoteTask
+    this.action = action
+  }
+}
+
+async function fetchTask(userId, taskId) {
+  const { data, error } = await supabase
     .from('tasks')
-    .upsert(taskToRow(userId, task), { onConflict: 'id' })
-
+    .select('*')
+    .eq('user_id', userId)
+    .eq('id', taskId)
+    .maybeSingle()
   if (error) throw error
+  return data ? rowToTask(data) : null
 }
 
-export async function upsertManyTasks(userId, tasks) {
-  if (tasks.length === 0) return
-  const { error } = await supabase
-    .from('tasks')
-    .upsert(tasks.map((t) => taskToRow(userId, t)), { onConflict: 'id' })
+/** Insert or update only if the browser edited the revision it last read. */
+export async function saveTaskVersioned(userId, task, expectedRevision) {
+  if (expectedRevision === 0) {
+    const { data, error } = await supabase
+      .from('tasks')
+      .insert(taskToRow(userId, task, 1))
+      .select('*')
+      .single()
+    if (!error) return rowToTask(data)
+    if (error.code !== '23505') throw error
+  } else {
+    const { data, error } = await supabase
+      .from('tasks')
+      .update(taskToRow(userId, task, expectedRevision + 1))
+      .eq('user_id', userId)
+      .eq('id', task.id)
+      .eq('revision', expectedRevision)
+      .select('*')
+      .maybeSingle()
+    if (error) throw error
+    if (data) return rowToTask(data)
+  }
 
-  if (error) throw error
+  throw new TaskVersionConflictError(task.id, await fetchTask(userId, task.id), 'edit')
 }
 
-export async function deleteTaskRow(taskId) {
-  const { error } = await supabase.from('tasks').delete().eq('id', taskId)
-  if (error) throw error
-}
-
-export async function deleteManyTaskRows(taskIds) {
-  if (taskIds.length === 0) return
-  const { error } = await supabase.from('tasks').delete().in('id', taskIds)
-  if (error) throw error
-}
-
-/**
- * Replace all of a user's tasks atomically (used for undo and importTasks).
- * Deletes all existing rows first, then batch-inserts the new set.
- */
-export async function replaceAllTasks(userId, tasks) {
-  const { error: deleteError } = await supabase
+/** Delete only if another browser has not edited the task since it was read. */
+export async function deleteTaskVersioned(userId, taskId, expectedRevision) {
+  const { data, error } = await supabase
     .from('tasks')
     .delete()
     .eq('user_id', userId)
+    .eq('id', taskId)
+    .eq('revision', expectedRevision)
+    .select('id')
+    .maybeSingle()
+  if (error) throw error
+  if (data) return
+  throw new TaskVersionConflictError(taskId, await fetchTask(userId, taskId), 'delete')
+}
 
-  if (deleteError) throw deleteError
-  if (tasks.length > 0) await upsertManyTasks(userId, tasks)
+/** Replace tasks in one database transaction; requires the companion SQL migration. */
+export async function replaceAllTasks(userId, tasks) {
+  const { error } = await supabase.rpc('replace_user_tasks', {
+    p_rows: tasks.map((task) => taskToRow(userId, task)),
+  })
+  if (error) throw error
+}
+
+export async function insertManyTasks(userId, tasks) {
+  if (tasks.length === 0) return
+  const { error } = await supabase
+    .from('tasks')
+    .insert(tasks.map((task) => taskToRow(userId, task)))
+  if (error) throw error
 }
 
 // ── Settings CRUD ─────────────────────────────────────────────────────────────
