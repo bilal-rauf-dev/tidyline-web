@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { useModalFocus } from '../hooks/useModalFocus'
 import { formatDate } from '../utils/dates'
 import { getDailyShutdown, tomorrowDate } from '../utils/shutdown'
 import { CloseIcon } from './icons'
@@ -12,21 +13,16 @@ export function ShutdownDialog({ tasks, setDeadline, archiveTask, onClose }) {
   const [dates, setDates] = useState({})
   const [closing, setClosing] = useState(false)
   const timerRef = useRef(null)
+  const closeRef = useRef(null)
+  const dialogRef = useRef(null)
   const close = useCallback(() => {
     setClosing(true)
     timerRef.current = window.setTimeout(onClose, EXIT_MS)
   }, [onClose])
 
-  useEffect(() => {
-    function keydown(event) {
-      if (event.key === 'Escape') close()
-    }
-    window.addEventListener('keydown', keydown)
-    return () => {
-      window.clearTimeout(timerRef.current)
-      window.removeEventListener('keydown', keydown)
-    }
-  }, [close])
+  useModalFocus(dialogRef, { initialFocusRef: closeRef, onClose: close })
+
+  useEffect(() => () => window.clearTimeout(timerRef.current), [])
 
   function resolve(id) {
     setHandled((current) => [...current, id])
@@ -35,15 +31,15 @@ export function ShutdownDialog({ tasks, setDeadline, archiveTask, onClose }) {
   const unfinished = summary.unfinished.filter((task) => !handled.includes(task.id))
 
   return createPortal(
-    <div className={closing ? 'task-detail-layer closing' : 'task-detail-layer'} role="dialog" aria-modal="true" aria-label="Daily shutdown">
+    <div className={closing ? 'task-detail-layer closing' : 'task-detail-layer'}>
       <button type="button" className="task-detail-scrim" aria-label="Close daily shutdown" onClick={close} />
-      <article className="task-detail-dialog shutdown-dialog">
+      <article ref={dialogRef} className="task-detail-dialog shutdown-dialog" role="dialog" aria-modal="true" aria-label="Daily shutdown" tabIndex={-1}>
         <header className="task-detail-heading">
           <div>
             <h2>Daily shutdown</h2>
             <span>{formatDate(summary.date)}</span>
           </div>
-          <button type="button" className="icon-mini" onClick={close} aria-label="Close daily shutdown"><CloseIcon /></button>
+          <button ref={closeRef} type="button" className="icon-mini" onClick={close} aria-label="Close daily shutdown"><CloseIcon /></button>
         </header>
 
         <div className="shutdown-dialog-content">

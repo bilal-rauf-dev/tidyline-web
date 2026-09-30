@@ -1,0 +1,19 @@
+{
+  "id": "/",
+  "name": "TidyLine",
+  "short_name": "TidyLine",
+  "description": "A deadline-focused planner for tasks and reminders.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#141416",
+  "theme_color": "#141416",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "1254x1254",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

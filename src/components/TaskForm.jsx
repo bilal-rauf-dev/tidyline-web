@@ -7,6 +7,7 @@ import {
   BellIcon,
   CalendarIcon,
   ChevronDownIcon,
+  ClockIcon,
   CloseIcon,
   PlusIcon,
   SaveIcon,
@@ -18,6 +19,7 @@ import { TaskDraftDetails } from './TaskDraftDetails'
 import { validateStartDate } from '../utils/taskFields'
 import { SelectMenu } from './SelectMenu'
 import { describeReminder } from '../utils/reminders'
+import { toDateStr } from '../utils/calendar'
 
 function createEmptyDetails() {
   return {
@@ -36,6 +38,8 @@ function createEmptyDetails() {
     recurrence: null,
     startDate: '',
     energyLevel: '',
+    priority: '',
+    plannedDate: '',
     status: 'active',
     waitingFor: '',
     followUpDate: '',
@@ -46,6 +50,7 @@ export function TaskForm({
   onAddTask,
   allTasks = [],
   initialDeadline = '',
+  initialDeadlineTime = '',
   heading = 'Add task',
   focusOnMount = false,
   templates = [],
@@ -54,9 +59,11 @@ export function TaskForm({
   initialDetails = null,
   initialReminders = null,
 }) {
+  const today = toDateStr(new Date())
   const titleInputRef = useRef(null)
   const [title, setTitle] = useState(initialTitle)
   const [deadline, setDeadline] = useState(initialDeadline)
+  const [deadlineTime, setDeadlineTime] = useState(initialDeadlineTime)
   const [reminderInput, setReminderInput] = useState('')
   const [remindersDraft, setRemindersDraft] = useState(initialReminders || [])
   const [tagInput, setTagInput] = useState(initialTags)
@@ -80,6 +87,7 @@ export function TaskForm({
     const keysToDelete = [
       'title',
       'deadline',
+      'deadlineTime',
       'tags',
       'startDate',
       'reminderMinutes',
@@ -124,7 +132,7 @@ export function TaskForm({
   function reminderDescription(reminder) {
     return typeof reminder === 'string'
       ? formatDateTime(reminder)
-      : describeReminder(reminder, { deadline })
+      : describeReminder(reminder, { deadline, deadlineTime })
   }
 
   function removeReminder(reminder) {
@@ -156,6 +164,7 @@ export function TaskForm({
       durationValue: template.duration?.value ?? '',
       durationUnit: template.duration?.unit ?? 'min',
       recurrence: template.recurrence,
+      priority: template.priority ?? '',
     }))
     setDetailsOpen(true)
   }
@@ -163,19 +172,24 @@ export function TaskForm({
   function handleSubmit(event) {
     event.preventDefault()
     const destination = event.nativeEvent.submitter?.value ?? 'active'
+    const invalidTodayPlan =
+      details.plannedDate === today &&
+      (details.status === 'waiting' || (details.startDate && details.startDate > today))
 
     if (
       !title.trim() ||
       !deadline ||
       validateStartDate(details.startDate, deadline) ||
+      invalidTodayPlan ||
       (details.status === 'waiting' && (!details.waitingFor.trim() || !details.followUpDate))
     ) {
       return
     }
 
-    onAddTask({
+    const added = onAddTask({
       title: title.trim(),
       deadline,
+      deadlineTime: deadlineTime || null,
       reminders: remindersDraft,
       tags: parseTags(tagInput),
       recurrence: details.recurrence,
@@ -190,14 +204,22 @@ export function TaskForm({
           : { value: Number(details.durationValue), unit: details.durationUnit },
       startDate: details.startDate || null,
       energyLevel: details.energyLevel || null,
+      priority: details.priority || null,
       status: details.status,
       archived: destination === 'archive',
       waitingFor: details.status === 'waiting' ? details.waitingFor.trim() : '',
       followUpDate: details.status === 'waiting' ? details.followUpDate : null,
+      plannedDate:
+        destination === 'active' && details.status === 'active'
+          ? details.plannedDate || null
+          : null,
     })
+
+    if (!added) return
 
     setTitle('')
     setDeadline('')
+    setDeadlineTime('')
     setRemindersDraft([])
     setReminderInput('')
     setTagInput('')
@@ -256,7 +278,7 @@ export function TaskForm({
           />
         </div>
 
-        <div className="field-group">
+        <div className="field-group deadline-reminder-group">
           <label className="field-icon">
             <span className="field-icon-head">
               <CalendarIcon />
@@ -267,6 +289,19 @@ export function TaskForm({
               value={deadline}
               onChange={(event) => setDeadline(event.target.value)}
               required
+            />
+          </label>
+
+          <label className="field-icon">
+            <span className="field-icon-head">
+              <ClockIcon />
+              Due time <span aria-hidden="true">(optional)</span>
+            </span>
+            <input
+              type="time"
+              value={deadlineTime}
+              aria-label="Due time, optional"
+              onChange={(event) => setDeadlineTime(event.target.value)}
             />
           </label>
 
@@ -349,6 +384,12 @@ export function TaskForm({
                 Add who or what you are waiting for and a follow-up date.
               </p>
             )}
+            {details.plannedDate === today &&
+              (details.status === 'waiting' || (details.startDate && details.startDate > today)) && (
+                <p className="field-error" role="alert">
+                  A task planned for today must be actionable today.
+                </p>
+              )}
           </div>
         </div>
 

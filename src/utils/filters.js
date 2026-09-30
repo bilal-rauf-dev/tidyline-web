@@ -5,6 +5,7 @@ export const DEFAULT_FILTERS = {
   tag: 'all',
   status: 'all',
   energyLevel: 'all',
+  priority: 'all',
   durationMin: '',
   durationMax: '',
   pinnedOnly: false,
@@ -25,6 +26,7 @@ export const STATUS_OPTIONS = [
 
 export const SORT_OPTIONS = [
   { value: 'deadline', label: 'Due date' },
+  { value: 'priority', label: 'Priority' },
   { value: 'createdAt', label: 'Created date' },
 ]
 
@@ -34,6 +36,14 @@ export const ENERGY_FILTER_OPTIONS = [
   { value: 'normal', label: 'Normal energy' },
   { value: 'deep-focus', label: 'Deep focus' },
   { value: 'unset', label: 'No energy set' },
+]
+
+export const PRIORITY_FILTER_OPTIONS = [
+  { value: 'all', label: 'Any priority' },
+  { value: 'high', label: 'High priority' },
+  { value: 'medium', label: 'Medium priority' },
+  { value: 'low', label: 'Low priority' },
+  { value: 'unset', label: 'No priority' },
 ]
 
 function matchesStatus(task, status, todayStr) {
@@ -81,6 +91,15 @@ export function filterTasks(tasks, filters) {
       return false
     }
 
+    if (
+      filters.priority !== 'all' &&
+      (filters.priority === 'unset'
+        ? Boolean(task.priority)
+        : task.priority !== filters.priority)
+    ) {
+      return false
+    }
+
     if (filters.pinnedOnly && !task.pinned) {
       return false
     }
@@ -118,8 +137,16 @@ export function filterTasks(tasks, filters) {
 
 export function buildComparator({ sortBy, sortDir }) {
   const direction = sortDir === 'desc' ? -1 : 1
+  const priorityRank = { high: 0, medium: 1, low: 2 }
 
   return (a, b) => {
+    if (sortBy === 'priority') {
+      const priorityDifference =
+        (priorityRank[a.priority] ?? 3) - (priorityRank[b.priority] ?? 3)
+      if (priorityDifference !== 0) return priorityDifference * direction
+      return a.deadline.localeCompare(b.deadline) * direction
+    }
+
     const left = sortBy === 'createdAt' ? a.createdAt : a.deadline
     const right = sortBy === 'createdAt' ? b.createdAt : b.deadline
     return left.localeCompare(right) * direction

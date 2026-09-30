@@ -1,0 +1,36 @@
+-- Project-specific example. Do not apply until the placeholders are replaced.
+-- Store the same CRON_SECRET value in the Edge Function secrets first.
+
+select vault.create_secret(
+  'https://YOUR_PROJECT_REF.supabase.co/functions/v1/send-reminders',
+  'tidyline_push_function_url'
+);
+
+select vault.create_secret(
+  'REPLACE_WITH_A_LONG_RANDOM_CRON_SECRET',
+  'tidyline_push_cron_secret'
+);
+
+select cron.schedule(
+  'tidyline-send-reminders',
+  '* * * * *',
+  $$
+  select net.http_post(
+    url := (
+      select decrypted_secret
+      from vault.decrypted_secrets
+      where name = 'tidyline_push_function_url'
+    ),
+    headers := jsonb_build_object(
+      'Content-Type', 'application/json',
+      'x-cron-secret', (
+        select decrypted_secret
+        from vault.decrypted_secrets
+        where name = 'tidyline_push_cron_secret'
+      )
+    ),
+    body := '{}'::jsonb,
+    timeout_milliseconds := 55000
+  );
+  $$
+);

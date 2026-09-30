@@ -344,8 +344,12 @@
   padding: 0.7rem;
 }
 
-.task-entry :is(input[type="text"]:not(.input-underline), input[type="date"], input[type="datetime-local"], input[type="url"], input[type="number"]) {
+.task-entry :is(input[type="text"]:not(.input-underline), input[type="date"], input[type="time"], input[type="datetime-local"], input[type="url"], input[type="number"]) {
   padding: 0.55rem 0.65rem;
+}
+
+.task-entry .deadline-reminder-group {
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
 }
 
 .task-entry .form-footer {
@@ -1179,7 +1183,8 @@ button {
 }
 
 .task-context,
-.energy-mark {
+.energy-mark,
+.priority-mark {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
@@ -1202,6 +1207,15 @@ button {
   border-left-color: var(--accent);
 }
 
+.priority-mark.priority-high {
+  border-left-color: var(--accent);
+  color: var(--accent);
+}
+
+.priority-mark.priority-medium {
+  border-left-color: var(--accent-soft);
+}
+
 .energy-dot {
   width: 0.42rem;
   height: 0.42rem;
@@ -1222,14 +1236,20 @@ button {
 }
 
 .bucket-column.dark .task-context,
-.bucket-column.dark .energy-mark {
+.bucket-column.dark .energy-mark,
+.bucket-column.dark .priority-mark {
   border-left-color: var(--line-on-dark);
   color: var(--text-on-dark-soft);
 }
 
 .bucket-column.dark .task-context.planned,
-.bucket-column.dark .energy-mark.energy-deep-focus {
+.bucket-column.dark .energy-mark.energy-deep-focus,
+.bucket-column.dark .priority-mark.priority-high {
   border-left-color: var(--accent);
+}
+
+.bucket-column.dark .priority-mark.priority-high {
+  color: var(--accent);
 }
 
 /* Overdue severity — weight and intensity rise with age */
@@ -2227,6 +2247,11 @@ button {
   display: block;
   font-size: 0.72rem;
   color: var(--text-soft);
+}
+
+.settings-note-error {
+  color: var(--accent);
+  margin-top: 0.25rem;
 }
 
 .accent-choices {
@@ -4609,6 +4634,7 @@ button {
 .quick-add-palette {
   display: flex;
   flex-direction: column;
+  max-height: calc(100dvh - 2rem);
 }
 
 .quick-add-body {
@@ -4617,6 +4643,8 @@ button {
   flex-direction: column;
   gap: 0.8rem;
   background: var(--surface);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .quick-add-chips-container {
@@ -5184,6 +5212,72 @@ textarea,
   border-radius: 9px;
   background: var(--surface-raised);
 }
+
+.planner-task-controls {
+  display: flex;
+  align-items: end;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+
+.planner-task-controls label {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+  font-size: 0.72rem;
+  color: var(--text-soft);
+}
+
+.planner-task-controls input {
+  width: 7.5rem;
+  max-width: 100%;
+  min-height: 2.5rem;
+  padding: 0.4rem;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.planner-task-controls button { min-height: 2.5rem; }
+.planner-source-list .planner-task-controls span { font-size: 0.72rem; }
+
+.planner-scheduled-controls {
+  margin-top: 1rem;
+}
+
+.planner-scheduled-controls h3 { margin: 0 0 0.6rem; }
+.planner-scheduled-controls ul { display: grid; gap: 0.7rem; }
+.planner-scheduled-controls li {
+  padding: 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface-raised);
+}
+
+.calendar-move-list ul { display: grid; gap: 0.7rem; }
+.calendar-move-list li {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  padding: 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+}
+.calendar-move-list form { display: flex; align-items: end; gap: 0.5rem; flex-wrap: wrap; }
+.calendar-move-list label { display: grid; gap: 0.2rem; font-size: 0.72rem; color: var(--text-soft); }
+.calendar-move-list input {
+  min-height: 2.5rem;
+  padding: 0.4rem;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--text);
+}
+.calendar-move-list button { min-height: 2.5rem; }
 
 /* Someday / Maybe */
 
@@ -5754,6 +5848,7 @@ textarea,
 
 .task-context,
 .energy-mark,
+.priority-mark,
 .risk-mark {
   padding-left: 0;
   border-left: 0;
@@ -6879,4 +6974,53 @@ textarea,
 .db-error-toast-dismiss:hover {
   background: rgba(255, 255, 255, 0.1);
   color: #fff;
+}
+
+.import-review {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-btn);
+  background: var(--surface-raised);
+}
+
+.import-review h3,
+.import-review p {
+  margin: 0;
+}
+
+.import-review ul {
+  margin: 0;
+  padding-inline-start: 1.25rem;
+  overflow-wrap: anywhere;
+}
+
+.import-review-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.sync-status-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-btn);
+  margin-bottom: 1rem;
+}
+
+.sync-status-banner .secondary {
+  flex: none;
+}
+
+.offline-banner {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-btn);
+  margin-bottom: 1rem;
 }

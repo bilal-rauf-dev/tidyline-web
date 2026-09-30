@@ -6,7 +6,7 @@ import {
   getCompletionStat,
   summarizeHeatmap,
 } from '../utils/analytics'
-import { formatDate, getCountdownLabel, getDeadlineParts } from '../utils/dates'
+import { formatDate, formatDeadline, getCountdownLabel, getDeadlineParts } from '../utils/dates'
 import { TIMELINE_TICKS, getTodayTimeline } from '../utils/timeline'
 import { RingStat } from '../components/RingStat'
 import { MilestoneBar } from '../components/MilestoneBar'
@@ -16,7 +16,7 @@ import { TagList } from '../components/TagList'
 import { HomeDaybreak } from '../components/HomeDaybreak'
 import { PlusIcon, GoogleIcon, LogOutIcon } from '../components/icons'
 import { isOverdue } from '../utils/overdue'
-import { toDateStr } from '../utils/calendar'
+import { timestampToLocalDateStr, toDateStr } from '../utils/calendar'
 import { isTaskPlannedForToday, isTaskUpcoming } from '../utils/taskFields'
 import { useAuth } from '../hooks/useAuth'
 
@@ -123,7 +123,7 @@ export function HomePage({
     )
     const overdueCount = tasks.filter((task) => isOverdue(task)).length
     const completedToday = tasks.filter(
-      (task) => task.done && task.completedAt?.slice(0, 10) === today,
+      (task) => task.done && timestampToLocalDateStr(task.completedAt) === today,
     ).length
     const done = dueToday.filter((task) => task.done).length
 
@@ -161,7 +161,7 @@ export function HomePage({
                 Add a task
               </Link>
 
-              {!auth.isAuthenticated ? (
+              {!auth.isAuthenticated && auth.canSignIn ? (
                 <button
                   type="button"
                   className="home-google-auth-btn"
@@ -171,7 +171,7 @@ export function HomePage({
                   <GoogleIcon size={18} />
                   <span>Sign in with Google</span>
                 </button>
-              ) : (
+              ) : auth.isAuthenticated ? (
                 <div className="home-user-badge">
                   <div className="home-user-avatar-wrap">
                     {auth.avatarUrl ? (
@@ -202,7 +202,7 @@ export function HomePage({
                     <span>Sign out</span>
                   </button>
                 </div>
-              )}
+              ) : null}
             </div>
           </header>
 
@@ -383,8 +383,8 @@ export function HomePage({
                         <span className="upcoming-title">{task.title}</span>
                         <span className="upcoming-date">
                           {isTaskUpcoming(task)
-                            ? `Starts ${formatDate(task.startDate)} · due ${formatDate(task.deadline)}`
-                            : `${formatDate(task.deadline)} · ${getCountdownLabel(task.deadline)}`}
+                            ? `Starts ${formatDate(task.startDate)} · due ${formatDeadline(task.deadline, task.deadlineTime)}`
+                            : `${formatDeadline(task.deadline, task.deadlineTime)} · ${getCountdownLabel(task.deadline)}`}
                         </span>
                         <TagList tags={task.tags} />
                       </div>

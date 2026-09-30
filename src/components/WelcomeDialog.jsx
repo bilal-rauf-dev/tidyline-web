@@ -2,14 +2,17 @@ import { useRef, useState } from 'react'
 import { parseImportedTasks } from '../utils/tasksIO'
 import { BrandMonogram } from './BrandMonogram'
 import { GoogleIcon } from './icons'
+import { ImportReview } from './ImportReview'
 
 export function WelcomeDialog({
   onImportTasks,
   onComplete,
   onGoogleSignIn,
+  existingTaskCount = 0,
 }) {
   const fileInputRef = useRef(null)
   const [importMessage, setImportMessage] = useState('')
+  const [importPreview, setImportPreview] = useState(null)
 
   function finishAsGuest() {
     onComplete?.('', true)
@@ -23,14 +26,27 @@ export function WelcomeDialog({
     reader.onload = () => {
       try {
         const tasks = parseImportedTasks(String(reader.result))
-        onImportTasks(tasks)
-        setImportMessage(`${tasks.length} ${tasks.length === 1 ? 'task' : 'tasks'} imported.`)
-      } catch {
-        setImportMessage('That file is not a valid TidyLine export.')
+        setImportPreview(tasks)
+        setImportMessage('')
+      } catch (error) {
+        setImportPreview(null)
+        setImportMessage(error instanceof Error ? error.message : 'That file is not a valid TidyLine export.')
       }
     }
+    reader.onerror = () => setImportMessage('Could not read that file.')
     reader.readAsText(file)
     event.target.value = ''
+  }
+
+  function confirmImport() {
+    if (!importPreview) return
+    try {
+      onImportTasks(importPreview)
+      setImportMessage(`${importPreview.length} ${importPreview.length === 1 ? 'task' : 'tasks'} imported.`)
+      setImportPreview(null)
+    } catch (error) {
+      setImportMessage(error instanceof Error ? error.message : 'Could not import those tasks.')
+    }
   }
 
   return (
@@ -66,6 +82,14 @@ export function WelcomeDialog({
             />
           </div>
           {importMessage && <p className="welcome-import-message" role="status">{importMessage}</p>}
+          {importPreview && (
+            <ImportReview
+              tasks={importPreview}
+              existingCount={existingTaskCount}
+              onConfirm={confirmImport}
+              onCancel={() => setImportPreview(null)}
+            />
+          )}
 
           <div className="welcome-actions">
             {onGoogleSignIn && (

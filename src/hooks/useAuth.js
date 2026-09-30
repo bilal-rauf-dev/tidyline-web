@@ -1,11 +1,13 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '../supabaseClient'
+import { checkBackendSchema } from '../utils/supabaseHealth'
 
 export function useAuth() {
   const [user, setUser] = useState(null)
   const [session, setSession] = useState(null)
   // No Supabase client at all (unconfigured/no backend) means there's nothing to wait on.
   const [loading, setLoading] = useState(Boolean(supabase))
+  const [backendStatus, setBackendStatus] = useState(supabase ? 'checking' : 'local')
 
   useEffect(() => {
     if (!supabase) {
@@ -14,7 +16,8 @@ export function useAuth() {
       return
     }
 
-    // Check initial active session
+    // Check the active session and public schema independently. A valid API
+    // key is not enough for cloud sync if the supplied migrations are absent.
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
       setUser(session?.user ?? null)
@@ -22,6 +25,10 @@ export function useAuth() {
     }).catch((error) => {
       console.error('Error getting initial session:', error)
       setLoading(false)
+    })
+    checkBackendSchema(supabase).then(setBackendStatus).catch((error) => {
+      console.error('Error checking Supabase schema:', error)
+      setBackendStatus('unavailable')
     })
 
     // Listen for auth state transitions (sign in, sign out, OAuth redirect callback)
@@ -39,9 +46,11 @@ export function useAuth() {
   }, [])
 
   const signInWithGoogle = useCallback(async () => {
-    if (!supabase) {
+    if (!supabase || backendStatus !== 'ready') {
       throw new Error(
-        'Google sign-in is unavailable: no Supabase backend is configured for this app.',
+        backendStatus === 'incomplete'
+          ? 'Google sign-in is unavailable until the Supabase database migrations are applied.'
+          : 'Google sign-in is unavailable while cloud sync is not ready.',
       )
     }
 
@@ -56,7 +65,7 @@ export function useAuth() {
       throw error
     }
     return data
-  }, [])
+  }, [backendStatus])
 
   const signOut = useCallback(async () => {
     if (!supabase) {
@@ -87,6 +96,8 @@ export function useAuth() {
     // Whether a Supabase backend is configured at all — lets callers hide/disable
     // sign-in UI instead of offering a button that can only ever throw.
     isConfigured: Boolean(supabase),
+    backendStatus,
+    canSignIn: Boolean(supabase) && backendStatus === 'ready',
     displayName,
     email,
     avatarUrl,

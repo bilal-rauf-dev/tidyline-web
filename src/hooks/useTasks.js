@@ -1,24 +1,39 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { deadlineForBucket } from '../utils/buckets'
 import { toDateStr } from '../utils/calendar'
-import { nextOccurrence } from '../utils/recurrence'
+import { nextOccurrence, normalizeRecurrence } from '../utils/recurrence'
 import { reminderKey } from '../utils/reminders'
+import { validateTaskCollection } from '../utils/tasksIO'
+import { planLocalTaskMigration } from '../utils/taskMigration'
+import {
+  accountSyncKey,
+  acknowledgeAccountOperation,
+  applyAccountOperations,
+  cacheAccountSnapshot,
+  cacheCleanAccountSnapshot,
+  enqueueAccountOperations,
+  readAccountSyncState,
+  resolveAccountTaskConflict,
+} from '../utils/taskSyncStore'
 import {
   applyTaskUpdates,
+  applyTaskRescheduleMoves,
   isTaskUpcoming,
   normalizeEnergyLevel,
+  normalizeDeadlineTime,
+  normalizePriority,
   normalizePlannedDate,
   normalizePostponeHistory,
   normalizeStartDate,
   shiftStartDateForDeadline,
 } from '../utils/taskFields'
 import {
-  deleteTaskRow,
-  deleteManyTaskRows,
+  deleteTaskVersioned,
   fetchTasks,
+  insertManyTasks,
   replaceAllTasks,
-  upsertManyTasks,
-  upsertTask,
+  saveTaskVersioned,
+  TaskVersionConflictError,
 } from '../utils/supabaseStorage'
 
 const STORAGE_KEY = 'tidyline:tasks'
@@ -32,6 +47,8 @@ function normalizeReminder(entry) {
   if (typeof entry === 'string') {
     return { id: `abs:${entry}`, kind: 'absolute', at: entry }
   }
+
+  if (!entry || typeof entry !== 'object' || Array.isArray(entry)) return null
 
   const kind = entry.kind ?? 'absolute'
   const record = { ...entry, kind }
@@ -50,48 +67,72 @@ export function normalizeTask(task) {
     normalizePlannedDate(task.originalDeadline) ?? postponeHistory[0]?.from ?? deadline
   const followUpDate = normalizePlannedDate(task.followUpDate)
   const waitingExpired = followUpDate && followUpDate <= toDateStr(new Date())
+  const startDate = normalizeStartDate(task.startDate, deadline)
+  const status = task.status === 'waiting' && !waitingExpired ? 'waiting' : 'active'
+  const today = toDateStr(new Date())
+  const actionablePlannedDate =
+    deadline &&
+    plannedDate &&
+    plannedDate >= today &&
+    status === 'active' &&
+    (!startDate || startDate <= plannedDate)
+      ? plannedDate
+      : null
 
   return {
     id: task.id,
     title: task.title,
     deadline,
-    reminders: normalizeList(task.reminders).map(normalizeReminder),
+    deadlineTime: deadline ? normalizeDeadlineTime(task.deadlineTime) : null,
+    reminders: normalizeList(task.reminders).map(normalizeReminder).filter(Boolean),
     tags: normalizeList(task.tags),
     done: Boolean(task.done),
     completedAt: typeof task.completedAt === 'string' ? task.completedAt : null,
     pinned: Boolean(task.pinned),
     archived: Boolean(task.archived),
-    recurrence: task.recurrence ?? null,
+    recurrence: normalizeRecurrence(task.recurrence, deadline),
     notes: typeof task.notes === 'string' ? task.notes : '',
     location: typeof task.location === 'string' ? task.location : '',
     duration: task.duration ?? null,
+    priority: normalizePriority(task.priority),
     checklist: normalizeList(task.checklist),
     links: normalizeList(task.links),
     attachments: normalizeList(task.attachments),
-    startDate: normalizeStartDate(task.startDate, deadline),
+    startDate,
     energyLevel: normalizeEnergyLevel(task.energyLevel),
-    plannedDate:
-      deadline && plannedDate && plannedDate >= toDateStr(new Date()) ? plannedDate : null,
+    plannedDate: actionablePlannedDate,
     originalDeadline,
     postponeHistory,
     scheduledStart: typeof task.scheduledStart === 'string' ? task.scheduledStart : null,
-    status: task.status === 'waiting' && !waitingExpired ? 'waiting' : 'active',
+    status,
     waitingFor:
       task.status === 'waiting' && !waitingExpired && typeof task.waitingFor === 'string'
         ? task.waitingFor
         : '',
     followUpDate: task.status === 'waiting' && !waitingExpired ? followUpDate : null,
     createdAt: typeof task.createdAt === 'string' ? task.createdAt : BOOT_TIME,
+    _syncRevision:
+      Number.isInteger(task._syncRevision) && task._syncRevision >= 0
+        ? task._syncRevision
+        : 0,
   }
 }
 
 function loadTasksFromLocalStorage() {
+  let raw = null
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    const parsed = raw ? JSON.parse(raw) : []
-    return Array.isArray(parsed) ? parsed.map(normalizeTask) : []
-  } catch {
-    return []
+    raw = localStorage.getItem(STORAGE_KEY)
+    const parsed = raw === null ? [] : JSON.parse(raw)
+    return { tasks: validateTaskCollection(parsed).map(normalizeTask), error: null }
+  } catch (error) {
+    // Keep the original value untouched. The recovery screen can export it.
+    return {
+      tasks: [],
+      error: {
+        message: error instanceof Error ? error.message : 'Could not read saved tasks',
+        raw,
+      },
+    }
   }
 }
 
@@ -129,10 +170,10 @@ function nextInstance(task, deadline) {
  *
  * When authenticated:
  *  - Tasks are fetched from Supabase on mount (loading = true until done).
- *  - Every mutation optimistically updates local state and fires a background
- *    Supabase write. Failed writes surface via `dbError`.
- *  - `hasPendingMigration` is true when the DB is empty but localStorage has
- *    tasks. Call `migrateLocalTasks()` to import them.
+ *  - Mutations are first saved in a per-account browser queue, then submitted
+ *    to Supabase. Failed writes stay queued and surface via the sync banner.
+ *  - `hasPendingMigration` is true when localStorage has tasks that can be
+ *    reviewed for an additive account merge.
  */
 export function useTasks(auth = null) {
   const isAuthenticated = auth?.isAuthenticated ?? false
@@ -140,13 +181,27 @@ export function useTasks(auth = null) {
 
   // For guests: load synchronously from localStorage.
   // For authenticated: start empty, populate from Supabase asynchronously.
-  const [tasks,               setTasks]               = useState(() =>
-    isAuthenticated ? [] : loadTasksFromLocalStorage(),
+  const [initialLocalLoad] = useState(() =>
+    isAuthenticated ? { tasks: [], error: null } : loadTasksFromLocalStorage(),
   )
+  const [tasks,               setTasks]               = useState(initialLocalLoad.tasks)
+  const [localDataError,      setLocalDataError]      = useState(initialLocalLoad.error)
   const [undoState,           setUndoState]           = useState(null)
-  const [loading,             setLoading]             = useState(() => Boolean(isAuthenticated && userId))
+  const [loadedAccountId,     setLoadedAccountId]     = useState(null)
+  const [loadGeneration,      setLoadGeneration]      = useState(0)
+  const [accountLoadError,    setAccountLoadError]    = useState(false)
   const [dbError,             setDbError]             = useState(null)
   const [hasPendingMigration, setHasPendingMigration] = useState(false)
+  const [pendingSyncCount,    setPendingSyncCount]    = useState(0)
+  const [syncing,             setSyncing]             = useState(false)
+  const [syncError,           setSyncError]           = useState(false)
+  const [syncConflicts,       setSyncConflicts]       = useState([])
+  const flushActiveRef = useRef(false)
+  const migrationActiveRef = useRef(false)
+  const loading = Boolean(
+    (isAuthenticated && userId && loadedAccountId !== userId) ||
+    (!isAuthenticated && loadedAccountId),
+  )
 
   // Track previous auth state so we can detect sign-out transitions and
   // prevent Supabase data from leaking into the guest session.
@@ -156,6 +211,150 @@ export function useTasks(auth = null) {
   // them without stale closure issues.
   const tasksRef = useRef(tasks)
   useEffect(() => { tasksRef.current = tasks }, [tasks])
+
+  const flushSyncQueue = useCallback(async () => {
+    if (!isAuthenticated || !userId || flushActiveRef.current) return
+    flushActiveRef.current = true
+    setSyncing(true)
+    try {
+      while (true) {
+        const current = readAccountSyncState(localStorage, userId)
+        const operation = current.operations[0]
+        if (!operation) {
+          setPendingSyncCount(0)
+          setSyncError(false)
+          break
+        }
+
+        try {
+          if (operation.kind === 'upsert') {
+            for (const task of operation.tasks) {
+              const expectedRevision = operation.expectedRevisions?.[task.id] ?? 0
+              await saveTaskVersioned(userId, task, expectedRevision)
+            }
+          }
+          if (operation.kind === 'delete') {
+            for (const taskId of operation.ids) {
+              const expectedRevision = operation.expectedRevisions?.[taskId] ?? 0
+              await deleteTaskVersioned(userId, taskId, expectedRevision)
+            }
+          }
+          if (operation.kind === 'replace') await replaceAllTasks(userId, operation.tasks)
+        } catch (error) {
+          if (!(error instanceof TaskVersionConflictError)) throw error
+
+          const localTask = current.snapshot.find((task) => task.id === error.taskId)
+          const conflictCopy = error.action === 'edit' && localTask
+            ? normalizeTask({
+                ...localTask,
+                id: crypto.randomUUID(),
+                title: localTask.title.endsWith(' (conflict copy)')
+                  ? localTask.title
+                  : `${localTask.title} (conflict copy)`,
+                _syncRevision: 1,
+              })
+            : null
+          const resolved = resolveAccountTaskConflict(localStorage, userId, {
+            operationId: operation.id,
+            taskId: error.taskId,
+            remoteTask: error.remoteTask,
+            conflictCopy,
+          })
+          tasksRef.current = resolved.snapshot
+          setTasks(resolved.snapshot)
+          setPendingSyncCount(resolved.operations.length)
+          setSyncConflicts((items) => [
+            ...items,
+            {
+              id: crypto.randomUUID(),
+              action: error.action,
+              title: localTask?.title ?? error.remoteTask?.title ?? 'Task',
+            },
+          ])
+          setSyncError(false)
+          continue
+        }
+
+        const acknowledged = acknowledgeAccountOperation(localStorage, userId, operation.id)
+        setPendingSyncCount(acknowledged.operations.length)
+        setSyncError(false)
+      }
+    } catch (error) {
+      console.error('[useTasks] queued sync failed:', error)
+      setSyncError(true)
+      setDbError('Changes are saved in this browser but have not reached your account. Sync will retry.')
+    } finally {
+      flushActiveRef.current = false
+      setSyncing(false)
+    }
+  }, [isAuthenticated, userId])
+
+  useEffect(() => {
+    if (!isAuthenticated || !userId || loading) return undefined
+    const retry = () => flushSyncQueue()
+    const firstRetry = window.setTimeout(retry, 0)
+    const interval = window.setInterval(retry, 30_000)
+    window.addEventListener('online', retry)
+    return () => {
+      window.clearTimeout(firstRetry)
+      window.clearInterval(interval)
+      window.removeEventListener('online', retry)
+    }
+  }, [isAuthenticated, userId, loading, flushSyncQueue])
+
+  // Refresh a clean account view when another device changes it. A pending
+  // browser operation always keeps precedence until it is resolved.
+  useEffect(() => {
+    if (!isAuthenticated || !userId || loading || accountLoadError) return undefined
+    let cancelled = false
+    let refreshing = false
+
+    async function refreshFromAccount() {
+      if (refreshing) return
+      try {
+        const before = readAccountSyncState(localStorage, userId)
+        if (before.operations.length > 0) return
+        refreshing = true
+        const remote = (await fetchTasks(userId)).map(normalizeTask)
+        const latest = readAccountSyncState(localStorage, userId)
+        if (cancelled || latest.operations.length > 0) return
+        if (!cacheCleanAccountSnapshot(localStorage, userId, remote)) return
+        tasksRef.current = remote
+        setTasks(remote)
+      } catch (error) {
+        console.error('[useTasks] account refresh failed:', error)
+      } finally {
+        refreshing = false
+      }
+    }
+
+    function onStorage(event) {
+      if (event.key !== accountSyncKey(userId)) return
+      try {
+        const saved = readAccountSyncState(localStorage, userId)
+        tasksRef.current = saved.snapshot
+        setTasks(saved.snapshot)
+        setPendingSyncCount(saved.operations.length)
+      } catch (error) {
+        console.error('[useTasks] shared account cache unreadable:', error)
+        setDbError('Saved account changes in this browser could not be read.')
+      }
+    }
+
+    function onFocus() {
+      if (document.visibilityState === 'visible') refreshFromAccount()
+    }
+
+    const interval = window.setInterval(refreshFromAccount, 60_000)
+    window.addEventListener('focus', onFocus)
+    window.addEventListener('storage', onStorage)
+    return () => {
+      cancelled = true
+      window.clearInterval(interval)
+      window.removeEventListener('focus', onFocus)
+      window.removeEventListener('storage', onStorage)
+    }
+  }, [isAuthenticated, userId, loading, accountLoadError])
 
   // ── Reset on sign-out (authenticated → guest) ─────────────────────────────
   // When the user signs out, React state still holds the Supabase-fetched
@@ -167,11 +366,17 @@ export function useTasks(auth = null) {
 
     if (wasAuthenticated && !isAuthenticated) {
       // User just signed out — reset to local-only data.
-      setTasks(loadTasksFromLocalStorage())
+      const loaded = loadTasksFromLocalStorage()
+      setTasks(loaded.tasks)
+      setLocalDataError(loaded.error)
       setUndoState(null)
       setDbError(null)
       setHasPendingMigration(false)
-      setLoading(false)
+      setLoadedAccountId(null)
+      setAccountLoadError(false)
+      setPendingSyncCount(0)
+      setSyncError(false)
+      setSyncConflicts([])
     }
   }, [isAuthenticated])
 
@@ -180,37 +385,73 @@ export function useTasks(auth = null) {
     if (!isAuthenticated || !userId) return
 
     let cancelled = false
+    let accountCache = null
+    try {
+      accountCache = readAccountSyncState(localStorage, userId)
+      const pending = accountCache.operations.length
+      queueMicrotask(() => { if (!cancelled) setPendingSyncCount(pending) })
+    } catch (error) {
+      console.error('[useTasks] account cache unreadable:', error)
+      queueMicrotask(() => {
+        if (!cancelled) setDbError('Saved account changes in this browser could not be read. Export your tasks before editing.')
+      })
+    }
 
     fetchTasks(userId)
       .then((data) => {
         if (cancelled) return
-        setDbError(null)
+        if (accountCache) setDbError(null)
 
-        // Offer migration if the user has local tasks but nothing in the DB yet.
-        if (data.length === 0) {
-          const alreadyDismissed = sessionStorage.getItem('tidyline:tasks-migration-dismissed')
-          if (!alreadyDismissed) {
-            try {
-              const local = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]')
-              if (Array.isArray(local) && local.length > 0) {
-                setHasPendingMigration(true)
-              }
-            } catch { /* ignore */ }
-          }
+        // Offer a reviewed merge even when the account already has tasks.
+        const alreadyDismissed = sessionStorage.getItem(`tidyline:tasks-migration-dismissed:${userId}`)
+        if (!alreadyDismissed) {
+          try {
+            const local = validateTaskCollection(JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]'))
+            if (local.length > 0) setHasPendingMigration(true)
+          } catch { /* keep unreadable local data untouched */ }
         }
 
-        setTasks(data.map(normalizeTask))
-        setLoading(false)
+        const remote = data.map(normalizeTask)
+        // Another tab may have queued an edit while this network request ran.
+        const latestCache = accountCache ? readAccountSyncState(localStorage, userId) : null
+        const merged = applyAccountOperations(remote, latestCache?.operations ?? [])
+        try {
+          if (latestCache) cacheAccountSnapshot(localStorage, userId, merged)
+        } catch (error) {
+          console.error('[useTasks] could not cache account tasks:', error)
+          setDbError('Could not save an account copy in this browser. Check available storage.')
+        }
+        tasksRef.current = merged
+        setTasks(merged)
+        setAccountLoadError(false)
+        setLoadedAccountId(userId)
       })
       .catch((err) => {
         if (cancelled) return
         console.error('[useTasks] fetch failed:', err)
-        setDbError('Could not load tasks from your account. Check your connection.')
-        setLoading(false)
+        setDbError(accountCache?.hasSnapshot
+          ? 'Showing tasks saved in this browser. Account sync will retry when connected.'
+          : 'Could not load tasks from your account. Check your connection.')
+        if (accountCache?.hasSnapshot) {
+          tasksRef.current = accountCache.snapshot
+          setTasks(accountCache.snapshot)
+          setAccountLoadError(false)
+        } else {
+          tasksRef.current = []
+          setTasks([])
+          setAccountLoadError(true)
+        }
+        setLoadedAccountId(userId)
       })
 
     return () => { cancelled = true }
-  }, [isAuthenticated, userId])
+  }, [isAuthenticated, userId, loadGeneration])
+
+  function retryAccountLoad() {
+    setAccountLoadError(false)
+    setLoadedAccountId(null)
+    setLoadGeneration((current) => current + 1)
+  }
 
   // ── Guest localStorage persistence ────────────────────────────────────────
   // Only runs for guest users. Authenticated writes go through Supabase helpers.
@@ -219,6 +460,7 @@ export function useTasks(auth = null) {
   const authStableRef = useRef(isAuthenticated)
   useEffect(() => {
     if (isAuthenticated) { authStableRef.current = true; return }
+    if (localDataError) return
 
     // If we just transitioned from authenticated → guest, the reset effect
     // above already set tasks to the correct local data. However, this
@@ -226,8 +468,15 @@ export function useTasks(auth = null) {
     // before the reset. Skip this write until the next genuine guest change.
     if (authStableRef.current) { authStableRef.current = false; return }
 
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks))
-  }, [tasks, isAuthenticated])
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks))
+    } catch {
+      const timer = window.setTimeout(() => {
+        setDbError('Could not save tasks in this browser. Export your tasks and check available storage.')
+      }, 0)
+      return () => window.clearTimeout(timer)
+    }
+  }, [tasks, isAuthenticated, localDataError])
 
   // ── Daily maintenance: clear past plannedDates, release expired waits ─────
   // Uses the tasks ref so it doesn't need tasks in its deps. This keeps the
@@ -274,35 +523,89 @@ export function useTasks(auth = null) {
 
   // ── Internal helpers ──────────────────────────────────────────────────────
 
-  function handleSyncError(label, err) {
-    console.error(`[useTasks] ${label} error:`, {
-      message: err?.message,
-      details: err?.details,
-      hint: err?.hint,
-      code: err?.code,
-      raw: err,
-    })
-    setDbError(err?.message ? `Failed to sync task: ${err.message}` : 'Failed to sync a change. Your data is safe locally — retry or refresh.')
+  function queueAccountChanges(operations) {
+    const nextTasks = applyAccountOperations(tasksRef.current, operations)
+    try {
+      const saved = isAuthenticated && userId
+        ? enqueueAccountOperations(localStorage, userId, nextTasks, operations)
+        : null
+      if (!saved) localStorage.setItem(STORAGE_KEY, JSON.stringify(nextTasks))
+      tasksRef.current = nextTasks
+      setTasks(nextTasks)
+      if (saved) {
+        setPendingSyncCount(saved.operations.length)
+        if (!loading) queueMicrotask(flushSyncQueue)
+      }
+      return true
+    } catch (error) {
+      console.error('[useTasks] could not queue task change:', error)
+      setTasks(tasksRef.current)
+      setUndoState(null)
+      setDbError('Could not save this change in the browser. Check available storage and try again.')
+      return false
+    }
+  }
+
+  function queueAccountChange(kind, payload) {
+    let prepared = payload
+    if (kind === 'replace' && isAuthenticated && userId) {
+      prepared = {
+        ...payload,
+        tasks: payload.tasks.map((task) => ({
+          ...task,
+          _syncRevision: Math.max(1, task._syncRevision ?? 0),
+        })),
+      }
+    }
+    return queueAccountChanges([{ id: crypto.randomUUID(), kind, ...prepared }])
+  }
+
+  function versionedUpsertOperation(task) {
+    const expectedRevision = Number.isInteger(task._syncRevision) ? task._syncRevision : 0
+    const queuedTask = { ...task, _syncRevision: expectedRevision + 1 }
+    return {
+      id: crypto.randomUUID(),
+      kind: 'upsert',
+      tasks: [queuedTask],
+      expectedRevisions: { [task.id]: expectedRevision },
+    }
   }
 
   function syncUpsert(task) {
-    if (!isAuthenticated || !userId) return
-    upsertTask(userId, task).catch((err) => handleSyncError('upsert', err))
+    if (!isAuthenticated || !userId) {
+      return queueAccountChange('upsert', { tasks: [task] })
+    }
+    return queueAccountChanges([versionedUpsertOperation(task)])
   }
 
   function syncUpsertMany(taskList) {
-    if (!isAuthenticated || !userId || taskList.length === 0) return
-    upsertManyTasks(userId, taskList).catch((err) => handleSyncError('upsert_many', err))
+    if (taskList.length === 0) return true
+    if (!isAuthenticated || !userId) {
+      return queueAccountChange('upsert', { tasks: taskList })
+    }
+    return queueAccountChanges(taskList.map(versionedUpsertOperation))
   }
 
   function syncDelete(taskId) {
-    if (!isAuthenticated || !userId) return
-    deleteTaskRow(taskId).catch((err) => handleSyncError('delete', err))
+    return syncDeleteMany([taskId])
   }
 
   function syncDeleteMany(taskIds) {
-    if (!isAuthenticated || !userId || taskIds.length === 0) return
-    deleteManyTaskRows(taskIds).catch((err) => handleSyncError('delete_many', err))
+    if (taskIds.length === 0) return true
+    if (!isAuthenticated || !userId) {
+      return queueAccountChange('delete', { ids: taskIds })
+    }
+    const byId = new Map(tasksRef.current.map((task) => [task.id, task]))
+    return queueAccountChanges(taskIds.map((taskId) => ({
+      id: crypto.randomUUID(),
+      kind: 'delete',
+      ids: [taskId],
+      expectedRevisions: {
+        [taskId]: Number.isInteger(byId.get(taskId)?._syncRevision)
+          ? byId.get(taskId)._syncRevision
+          : 0,
+      },
+    })))
   }
 
   function commit(message, nextTasks) {
@@ -342,24 +645,23 @@ export function useTasks(auth = null) {
   // ── Mutations ─────────────────────────────────────────────────────────────
 
   function addTask({
-    title, deadline, reminders, tags = [], recurrence = null,
+    title, deadline, deadlineTime = null, reminders, tags = [], recurrence = null,
     notes = '', checklist = [], links = [], attachments = [],
-    location = '', duration = null, startDate = null, energyLevel = null,
+    location = '', duration = null, startDate = null, energyLevel = null, priority = null,
     scheduledStart = null, archived = false, status = 'active',
     waitingFor = '', followUpDate = null, plannedDate = null,
   }) {
     const task = normalizeTask({
       id: crypto.randomUUID(),
-      title, deadline, reminders, tags, recurrence, notes, checklist, links,
-      attachments, location, duration, startDate, energyLevel, scheduledStart,
+      title, deadline, deadlineTime, reminders, tags, recurrence, notes, checklist, links,
+      attachments, location, duration, startDate, energyLevel, priority, scheduledStart,
       archived, status, waitingFor, followUpDate, plannedDate,
       originalDeadline: deadline, postponeHistory: [],
       createdAt: new Date().toISOString(),
     })
 
     setTasks((current) => [task, ...current])
-    syncUpsert(task)
-    return task
+    return syncUpsert(task) ? task : null
   }
 
   function addSomedayTask({ title, notes = '', tags = [] }) {
@@ -370,8 +672,7 @@ export function useTasks(auth = null) {
     })
 
     setTasks((current) => [task, ...current])
-    syncUpsert(task)
-    return task
+    return syncUpsert(task) ? task : null
   }
 
   function updateTask(id, updates, source = 'edit') {
@@ -394,14 +695,19 @@ export function useTasks(auth = null) {
     const target = getTask(id)
     if (!target || target.done) return
 
-    const completed = { ...target, done: true, completedAt: new Date().toISOString() }
+    const completedAt = new Date()
+    const completed = { ...target, done: true, completedAt: completedAt.toISOString() }
     let next = tasks.map((t) => (t.id === id ? completed : t))
     let createdNext = false
     let newInstance = null
 
     // Recurring tasks materialise their next instance on completion.
     if (target.recurrence && target.deadline) {
-      const upcoming = nextOccurrence(target.recurrence, target.deadline)
+      const upcoming = nextOccurrence(
+        target.recurrence,
+        target.deadline,
+        toDateStr(completedAt),
+      )
       if (upcoming) {
         newInstance = nextInstance(target, upcoming)
         next = [newInstance, ...next]
@@ -505,22 +811,12 @@ export function useTasks(auth = null) {
   }
 
   function rescheduleTasks(moves, source = 'calendar') {
-    const byId = new Map(moves.map((move) => [move.id, move.deadline]))
-    let changed = false
-    const updatedList = []
+    const result = applyTaskRescheduleMoves(tasks, moves, source)
+    if (result.updatedTasks.length === 0) return
 
-    const next = tasks.map((task) => {
-      const deadline = byId.get(task.id)
-      if (!deadline || deadline === task.deadline) return task
-      const updated = applyTaskUpdates(task, { deadline }, source)
-      if (updated !== task) { changed = true; updatedList.push(updated) }
-      return updated
-    })
-
-    if (changed) {
-      commit(`${moves.length} tasks rescheduled`, next)
-      syncUpsertMany(updatedList)
-    }
+    const count = result.updatedTasks.length
+    commit(`${count} task${count === 1 ? '' : 's'} rescheduled`, result.tasks)
+    syncUpsertMany(result.updatedTasks)
   }
 
   function togglePlanForToday(id) {
@@ -609,20 +905,34 @@ export function useTasks(auth = null) {
 
   function bulkComplete(ids) {
     const set = new Set(ids)
-    const stamp = new Date().toISOString()
+    const completedAt = new Date()
+    const stamp = completedAt.toISOString()
+    const completionDate = toDateStr(completedAt)
     const updatedList = []
+    const nextInstances = []
 
-    const next = tasks.map((task) => {
+    const completedTasks = tasks.map((task) => {
       if (set.has(task.id) && !task.done) {
         const updated = { ...task, done: true, completedAt: stamp }
         updatedList.push(updated)
+        if (task.recurrence && task.deadline) {
+          const upcoming = nextOccurrence(task.recurrence, task.deadline, completionDate)
+          if (upcoming) nextInstances.push(nextInstance(task, upcoming))
+        }
         return updated
       }
       return task
     })
 
-    commit(`${ids.length} task${ids.length === 1 ? '' : 's'} completed`, next)
-    syncUpsertMany(updatedList)
+    const count = updatedList.length
+    if (count === 0) return
+    commit(
+      nextInstances.length > 0
+        ? `${count} task${count === 1 ? '' : 's'} completed — next scheduled`
+        : `${count} task${count === 1 ? '' : 's'} completed`,
+      [...nextInstances, ...completedTasks],
+    )
+    syncUpsertMany([...updatedList, ...nextInstances])
   }
 
   function bulkArchive(ids) {
@@ -652,13 +962,15 @@ export function useTasks(auth = null) {
   }
 
   function importTasks(newTasks) {
-    const normalized = newTasks.map(normalizeTask)
-    setTasks(normalized)
-
+    const normalized = validateTaskCollection(newTasks).map(normalizeTask)
     if (isAuthenticated && userId) {
-      replaceAllTasks(userId, normalized).catch((err) =>
-        handleSyncError('importTasks replaceAll', err),
-      )
+      if (!queueAccountChange('replace', { tasks: normalized })) {
+        throw new Error('Could not save the imported tasks in this browser. The existing tasks were kept.')
+      }
+    } else {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized))
+      tasksRef.current = normalized
+      setTasks(normalized)
     }
   }
 
@@ -671,48 +983,91 @@ export function useTasks(auth = null) {
   function undo() {
     if (!undoState) return
     const snapshot = undoState.snapshot
-    setTasks(snapshot)
-    setUndoState(null)
-
     if (isAuthenticated && userId) {
-      // Replace all: delete current rows, re-insert the snapshot.
-      replaceAllTasks(userId, snapshot).catch((err) =>
-        handleSyncError('undo replaceAll', err),
-      )
+      if (!queueAccountChange('replace', { tasks: snapshot })) return
+    } else {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot))
+      } catch {
+        setDbError('Could not save the undo in this browser. Check available storage and try again.')
+        return
+      }
+      tasksRef.current = snapshot
+      setTasks(snapshot)
     }
+    setUndoState(null)
   }
 
   /**
-   * One-time migration: copy localStorage tasks into Supabase.
-   * Offered via the MigrationBanner when DB is empty but local data exists.
+   * One-time migration: add localStorage tasks to the account without changing
+   * existing account tasks. Source data is removed only after the cloud write.
    */
   async function migrateLocalTasks() {
-    if (!isAuthenticated || !userId) return
+    if (!isAuthenticated || !userId || migrationActiveRef.current) return
+    migrationActiveRef.current = true
     try {
       const raw = localStorage.getItem(STORAGE_KEY)
       if (!raw) { setHasPendingMigration(false); return }
 
-      const parsed = JSON.parse(raw)
-      if (!Array.isArray(parsed) || parsed.length === 0) { setHasPendingMigration(false); return }
+      const parsed = validateTaskCollection(JSON.parse(raw))
+      if (parsed.length === 0) { setHasPendingMigration(false); return }
 
+      if (readAccountSyncState(localStorage, userId).operations.length > 0) {
+        throw new Error('Wait for pending account changes to sync before merging local tasks.')
+      }
+      const account = (await fetchTasks(userId)).map(normalizeTask)
+      if (readAccountSyncState(localStorage, userId).operations.length > 0) {
+        throw new Error('Wait for pending account changes to sync before merging local tasks.')
+      }
       const normalized = parsed.map(normalizeTask)
-      await upsertManyTasks(userId, normalized)
-      setTasks(normalized)
+      const plan = await planLocalTaskMigration(userId, account, normalized)
+      await insertManyTasks(userId, plan.additions)
+      const addedIds = new Set(plan.additions.map((task) => task.id))
+      const merged = plan.merged.map((task) =>
+        addedIds.has(task.id) ? { ...task, _syncRevision: 1 } : task,
+      )
+      if (!cacheCleanAccountSnapshot(localStorage, userId, merged)) {
+        throw new Error('Account changes arrived during the merge. Wait for them to sync, then retry.')
+      }
+      tasksRef.current = merged
+      setTasks(merged)
       localStorage.removeItem(STORAGE_KEY)
       setHasPendingMigration(false)
     } catch (err) {
       console.error('[useTasks] migrateLocalTasks failed:', err)
-      setDbError('Failed to migrate local tasks to your account. Please try again.')
+      setDbError(err instanceof Error ? err.message : 'Failed to merge local tasks. Please try again.')
+    } finally {
+      migrationActiveRef.current = false
     }
   }
 
   function dismissMigration() {
-    sessionStorage.setItem('tidyline:tasks-migration-dismissed', 'true')
+    if (userId) sessionStorage.setItem(`tidyline:tasks-migration-dismissed:${userId}`, 'true')
     setHasPendingMigration(false)
+  }
+
+  function discardBrokenLocalTasks() {
+    try {
+      localStorage.removeItem(STORAGE_KEY)
+      setTasks([])
+      setLocalDataError(null)
+    } catch {
+      setDbError('Could not remove the unreadable data from this browser. Check browser storage permissions.')
+    }
   }
 
   return {
     tasks,
+    accountLoadError,
+    retryAccountLoad,
+    pendingSyncCount,
+    syncing,
+    syncError,
+    syncConflicts,
+    dismissSyncConflicts: () => setSyncConflicts([]),
+    retrySync: flushSyncQueue,
+    localDataError,
+    discardBrokenLocalTasks,
     loading,
     dbError,
     clearDbError: () => setDbError(null),

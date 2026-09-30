@@ -1,0 +1,2 @@
+[functions.send-reminders]
+verify_jwt = false

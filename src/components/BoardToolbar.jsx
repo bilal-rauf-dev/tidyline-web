@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { ENERGY_FILTER_OPTIONS, SORT_OPTIONS, STATUS_OPTIONS } from '../utils/filters'
+import { ENERGY_FILTER_OPTIONS, PRIORITY_FILTER_OPTIONS, SORT_OPTIONS, STATUS_OPTIONS } from '../utils/filters'
 import { ChevronDownIcon, SearchIcon, TagIcon } from './icons'
 import { SelectMenu } from './SelectMenu'
 import { Checkbox } from './Checkbox'
@@ -76,6 +76,11 @@ export function BoardToolbar({ filters, onChange, tags }) {
           <div className="toolbar-field">
             <span className="field-icon-head">Energy</span>
             <SelectMenu value={filters.energyLevel} ariaLabel="Filter by energy level" options={ENERGY_FILTER_OPTIONS} onChange={(value) => set('energyLevel', value)} />
+          </div>
+
+          <div className="toolbar-field">
+            <span className="field-icon-head">Priority</span>
+            <SelectMenu value={filters.priority} ariaLabel="Filter by priority" options={PRIORITY_FILTER_OPTIONS} onChange={(value) => set('priority', value)} />
           </div>
 
           <div className="toolbar-field">

@@ -44,6 +44,7 @@ test('Submit report tomorrow at 5pm', () => {
   assert(r.title === 'Submit report', `title: ${JSON.stringify(r.title)}`)
   assert(r.deadline !== null, 'deadline should be parsed')
   assert(toYMD(r.deadline) === '2026-08-12', `deadline: ${toYMD(r.deadline)}`)
+  assert(r.deadlineTime === '17:00', `deadlineTime: ${r.deadlineTime}`)
   assert(r.tags.length === 0, 'no tags expected')
 })
 
@@ -61,6 +62,7 @@ test('Call Talha Friday remind 2h before', () => {
   // Next Friday from Tuesday 2026-08-11 is 2026-08-14
   assert(toYMD(r.deadline) === '2026-08-14', `deadline: ${toYMD(r.deadline)}`)
   assert(r.reminderMinutes === 120, `reminderMinutes: ${r.reminderMinutes}`)
+  assert(r.deadlineTime === null, `deadlineTime: ${r.deadlineTime}`)
 })
 
 test('Study OS for 90m #university @deep', () => {
@@ -145,6 +147,7 @@ test('Full complex: Finish DB assignment tomorrow 8pm for 2h remind 30m before !
   assert(toYMD(r.deadline) === '2026-08-12', `deadline: ${toYMD(r.deadline)}`)
   assert(r.durationMinutes === 120, `duration: ${r.durationMinutes}`)
   assert(r.reminderMinutes === 30, `reminder: ${r.reminderMinutes}`)
+  assert(r.deadlineTime === '20:00', `deadlineTime: ${r.deadlineTime}`)
   assert(r.priority === 'high', `priority: ${r.priority}`)
   assert(r.energy === 'deep-focus', `energy: ${r.energy}`)
   assert(r.tags.includes('university'), `tags: ${JSON.stringify(r.tags)}`)

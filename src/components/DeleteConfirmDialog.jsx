@@ -1,25 +1,16 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
+import { useModalFocus } from '../hooks/useModalFocus'
 import { Checkbox } from './Checkbox'
 
 export function DeleteConfirmDialog({ taskTitle, onCancel, onConfirm }) {
   const [dontAskAgain, setDontAskAgain] = useState(false)
   const cancelRef = useRef(null)
+  const dialogRef = useRef(null)
 
-  useEffect(() => {
-    cancelRef.current?.focus()
-
-    function handleKeyDown(event) {
-      if (event.key === 'Escape') {
-        onCancel()
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [onCancel])
+  useModalFocus(dialogRef, { initialFocusRef: cancelRef, onClose: onCancel })
 
   return (
-    <div className="confirm-layer" role="dialog" aria-modal="true" aria-labelledby="delete-title">
+    <div className="confirm-layer">
       <button
         type="button"
         className="confirm-scrim"
@@ -27,7 +18,7 @@ export function DeleteConfirmDialog({ taskTitle, onCancel, onConfirm }) {
         aria-label="Cancel task deletion"
       />
 
-      <div className="confirm-dialog">
+      <div ref={dialogRef} className="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="delete-title" tabIndex={-1}>
         <h2 id="delete-title">Delete task?</h2>
         <p>
           “{taskTitle}” will be removed. You can still restore it from the undo notification.

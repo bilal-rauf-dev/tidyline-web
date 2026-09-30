@@ -1,13 +1,16 @@
 import { createClient } from '@supabase/supabase-js'
+import { assertSafeSupabaseBrowserKey } from './utils/supabaseKey'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+assertSafeSupabaseBrowserKey(import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY)
+assertSafeSupabaseBrowserKey(import.meta.env.VITE_SUPABASE_ANON_KEY)
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY
 
 const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey)
 
 if (!isSupabaseConfigured && import.meta.env.DEV) {
   console.warn(
-    '[TidyLine] Supabase is not configured (VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY are ' +
+    '[TidyLine] Supabase is not configured (VITE_SUPABASE_URL and a publishable/anon key are ' +
       'missing). Running in local-only mode: tasks stay in this browser and Google sign-in is ' +
       'unavailable until these are set. See .env.example.',
   )

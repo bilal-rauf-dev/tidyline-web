@@ -1,4 +1,4 @@
-import { toDateStr } from './calendar'
+import { timestampToLocalDateStr, toDateStr } from './calendar'
 import { BUCKET_LABELS, BUCKET_ORDER, groupTasksByBucket } from './buckets'
 import { isTaskUpcoming } from './taskFields'
 
@@ -7,8 +7,8 @@ const BUSIEST_WINDOW_DAYS = 14
 const COMPLETION_HISTORY_DAYS = 14
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000
 
-function startOfToday() {
-  const today = new Date()
+function startOfDay(referenceDate = new Date()) {
+  const today = new Date(referenceDate)
   today.setHours(0, 0, 0, 0)
   return today
 }
@@ -74,8 +74,8 @@ export function getBucketTrends(tasks, bucketOrder = BUCKET_ORDER) {
  *        'empty'   — neither
  * Overdue wins over active when a day has both, since it is the actionable one.
  */
-export function getActivityHeatmap(tasks, days = HEATMAP_DAYS) {
-  const today = startOfToday()
+export function getActivityHeatmap(tasks, days = HEATMAP_DAYS, referenceDate = new Date()) {
+  const today = startOfDay(referenceDate)
   const todayStr = toDateStr(today)
 
   const completed = new Set()
@@ -83,8 +83,14 @@ export function getActivityHeatmap(tasks, days = HEATMAP_DAYS) {
 
   tasks.forEach((task) => {
     if (task.done) {
-      completed.add(task.deadline)
-    } else if (
+      if (task.completedAt) {
+        const completionDate = timestampToLocalDateStr(task.completedAt)
+        if (completionDate) completed.add(completionDate)
+      }
+      return
+    }
+
+    if (
       task.status !== 'waiting' &&
       !isTaskUpcoming(task, today) &&
       task.deadline < todayStr
@@ -134,7 +140,7 @@ export function summarizeHeatmap(cells) {
  * Feeds the sparkline card.
  */
 export function getBusiestDay(tasks, days = BUSIEST_WINDOW_DAYS) {
-  const today = startOfToday()
+  const today = startOfDay()
   const counts = new Map()
 
   tasks.forEach((task) => {
@@ -174,8 +180,12 @@ export function getBusiestDay(tasks, days = BUSIEST_WINDOW_DAYS) {
  * history from current task state. Older tasks without completedAt simply do
  * not contribute, which keeps the chart honest.
  */
-export function getCompletionHistory(tasks, days = COMPLETION_HISTORY_DAYS) {
-  const today = startOfToday()
+export function getCompletionHistory(
+  tasks,
+  days = COMPLETION_HISTORY_DAYS,
+  referenceDate = new Date(),
+) {
+  const today = startOfDay(referenceDate)
   const counts = new Map()
 
   tasks.forEach((task) => {
@@ -183,7 +193,8 @@ export function getCompletionHistory(tasks, days = COMPLETION_HISTORY_DAYS) {
       return
     }
 
-    const dateStr = task.completedAt.slice(0, 10)
+    const dateStr = timestampToLocalDateStr(task.completedAt)
+    if (!dateStr) return
     counts.set(dateStr, (counts.get(dateStr) ?? 0) + 1)
   })
 
